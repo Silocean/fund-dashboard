@@ -1398,6 +1398,19 @@
         let fundList = []; // 所有基金列表
         let isFetchingFundList = false; // 是否正在获取基金列表
         let fundDetails = {}; // 基金详细信息：{ code: { rates, managers, etc } }
+        // 渲染防抖器：避免短时间内多次整体重绘引起闪烁
+        let _renderTimer = null;
+        function scheduleRender(delay = 250) {
+            if (_renderTimer) clearTimeout(_renderTimer);
+            _renderTimer = setTimeout(() => {
+                try {
+                    renderFunds();
+                } catch (e) {
+                    console.error('scheduleRender: renderFunds 错误', e);
+                }
+                _renderTimer = null;
+            }, delay);
+        }
         
         // 基金详细信息加载队列
         let fundDetailsQueue = []; // 待加载的基金代码队列
@@ -2604,7 +2617,7 @@
                     
                     // 如果更新失败（可能是DOM还没创建），说明是初次加载，需要renderFunds
                     if (!updated && !skipRender) {
-                        renderFunds();
+                        scheduleRender();
                     }
                     
                     // 检查该基金的详情选项卡是否处于激活状态
@@ -2713,7 +2726,7 @@
             updateDailyRange(data.fundcode, percentage);
             
             saveHistoryData();
-            renderFunds();
+            scheduleRender();
         };
 
         // 改变排序方式
@@ -3539,21 +3552,38 @@
             console.log(`[drawNetWorthChart] 基金 ${code} - 前5个净值:`, netWorthValues.slice(0, 5));
             console.log(`[drawNetWorthChart] 基金 ${code} - 后5个净值:`, netWorthValues.slice(-5));
             
-            // 计算涨跌（相比第一个数据点）
+            // 计算涨跌百分比（相比第一个数据点，从0%开始）
             const firstValue = netWorthValues[0];
             const lastValue = netWorthValues[netWorthValues.length - 1];
+            const percentageValues = netWorthValues.map(v => ((v - firstValue) / firstValue) * 100);
             const isPositive = lastValue >= firstValue;
             const lineColor = isPositive ? '#ff4d4f' : '#00b96b';
-            
-            console.log(`[drawNetWorthChart] 基金 ${code} - 首个净值: ${firstValue}, 最后净值: ${lastValue}, 涨跌: ${isPositive ? '上涨' : '下跌'}`);
+
+            // 调试：记录百分比数据的范围，以便排查刻度问题
+            try {
+                const minPerc = Math.min(...percentageValues);
+                const maxPerc = Math.max(...percentageValues);
+                console.log(`[drawNetWorthChart][DEBUG] ${code} percentageValues.length=${percentageValues.length} min=${minPerc.toFixed(4)} max=${maxPerc.toFixed(4)} first=${firstValue} last=${lastValue}`);
+                if (code === '021534') {
+                    console.warn(`[drawNetWorthChart][DEBUG] 目标基金 ${code} 百分比范围: ${minPerc.toFixed(2)}% ~ ${maxPerc.toFixed(2)}%`);
+                }
+
+                // 强制 y 轴从 0 开始；为上限添加少量余量，避免曲线靠顶
+                var yMin = 0;
+                var yMax = Math.max(maxPerc * 1.05, 1); // 至少显示到 1% 的上限，或稍高于最大值
+            } catch (e) {
+                console.error('[drawNetWorthChart][DEBUG] 计算百分比范围出错', e);
+                var yMin = 0;
+                var yMax = 5;
+            }
 
             charts[`net-worth-${code}`] = new Chart(ctx, {
                 type: 'line',
                 data: {
                     labels: labels,
                     datasets: [{
-                        label: '单位净值',
-                        data: netWorthValues,
+                        label: '涨跌幅',
+                        data: percentageValues,
                         borderColor: lineColor,
                         backgroundColor: `${lineColor}15`,
                         borderWidth: 2,
@@ -3570,67 +3600,50 @@
                     responsive: true,
                     maintainAspectRatio: false,
                     plugins: {
-                        legend: {
-                            display: false
-                        },
+                        legend: { display: false },
                         tooltip: {
                             mode: 'index',
                             intersect: false,
                             callbacks: {
                                 label: function(context) {
-                                    return '净值：' + context.parsed.y.toFixed(4);
+                                    return '涨跌幅：' + context.parsed.y.toFixed(2) + '%';
                                 }
                             }
                         },
                         title: {
                             display: true,
-                            text: '单位净值走势（近180天）',
-                            font: {
-                                size: 14,
-                                weight: 'bold'
-                            },
-                            padding: {
-                                top: 10,
-                                bottom: 20
-                            }
+                            text: '单位净值涨跌幅（近180天）',
+                            font: { size: 14, weight: 'bold' },
+                            padding: { top: 10, bottom: 20 }
                         }
                     },
                     scales: {
                         x: {
                             display: true,
-                            grid: {
-                                display: false
-                            },
-                            ticks: {
-                                maxRotation: 45,
-                                minRotation: 45,
-                                font: {
-                                    size: 10
-                                },
-                                maxTicksLimit: 12
-                            }
+                            grid: { display: false },
+                            ticks: { maxRotation: 45, minRotation: 45, font: { size: 10 }, maxTicksLimit: 12 }
                         },
                         y: {
                             display: true,
-                            position: 'right',
+                            position: 'left',
+                            min: yMin,
+                            max: yMax,
+                            grace: '0%',
                             ticks: {
-                                callback: function(value) {
-                                    return value.toFixed(4);
-                                },
-                                font: {
-                                    size: 11
-                                }
+                                callback: function(value) { return value.toFixed(2) + '%'; },
+                                font: { size: 11 }
                             },
                             grid: {
-                                color: 'rgba(0, 0, 0, 0.05)'
+                                color: function(context) {
+                                    if (context.tick.value === 0) return 'rgba(100, 100, 100, 0.5)';
+                                    return 'rgba(0, 0, 0, 0.05)';
+                                },
+                                lineWidth: function(context) { return context.tick.value === 0 ? 2 : 1; },
+                                borderDash: function(context) { return context.tick.value === 0 ? [6,4] : []; }
                             }
                         }
                     },
-                    interaction: {
-                        mode: 'nearest',
-                        axis: 'x',
-                        intersect: false
-                    }
+                    interaction: { mode: 'nearest', axis: 'x', intersect: false }
                 }
             });
             
