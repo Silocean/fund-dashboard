@@ -1,0 +1,3956 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>基金实时估值看板</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .header {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 30px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            position: relative;
+            z-index: 100;
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 28px;
+        }
+
+        .controls {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            align-items: center;
+            position: relative;
+            overflow: visible;
+        }
+
+        .add-fund {
+            display: flex;
+            gap: 10px;
+            flex: 1;
+            min-width: 300px;
+        }
+
+        .add-fund input {
+            flex: 1;
+            min-width: 200px;
+            padding: 12px 16px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: all 0.3s;
+        }
+
+        .sort-controls {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .sort-controls label {
+            color: #666;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .sort-controls select {
+            padding: 10px 14px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 14px;
+            background: white;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .sort-controls select:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .backup-controls {
+            display: flex;
+            gap: 10px;
+        }
+
+        .add-fund input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        /* 自动补全下拉列表样式 */
+        .autocomplete-wrapper {
+            position: relative;
+            flex: 1;
+            min-width: 200px;
+        }
+
+        .autocomplete-wrapper input {
+            width: 100%;
+        }
+
+        .autocomplete-list {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            max-height: 300px;
+            overflow-y: auto;
+            background: white;
+            border: 2px solid #667eea;
+            border-top: none;
+            border-radius: 0 0 8px 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            z-index: 2000;
+            display: none;
+        }
+
+        .autocomplete-list.active {
+            display: block;
+        }
+
+        .autocomplete-item {
+            padding: 12px 16px;
+            cursor: pointer;
+            transition: background 0.2s;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .autocomplete-item:last-child {
+            border-bottom: none;
+        }
+
+        .autocomplete-item:hover {
+            background: #f5f7ff;
+        }
+
+        .autocomplete-item-name {
+            font-size: 14px;
+            color: #333;
+            font-weight: 500;
+            margin-bottom: 4px;
+        }
+
+        .autocomplete-item-code {
+            font-size: 12px;
+            color: #999;
+        }
+
+        .autocomplete-item-type {
+            display: inline-block;
+            font-size: 11px;
+            color: #667eea;
+            background: rgba(102, 126, 234, 0.1);
+            padding: 2px 6px;
+            border-radius: 4px;
+            margin-left: 8px;
+        }
+
+        .autocomplete-loading {
+            padding: 12px 16px;
+            text-align: center;
+            color: #999;
+            font-size: 13px;
+        }
+
+        .autocomplete-empty {
+            padding: 12px 16px;
+            text-align: center;
+            color: #999;
+            font-size: 13px;
+        }
+
+        /* 选项卡样式 */
+        .fund-tabs {
+            display: flex;
+            border-bottom: 2px solid #e0e0e0;
+            margin-bottom: 15px;
+            gap: 5px;
+            margin-top: 10px;
+        }
+
+        .fund-tab {
+            flex: 1;
+            padding: 10px 20px;
+            cursor: pointer;
+            border: none;
+            background: transparent;
+            color: #666;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            border-bottom: 3px solid transparent;
+            margin-bottom: -2px;
+            position: relative;
+        }
+
+        .fund-tab:hover {
+            color: #667eea;
+            background: rgba(102, 126, 234, 0.05);
+        }
+
+        .fund-tab.active {
+            color: #667eea;
+            border-bottom-color: #667eea;
+            font-weight: 600;
+            background: rgba(102, 126, 234, 0.08);
+        }
+
+        .fund-tab-content {
+            display: none;
+            animation: fadeIn 0.3s ease-in-out;
+        }
+
+        .fund-tab-content.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* 基金详细信息样式 */
+        .fund-details {
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+
+        .fund-details-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+
+        .fund-details-header h4 {
+            font-size: 14px;
+            color: #555;
+            margin: 0;
+        }
+
+        .fund-details-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+        }
+
+        .fund-detail-item {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .fund-detail-label {
+            font-size: 11px;
+            color: #666;
+            margin-bottom: 3px;
+        }
+
+        .fund-detail-value {
+            font-size: 15px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .fund-detail-value.positive {
+            color: #ff4d4f;
+        }
+
+        .fund-detail-value.negative {
+            color: #00b96b;
+        }
+
+        .fund-manager-info {
+            font-size: 12px;
+            color: #666;
+            margin-top: 8px;
+            padding-top: 8px;
+            border-top: 1px solid #dee2e6;
+        }
+
+        .fund-manager-name {
+            font-weight: 600;
+            color: #333;
+        }
+
+        .net-worth-chart-container {
+            margin-top: 15px;
+            min-height: 300px;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-danger {
+            background: #ff6b6b;
+            color: white;
+            padding: 6px 12px;
+            font-size: 14px;
+        }
+
+        .btn-danger:hover {
+            background: #ff5252;
+            transform: scale(1.05);
+        }
+
+        .btn-secondary {
+            background: #95a5a6;
+            color: white;
+            padding: 6px 12px;
+            font-size: 13px;
+        }
+
+        .btn-secondary:hover {
+            background: #7f8c8d;
+        }
+
+        .backup-controls .btn-secondary {
+            padding: 10px 16px;
+            font-size: 14px;
+            background: #52c41a;
+        }
+
+        .backup-controls .btn-secondary:hover {
+            background: #389e0d;
+            transform: translateY(-1px);
+        }
+
+        .backup-controls .btn-secondary:first-child {
+            background: #1890ff;
+        }
+
+        .backup-controls .btn-secondary:first-child:hover {
+            background: #096dd9;
+        }
+
+        .btn-warning {
+            background: #f39c12;
+            color: white;
+            padding: 6px 12px;
+            font-size: 13px;
+        }
+
+        .btn-warning:hover {
+            background: #e67e22;
+        }
+
+        /* 总览看板样式 */
+        .overview-panel {
+            margin-bottom: 30px;
+            position: relative;
+            z-index: 10;
+        }
+
+        .overview-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        }
+
+        .overview-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #e0e0e0;
+        }
+
+        .overview-header h2 {
+            font-size: 24px;
+            color: #333;
+            margin: 0;
+        }
+
+        .overview-date {
+            font-size: 13px;
+            color: #999;
+        }
+
+        .overview-stats {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 20px;
+        }
+
+        .stat-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            border-radius: 10px;
+            background: #f8f9fa;
+            transition: transform 0.2s;
+        }
+
+        .stat-item:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        .stat-item.stat-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+
+        .stat-item.stat-primary .stat-label,
+        .stat-item.stat-primary .stat-value {
+            color: white;
+        }
+
+        .stat-item.stat-highlight {
+            background: linear-gradient(135deg, #f0f2f5 0%, #ffffff 100%);
+            border: 2px solid #e8e8e8;
+        }
+
+        .stat-item.stat-highlight .stat-label {
+            color: #666;
+        }
+        
+        .stat-item.stat-highlight .stat-value {
+            color: #333;
+        }
+
+        .stat-label {
+            font-size: 13px;
+            color: #666;
+            margin-bottom: 8px;
+            font-weight: 500;
+        }
+
+        .stat-value {
+            font-size: 26px;
+            font-weight: 700;
+            color: #333;
+        }
+
+        .stat-value.positive {
+            color: #ff4d4f; /* 盈利：鲜艳红色 */
+        }
+
+        .stat-value.negative {
+            color: #00b96b; /* 亏损：鲜艳绿色 */
+        }
+
+        /* 今日盈亏使用涨跌颜色，不覆盖为白色 */
+        .stat-item.stat-highlight .stat-value.positive {
+            color: #ff4d4f !important; /* 涨：红色 */
+            font-weight: 800;
+        }
+        
+        .stat-item.stat-highlight .stat-value.negative {
+            color: #00b96b !important; /* 跌：绿色 */
+            font-weight: 800;
+        }
+        
+        /* 其他主要统计卡片保持白色 */
+        .stat-item.stat-primary .stat-value.positive,
+        .stat-item.stat-primary .stat-value.negative {
+            color: white;
+        }
+
+        .funds-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+            gap: 20px;
+        }
+
+        .fund-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s, box-shadow 0.3s;
+            position: relative;
+        }
+
+        .fund-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 48px rgba(0, 0, 0, 0.15);
+        }
+
+        .fund-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 15px;
+        }
+
+        .fund-title {
+            flex: 1;
+        }
+
+        .fund-name {
+            font-size: 18px;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 5px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .fund-badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 600;
+            white-space: nowrap;
+        }
+
+        .fund-badge.holding {
+            background: linear-gradient(135deg, #ff6b6b 0%, #ee5a5a 100%);
+            color: white;
+        }
+
+        .fund-badge.watching {
+            background: linear-gradient(135deg, #ffd93d 0%, #f5c842 100%);
+            color: #7a6400;
+        }
+
+        .fund-code {
+            font-size: 14px;
+            color: #999;
+        }
+
+        .fund-info {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+
+        .info-item {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .info-label {
+            font-size: 12px;
+            color: #999;
+            margin-bottom: 4px;
+        }
+
+        .info-value {
+            font-size: 20px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .info-value.positive {
+            color: #ff4d4f; /* 涨：鲜艳红色 */
+        }
+
+        .info-value.negative {
+            color: #00b96b; /* 跌：鲜艳绿色 */
+        }
+
+        .percentage-container {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 15px;
+        }
+
+        .percentage {
+            font-size: 22px;
+            font-weight: 700;
+            padding: 10px 18px;
+            border-radius: 8px;
+            flex-shrink: 0;
+        }
+
+        .percentage.positive {
+            color: #ff4d4f; /* 涨：鲜艳红色 */
+            background: rgba(255, 77, 79, 0.15);
+        }
+
+        .percentage.negative {
+            color: #00b96b; /* 跌：鲜艳绿色 */
+            background: rgba(0, 185, 107, 0.15);
+        }
+
+        .daily-profit {
+            font-size: 22px;
+            font-weight: 700;
+            padding: 10px 18px;
+            border-radius: 8px;
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+
+        .daily-profit.positive {
+            color: #ff4d4f; /* 涨：鲜艳红色 */
+            background: rgba(255, 77, 79, 0.15);
+        }
+
+        .daily-profit.negative {
+            color: #00b96b; /* 跌：鲜艳绿色 */
+            background: rgba(0, 185, 107, 0.15);
+        }
+
+        .chart-container {
+            position: relative;
+            height: 150px;
+            margin-bottom: 10px;
+        }
+
+        .update-time {
+            font-size: 12px;
+            color: #999;
+            text-align: center;
+        }
+
+        /* 持仓信息样式 */
+        .position-info {
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+
+        .position-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .position-header h4 {
+            font-size: 14px;
+            color: #555;
+            margin: 0;
+        }
+
+        .position-actions {
+            display: flex;
+            gap: 5px;
+        }
+
+        .position-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+
+        .position-item {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .position-label {
+            font-size: 11px;
+            color: #666;
+            margin-bottom: 3px;
+        }
+
+        .position-value {
+            font-size: 16px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .position-value.profit {
+            color: #ff4d4f; /* 盈利：鲜艳红色 */
+        }
+
+        .position-value.loss {
+            color: #00b96b; /* 亏损：鲜艳绿色 */
+        }
+
+        .no-position {
+            text-align: center;
+            color: #999;
+            font-size: 13px;
+            padding: 10px;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: white;
+            font-size: 18px;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            color: #666;
+        }
+
+        .empty-state h2 {
+            margin-bottom: 10px;
+            color: #333;
+        }
+
+        /* 模态框样式 */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.6);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            max-width: 500px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .modal-confirm {
+            max-width: 600px;
+            max-height: 85vh;
+        }
+
+        .confirm-message {
+            padding: 0;
+            background: transparent;
+            border-radius: 0;
+            margin-bottom: 25px;
+            font-size: 14px;
+            line-height: 1.8;
+            color: #333;
+            max-height: 60vh;
+            overflow-y: auto;
+        }
+
+        .confirm-message::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .confirm-message::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 4px;
+        }
+
+        .confirm-message::-webkit-scrollbar-thumb {
+            background: #888;
+            border-radius: 4px;
+        }
+
+        .confirm-message::-webkit-scrollbar-thumb:hover {
+            background: #555;
+        }
+
+        .confirm-fund-info {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+        }
+
+        .confirm-fund-name {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .confirm-fund-code {
+            font-size: 14px;
+            opacity: 0.9;
+            font-family: 'Courier New', monospace;
+        }
+
+        .confirm-section {
+            background: white;
+            border: 1px solid #e9ecef;
+            border-radius: 10px;
+            padding: 16px;
+            margin-bottom: 15px;
+        }
+
+        .confirm-section-title {
+            font-size: 15px;
+            font-weight: bold;
+            color: #495057;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .confirm-detail-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+        }
+
+        .confirm-detail-item {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .confirm-detail-item.full-width {
+            grid-column: 1 / -1;
+        }
+
+        .confirm-detail-label {
+            font-size: 12px;
+            color: #6c757d;
+        }
+
+        .confirm-detail-value {
+            font-size: 15px;
+            font-weight: 600;
+            color: #212529;
+        }
+
+        .confirm-detail-value.highlight {
+            color: #dc3545;
+            font-size: 16px;
+        }
+
+        .confirm-warning {
+            background: linear-gradient(135deg, #ff6b6b 0%, #ee5a6f 100%);
+            color: white;
+            padding: 18px;
+            border-radius: 10px;
+            margin-top: 20px;
+            box-shadow: 0 4px 15px rgba(255, 107, 107, 0.3);
+        }
+
+        .confirm-warning-title {
+            font-size: 16px;
+            font-weight: bold;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .confirm-warning-text {
+            font-size: 13px;
+            line-height: 1.6;
+            opacity: 0.95;
+        }
+
+        .confirm-final-warning {
+            background: linear-gradient(135deg, #ff4757 0%, #c0392b 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 12px;
+            text-align: center;
+            box-shadow: 0 6px 20px rgba(255, 71, 87, 0.4);
+        }
+
+        .confirm-final-icon {
+            font-size: 48px;
+            margin-bottom: 15px;
+        }
+
+        .confirm-final-title {
+            font-size: 20px;
+            font-weight: bold;
+            margin-bottom: 15px;
+        }
+
+        .confirm-final-content {
+            font-size: 15px;
+            line-height: 1.8;
+            margin-bottom: 12px;
+        }
+
+        .confirm-final-note {
+            font-size: 13px;
+            opacity: 0.9;
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid rgba(255, 255, 255, 0.3);
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .modal-header h2 {
+            font-size: 22px;
+            color: #333;
+            margin: 0;
+        }
+
+        .close-btn {
+            background: none;
+            border: none;
+            font-size: 28px;
+            color: #999;
+            cursor: pointer;
+            padding: 0;
+            width: 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .close-btn:hover {
+            color: #333;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 14px;
+            color: #555;
+            margin-bottom: 8px;
+            font-weight: 500;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 15px;
+            transition: all 0.3s;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .form-group small {
+            display: block;
+            margin-top: 5px;
+            color: #999;
+            font-size: 12px;
+        }
+
+        .form-actions {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+            margin-top: 25px;
+        }
+
+        .form-actions button {
+            padding: 10px 20px;
+        }
+
+        /* 交易历史样式 */
+        .transaction-item {
+            padding: 15px;
+            border-bottom: 1px solid #e0e0e0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .transaction-item:last-child {
+            border-bottom: none;
+        }
+
+        .transaction-info {
+            flex: 1;
+        }
+
+        .transaction-type {
+            display: inline-block;
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 600;
+            margin-right: 8px;
+        }
+
+        .transaction-type.buy {
+            background: #fff1f0;
+            color: #f5222d;
+        }
+
+        .transaction-type.sell {
+            background: #f6ffed;
+            color: #52c41a;
+        }
+
+        .transaction-details {
+            font-size: 13px;
+            color: #666;
+            margin-top: 5px;
+        }
+
+        .transaction-date {
+            font-size: 12px;
+            color: #999;
+            margin-top: 3px;
+        }
+
+        /* 快速卖出按钮样式 */
+        .quick-sell-buttons {
+            display: flex;
+            gap: 8px;
+            margin-top: 10px;
+            margin-bottom: 8px;
+        }
+
+        .quick-sell-btn {
+            flex: 1;
+            padding: 8px 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 6px;
+            background: white;
+            color: #666;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .quick-sell-btn:hover {
+            border-color: #667eea;
+            color: #667eea;
+            background: rgba(102, 126, 234, 0.05);
+            transform: translateY(-1px);
+        }
+
+        .quick-sell-btn:active {
+            transform: translateY(0);
+        }
+
+        @media (max-width: 1200px) {
+            .overview-stats {
+                grid-template-columns: repeat(3, 1fr);
+            }
+        }
+
+        @media (max-width: 900px) {
+            .overview-stats {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        @media (max-width: 768px) {
+            .funds-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .modal-content {
+                padding: 20px;
+            }
+
+            .modal-confirm {
+                max-width: 95%;
+            }
+
+            .confirm-detail-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .confirm-fund-name {
+                font-size: 16px;
+            }
+
+            .confirm-section-title {
+                font-size: 14px;
+            }
+
+            .confirm-final-icon {
+                font-size: 36px;
+            }
+
+            .confirm-final-title {
+                font-size: 18px;
+            }
+
+            .percentage-container {
+                flex-wrap: wrap;
+            }
+
+            .percentage {
+                font-size: 18px;
+                padding: 8px 14px;
+            }
+
+            .daily-profit {
+                font-size: 18px;
+                padding: 8px 14px;
+            }
+
+            .quick-sell-btn {
+                font-size: 13px;
+                padding: 6px 10px;
+            }
+
+            .overview-stats {
+                grid-template-columns: 1fr;
+                gap: 15px;
+            }
+
+            .stat-item {
+                padding: 15px;
+            }
+
+            .stat-value {
+                font-size: 22px;
+            }
+
+            .overview-header h2 {
+                font-size: 20px;
+            }
+
+            .overview-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📈 基金实时估值看板</h1>
+            <div class="controls">
+                <div class="add-fund">
+                    <div class="autocomplete-wrapper">
+                        <input type="text" id="fundCodeInput" placeholder="输入基金代码或名称搜索" autocomplete="off">
+                        <div id="autocompleteList" class="autocomplete-list"></div>
+                    </div>
+                    <button class="btn btn-primary" onclick="addFund()">添加基金</button>
+                </div>
+                <div class="sort-controls">
+                    <label for="sortSelect">排序：</label>
+                    <select id="sortSelect" onchange="changeSortOrder()">
+                        <option value="default">默认顺序</option>
+                        <option value="desc">涨跌幅从高到低</option>
+                        <option value="asc">涨跌幅从低到高</option>
+                    </select>
+                </div>
+                <div class="backup-controls">
+                    <button class="btn btn-secondary" onclick="exportData()" title="导出所有数据到文件">💾 导出数据</button>
+                    <button class="btn btn-secondary" onclick="document.getElementById('importFileInput').click()" title="从文件导入数据">📥 导入数据</button>
+                    <input type="file" id="importFileInput" accept=".json" style="display: none;" onchange="importData(event)">
+                </div>
+            </div>
+        </div>
+
+        <!-- 总览看板 -->
+        <div id="overviewPanel" class="overview-panel" style="display: none;">
+            <div class="overview-card">
+                <div class="overview-header">
+                    <h2>📊 投资总览</h2>
+                    <div class="overview-date">更新时间: <span id="overviewUpdateTime">--</span></div>
+                </div>
+                <div class="overview-stats">
+                    <div class="stat-item stat-primary">
+                        <div class="stat-label">总市值</div>
+                        <div class="stat-value" id="totalMarketValue">¥0.00</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-label">总成本</div>
+                        <div class="stat-value" id="totalCost">¥0.00</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-label">总收益</div>
+                        <div class="stat-value" id="totalProfit">¥0.00</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-label">收益率</div>
+                        <div class="stat-value" id="totalProfitRate">0.00%</div>
+                    </div>
+                    <div class="stat-item stat-highlight">
+                        <div class="stat-label">今日盈亏</div>
+                        <div class="stat-value" id="todayProfit">¥0.00</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="fundsContainer" class="funds-grid"></div>
+    </div>
+
+    <!-- 初始申购模态框 -->
+    <div id="initialPurchaseModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>添加基金 - 初始申购信息</h2>
+                <button class="close-btn" onclick="closeInitialPurchaseModal()">&times;</button>
+            </div>
+            <div class="form-group">
+                <label for="initialNetValue">申购净值</label>
+                <input type="number" id="initialNetValue" step="0.0001" placeholder="如：1.5000">
+                <small>申购时的单位净值</small>
+            </div>
+            <div class="form-group">
+                <label for="initialAmount">申购金额（元）</label>
+                <input type="number" id="initialAmount" step="0.01" placeholder="如：10000.00">
+                <small>实际投入的金额</small>
+            </div>
+            <div class="form-group">
+                <label for="initialFee">申购手续费（元）</label>
+                <input type="number" id="initialFee" step="0.01" placeholder="如：15.00" value="0">
+                <small>申购时支付的手续费，没有则填0</small>
+            </div>
+            <div class="form-group">
+                <label>申购份额（自动计算）</label>
+                <input type="number" id="initialShares" step="0.01" readonly style="background: #f5f5f5;">
+                <small id="sharesCalcHint">份额 = (申购金额 - 手续费) / 申购净值</small>
+            </div>
+            <div class="form-actions">
+                <button class="btn btn-secondary" onclick="closeInitialPurchaseModal()">跳过</button>
+                <button class="btn btn-primary" onclick="saveInitialPurchase()">确认添加</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 买入模态框 -->
+    <div id="buyModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>买入基金</h2>
+                <button class="close-btn" onclick="closeBuyModal()">&times;</button>
+            </div>
+            <div class="form-group">
+                <label for="buyNetValue">买入净值</label>
+                <input type="number" id="buyNetValue" step="0.0001" placeholder="如：1.6000">
+                <small>买入时的单位净值</small>
+            </div>
+            <div class="form-group">
+                <label for="buyAmount">买入金额（元）</label>
+                <input type="number" id="buyAmount" step="0.01" placeholder="如：5000.00">
+                <small>本次投入的金额</small>
+            </div>
+            <div class="form-group">
+                <label for="buyFee">买入手续费（元）</label>
+                <input type="number" id="buyFee" step="0.01" placeholder="如：7.50" value="0">
+                <small>本次交易的手续费</small>
+            </div>
+            <div class="form-group">
+                <label>买入份额（自动计算）</label>
+                <input type="number" id="buyShares" step="0.01" readonly style="background: #f5f5f5;">
+                <small>份额 = (买入金额 - 手续费) / 买入净值</small>
+            </div>
+            <div class="form-actions">
+                <button class="btn btn-secondary" onclick="closeBuyModal()">取消</button>
+                <button class="btn btn-primary" onclick="saveBuy()">确认买入</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 卖出模态框 -->
+    <div id="sellModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>卖出基金</h2>
+                <button class="close-btn" onclick="closeSellModal()">&times;</button>
+            </div>
+            <div class="form-group">
+                <label for="sellNetValue">卖出净值</label>
+                <input type="number" id="sellNetValue" step="0.0001" placeholder="如：1.8000">
+                <small>卖出时的单位净值</small>
+            </div>
+            <div class="form-group">
+                <label for="sellShares">卖出份额</label>
+                <input type="number" id="sellShares" step="0.01" placeholder="如：500.00">
+                <div class="quick-sell-buttons">
+                    <button type="button" class="quick-sell-btn" onclick="setQuickSellShares(0.25)">1/4</button>
+                    <button type="button" class="quick-sell-btn" onclick="setQuickSellShares(0.333333)">1/3</button>
+                    <button type="button" class="quick-sell-btn" onclick="setQuickSellShares(0.5)">1/2</button>
+                    <button type="button" class="quick-sell-btn" onclick="setQuickSellShares(1)">全部</button>
+                </div>
+                <small id="sellSharesHint">可卖出份额：0.00</small>
+            </div>
+            <div class="form-group">
+                <label for="sellFee">卖出手续费（元）</label>
+                <input type="number" id="sellFee" step="0.01" placeholder="如：5.00" value="0">
+                <small>本次交易的手续费</small>
+            </div>
+            <div class="form-group">
+                <label>卖出金额（自动计算）</label>
+                <input type="number" id="sellAmount" step="0.01" readonly style="background: #f5f5f5;">
+                <small>到账金额 = 卖出份额 × 卖出净值 - 手续费</small>
+            </div>
+            <div class="form-actions">
+                <button class="btn btn-secondary" onclick="closeSellModal()">取消</button>
+                <button class="btn btn-primary" onclick="saveSell()">确认卖出</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 交易历史模态框 -->
+    <div id="transactionHistoryModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>交易历史</h2>
+                <button class="close-btn" onclick="closeTransactionHistoryModal()">&times;</button>
+            </div>
+            <div id="transactionHistoryContent" style="max-height: 400px; overflow-y: auto;">
+                <!-- 交易历史内容 -->
+            </div>
+        </div>
+    </div>
+
+    <!-- 自定义确认对话框 -->
+    <div id="customConfirmModal" class="modal">
+        <div class="modal-content modal-confirm">
+            <div class="modal-header">
+                <h2 id="confirmTitle">确认</h2>
+                <button class="close-btn" onclick="closeCustomConfirm(false)">&times;</button>
+            </div>
+            <div class="confirm-message" id="confirmMessage"></div>
+            <div class="form-actions">
+                <button class="btn btn-secondary" onclick="closeCustomConfirm(false)">取消</button>
+                <button class="btn btn-danger" id="confirmBtn" onclick="closeCustomConfirm(true)">确定</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 存储基金数据
+        let fundsData = {};
+        let charts = {};
+        let historyData = {}; // 存储历史数据用于绘制图表
+        let loadingFundCodes = new Set(); // 正在加载的基金代码集合
+        let sortOrder = 'default'; // 排序方式：default, desc, asc
+        let positions = {}; // 持仓数据：{ code: { transactions: [], totalShares, totalCost, avgCost } }
+        let dailyRanges = {}; // 今日最高最低：{ code: { high, low } }
+        let currentModalFundCode = null; // 当前操作的基金代码
+        let currentAvailableShares = 0; // 当前可卖出份额
+        let confirmCallback = null; // 确认对话框回调函数
+        let fundList = []; // 所有基金列表
+        let isFetchingFundList = false; // 是否正在获取基金列表
+        let fundDetails = {}; // 基金详细信息：{ code: { rates, managers, etc } }
+        
+        // 基金详细信息加载队列
+        let fundDetailsQueue = []; // 待加载的基金代码队列
+        let isLoadingFundDetails = false; // 是否正在加载基金详细信息
+
+        // 全局清理函数 - 清除所有基金详细信息数据
+        window.clearAllFundDetails = function() {
+            console.log('开始清理所有基金详细信息...');
+            
+            // 清除localStorage中所有的fundDetail_*
+            const keysToRemove = [];
+            for (let i = 0; i < localStorage.length; i++) {
+                const key = localStorage.key(i);
+                if (key && key.startsWith('fundDetail_')) {
+                    keysToRemove.push(key);
+                }
+            }
+            keysToRemove.forEach(key => {
+                console.log(`删除缓存: ${key}`);
+                localStorage.removeItem(key);
+            });
+            
+            // 清除内存中的fundDetails
+            fundDetails = {};
+            console.log('内存中的fundDetails已清空');
+            
+            // 清空队列
+            fundDetailsQueue = [];
+            isLoadingFundDetails = false;
+            console.log('加载队列已清空');
+            
+            console.log(`完成！共删除 ${keysToRemove.length} 个缓存项`);
+            console.log('请刷新页面重新加载数据');
+        };
+        
+        // 显示自定义确认对话框
+        function showCustomConfirm(title, message, confirmText = '确定', isHtml = false) {
+            return new Promise((resolve) => {
+                document.getElementById('confirmTitle').textContent = title;
+                
+                // 支持HTML内容或纯文本
+                if (isHtml) {
+                    document.getElementById('confirmMessage').innerHTML = message;
+                } else {
+                    document.getElementById('confirmMessage').textContent = message;
+                }
+                
+                document.getElementById('confirmBtn').textContent = confirmText;
+                document.getElementById('customConfirmModal').classList.add('active');
+                
+                confirmCallback = resolve;
+            });
+        }
+
+        // 关闭自定义确认对话框
+        function closeCustomConfirm(result) {
+            document.getElementById('customConfirmModal').classList.remove('active');
+            if (confirmCallback) {
+                confirmCallback(result);
+                confirmCallback = null;
+            }
+        }
+
+        // 从localStorage加载基金代码
+        function loadFundCodes() {
+            const saved = localStorage.getItem('fundCodes');
+            return saved ? JSON.parse(saved) : [];
+        }
+
+        // 保存基金代码到localStorage
+        function saveFundCodes(codes) {
+            localStorage.setItem('fundCodes', JSON.stringify(codes));
+        }
+
+        // 加载历史数据
+        function loadHistoryData() {
+            const saved = localStorage.getItem('fundHistoryData');
+            return saved ? JSON.parse(saved) : {};
+        }
+
+        // 保存历史数据
+        function saveHistoryData() {
+            localStorage.setItem('fundHistoryData', JSON.stringify(historyData));
+        }
+
+        // 加载持仓数据
+        function loadPositions() {
+            const saved = localStorage.getItem('positions');
+            return saved ? JSON.parse(saved) : {};
+        }
+
+        // 保存持仓数据
+        function savePositions() {
+            localStorage.setItem('positions', JSON.stringify(positions));
+        }
+
+        // 加载今日范围数据
+        function loadDailyRanges() {
+            const saved = localStorage.getItem('dailyRanges');
+            const data = saved ? JSON.parse(saved) : {};
+            // 检查日期，如果不是今天的数据则清空
+            const today = new Date().toLocaleDateString('zh-CN');
+            if (data.date !== today) {
+                return { date: today, ranges: {} };
+            }
+            return data;
+        }
+
+        // 保存今日范围数据
+        function saveDailyRanges() {
+            const today = new Date().toLocaleDateString('zh-CN');
+            localStorage.setItem('dailyRanges', JSON.stringify({
+                date: today,
+                ranges: dailyRanges
+            }));
+        }
+
+        // 获取基金列表
+        function fetchFundList() {
+            if (isFetchingFundList) return;
+            
+            isFetchingFundList = true;
+            
+            // 清理旧的全局变量
+            if (window.r) {
+                delete window.r;
+            }
+            
+            const script = document.createElement('script');
+            script.id = 'fundListScript';
+            script.src = `http://fund.eastmoney.com/js/fundcode_search.js?t=${Date.now()}`;
+            
+            script.onload = () => {
+                // Script加载完成后，r变量应该已经定义
+                setTimeout(() => {
+                    if (window.r && Array.isArray(window.r)) {
+                        processFundListData(window.r);
+                    } else {
+                        console.error('基金列表数据格式错误或未定义');
+                        isFetchingFundList = false;
+                    }
+                    // 清理script标签
+                    script.remove();
+                }, 100);
+            };
+            
+            script.onerror = () => {
+                console.error('获取基金列表失败');
+                isFetchingFundList = false;
+                script.remove();
+            };
+            
+            document.body.appendChild(script);
+        }
+
+        // 处理基金列表数据
+        function processFundListData(data) {
+            if (!data || !Array.isArray(data)) {
+                console.error('基金列表数据格式错误');
+                isFetchingFundList = false;
+                return;
+            }
+
+            // 解析基金列表数据
+            // 数据格式: ["代码","简拼","基金名称","基金类型","拼音全拼"]
+            fundList = data.map(item => ({
+                code: item[0],
+                abbr: item[1],
+                name: item[2],
+                type: item[3],
+                pinyin: item[4]
+            }));
+
+            // 保存到本地缓存
+            const cacheData = {
+                data: fundList,
+                timestamp: Date.now()
+            };
+            localStorage.setItem('fundListCache', JSON.stringify(cacheData));
+            
+            console.log(`基金列表已更新，共 ${fundList.length} 只基金`);
+            isFetchingFundList = false;
+            
+            // 如果用户正在输入，更新下拉列表
+            const input = document.getElementById('fundCodeInput');
+            const listEl = document.getElementById('autocompleteList');
+            if (input && listEl && listEl.classList.contains('active')) {
+                const keyword = input.value.trim();
+                if (keyword) {
+                    showAutocompleteSuggestions(keyword);
+                }
+            }
+            
+            // 清理全局变量
+            if (window.r) {
+                delete window.r;
+            }
+        }
+
+        // 加载缓存的基金列表
+        function loadFundListCache() {
+            const cached = localStorage.getItem('fundListCache');
+            if (!cached) return null;
+
+            try {
+                const cacheData = JSON.parse(cached);
+                const now = Date.now();
+                const oneDay = 24 * 60 * 60 * 1000;
+
+                // 检查缓存是否过期（超过1天）
+                if (now - cacheData.timestamp > oneDay) {
+                    console.log('基金列表缓存已过期，将重新获取');
+                    return null;
+                }
+
+                fundList = cacheData.data || [];
+                console.log(`从缓存加载了 ${fundList.length} 只基金`);
+                return fundList;
+            } catch (e) {
+                console.error('加载基金列表缓存失败', e);
+                return null;
+            }
+        }
+
+        // 搜索基金
+        function searchFunds(keyword) {
+            if (!keyword || keyword.length === 0) return [];
+            
+            const lowerKeyword = keyword.toLowerCase();
+            
+            // 搜索匹配的基金（代码、名称、简拼、全拼）
+            const results = fundList.filter(fund => {
+                return fund.code.includes(keyword) ||
+                       fund.name.toLowerCase().includes(lowerKeyword) ||
+                       fund.abbr.toLowerCase().includes(lowerKeyword) ||
+                       fund.pinyin.toLowerCase().includes(lowerKeyword);
+            });
+
+            // 限制返回数量，避免列表太长
+            return results.slice(0, 20);
+        }
+
+        // 显示自动补全列表
+        function showAutocompleteSuggestions(keyword) {
+            const listEl = document.getElementById('autocompleteList');
+            
+            if (!keyword || keyword.length === 0) {
+                listEl.classList.remove('active');
+                return;
+            }
+
+            // 如果基金列表还没加载，显示加载中，并触发加载
+            if (fundList.length === 0) {
+                listEl.innerHTML = '<div class="autocomplete-loading">基金列表加载中，请稍候...</div>';
+                listEl.classList.add('active');
+                
+                // 如果还没开始加载，立即开始加载
+                if (!isFetchingFundList) {
+                    console.log('用户开始输入，触发基金列表加载');
+                    fetchFundList();
+                }
+                return;
+            }
+
+            const results = searchFunds(keyword);
+            
+            if (results.length === 0) {
+                listEl.innerHTML = '<div class="autocomplete-empty">未找到匹配的基金</div>';
+                listEl.classList.add('active');
+                return;
+            }
+
+            // 渲染搜索结果
+            listEl.innerHTML = '';
+            results.forEach(fund => {
+                const itemDiv = document.createElement('div');
+                itemDiv.className = 'autocomplete-item';
+                itemDiv.onclick = () => selectFund(fund.code, fund.name);
+                
+                const nameDiv = document.createElement('div');
+                nameDiv.className = 'autocomplete-item-name';
+                nameDiv.textContent = fund.name;
+                
+                const typeSpan = document.createElement('span');
+                typeSpan.className = 'autocomplete-item-type';
+                typeSpan.textContent = fund.type;
+                nameDiv.appendChild(typeSpan);
+                
+                const codeDiv = document.createElement('div');
+                codeDiv.className = 'autocomplete-item-code';
+                codeDiv.textContent = fund.code;
+                
+                itemDiv.appendChild(nameDiv);
+                itemDiv.appendChild(codeDiv);
+                listEl.appendChild(itemDiv);
+            });
+            
+            listEl.classList.add('active');
+        }
+
+        // HTML转义函数
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // 选择基金
+        function selectFund(code, name) {
+            const input = document.getElementById('fundCodeInput');
+            input.value = code;
+            
+            // 隐藏下拉列表
+            document.getElementById('autocompleteList').classList.remove('active');
+            
+            // 自动添加基金
+            addFund();
+        }
+
+        // 隐藏自动补全列表
+        function hideAutocompleteList() {
+            setTimeout(() => {
+                document.getElementById('autocompleteList').classList.remove('active');
+            }, 200); // 延迟以便点击事件能触发
+        }
+
+        // 导出数据
+        function exportData() {
+            // 收集所有数据
+            const exportData = {
+                version: '1.1',
+                exportDate: new Date().toISOString(),
+                fundCodes: loadFundCodes(),
+                positions: positions,
+                historyData: historyData,
+                dailyRanges: {
+                    date: new Date().toDateString(),
+                    ranges: dailyRanges
+                },
+                sortOrder: sortOrder,
+                fundDetails: fundDetails
+            };
+
+            // 转换为JSON字符串
+            const dataStr = JSON.stringify(exportData, null, 2);
+            const dataBlob = new Blob([dataStr], { type: 'application/json' });
+
+            // 创建下载链接
+            const url = URL.createObjectURL(dataBlob);
+            const link = document.createElement('a');
+            link.href = url;
+            
+            // 生成文件名：fund-dashboard-backup-日期时间.json
+            const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);
+            link.download = `fund-dashboard-backup-${timestamp}.json`;
+            
+            // 触发下载
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+
+            // 更新最后备份时间
+            updateLastBackupDate();
+
+            alert('✅ 数据导出成功！\n文件已保存到下载文件夹\n\n建议定期备份以防数据丢失');
+        }
+
+        // 导入数据
+        function importData(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            // 检查文件类型
+            if (!file.name.endsWith('.json')) {
+                alert('❌ 请选择JSON格式的备份文件');
+                event.target.value = '';
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const importedData = JSON.parse(e.target.result);
+
+                    // 验证数据格式
+                    if (!importedData.version || !importedData.fundCodes) {
+                        throw new Error('无效的备份文件格式');
+                    }
+
+                    // 询问用户是否覆盖现有数据
+                    const currentCodes = loadFundCodes();
+                    let message = '确定要导入数据吗？\n\n';
+                    
+                    if (currentCodes.length > 0) {
+                        message += `⚠️ 当前有 ${currentCodes.length} 只基金\n`;
+                        message += `📥 导入文件包含 ${importedData.fundCodes.length} 只基金\n\n`;
+                        message += '选择导入方式：\n';
+                        message += '确定 = 合并数据（保留现有+添加新的）\n';
+                        message += '取消 = 放弃导入';
+                        
+                        if (!confirm(message)) {
+                            event.target.value = '';
+                            return;
+                        }
+
+                        // 合并模式：询问是否要完全覆盖
+                        if (confirm('是否要完全覆盖现有数据？\n\n确定 = 完全覆盖\n取消 = 合并保留')) {
+                            // 完全覆盖模式
+                            performFullImport(importedData);
+                        } else {
+                            // 合并模式
+                            performMergeImport(importedData);
+                        }
+                    } else {
+                        // 没有现有数据，直接导入
+                        if (confirm(message + `将导入 ${importedData.fundCodes.length} 只基金的数据`)) {
+                            performFullImport(importedData);
+                        }
+                    }
+
+                    event.target.value = '';
+                } catch (error) {
+                    console.error('导入数据失败：', error);
+                    alert('❌ 导入失败：' + error.message + '\n\n请确保选择的是有效的备份文件');
+                    event.target.value = '';
+                }
+            };
+
+            reader.readAsText(file);
+        }
+
+        // 执行完全覆盖导入
+        function performFullImport(importedData) {
+            try {
+                // 清空现有数据
+                fundsData = {};
+                charts = {};
+                
+                // 导入所有数据
+                saveFundCodes(importedData.fundCodes || []);
+                positions = importedData.positions || {};
+                savePositions();
+                historyData = importedData.historyData || {};
+                saveHistoryData();
+                fundDetails = importedData.fundDetails || {};
+                
+                // 保存详细信息到缓存
+                Object.keys(fundDetails).forEach(code => {
+                    const cacheData = {
+                        data: fundDetails[code],
+                        timestamp: Date.now()
+                    };
+                    localStorage.setItem(`fundDetail_${code}`, JSON.stringify(cacheData));
+                });
+                
+                if (importedData.dailyRanges) {
+                    dailyRanges = importedData.dailyRanges.ranges || {};
+                    saveDailyRanges();
+                }
+                
+                if (importedData.sortOrder) {
+                    sortOrder = importedData.sortOrder;
+                    localStorage.setItem('sortOrder', sortOrder);
+                    document.getElementById('sortSelect').value = sortOrder;
+                }
+
+                // 重新加载基金数据
+                renderFunds();
+                const codes = loadFundCodes();
+                codes.forEach(code => {
+                    fetchFundData(code);
+                });
+
+                alert(`✅ 数据导入成功！\n\n已导入 ${importedData.fundCodes.length} 只基金\n导出日期：${new Date(importedData.exportDate).toLocaleString('zh-CN')}`);
+            } catch (error) {
+                console.error('完全导入失败：', error);
+                alert('❌ 导入过程中出错：' + error.message);
+            }
+        }
+
+        // 执行合并导入
+        function performMergeImport(importedData) {
+            try {
+                const currentCodes = loadFundCodes();
+                const newCodes = importedData.fundCodes || [];
+                
+                // 合并基金代码（去重）
+                const mergedCodes = [...new Set([...currentCodes, ...newCodes])];
+                saveFundCodes(mergedCodes);
+
+                // 合并持仓数据（导入的数据优先）
+                Object.keys(importedData.positions || {}).forEach(code => {
+                    if (!positions[code] || confirm(`基金 ${code} 已有持仓数据，是否覆盖？`)) {
+                        positions[code] = importedData.positions[code];
+                    }
+                });
+                savePositions();
+
+                // 合并历史数据
+                Object.keys(importedData.historyData || {}).forEach(code => {
+                    if (!historyData[code]) {
+                        historyData[code] = importedData.historyData[code];
+                    }
+                });
+                saveHistoryData();
+
+                // 重新加载
+                renderFunds();
+                const codes = loadFundCodes();
+                codes.forEach(code => {
+                    if (!fundsData[code]) {
+                        fetchFundData(code);
+                    }
+                });
+
+                const addedCount = mergedCodes.length - currentCodes.length;
+                alert(`✅ 数据合并成功！\n\n新增 ${addedCount} 只基金\n总计 ${mergedCodes.length} 只基金`);
+            } catch (error) {
+                console.error('合并导入失败：', error);
+                alert('❌ 合并过程中出错：' + error.message);
+            }
+        }
+
+        // 添加基金
+        function addFund() {
+            const input = document.getElementById('fundCodeInput');
+            const code = input.value.trim();
+            
+            if (!code) {
+                alert('请输入基金代码或名称搜索');
+                return;
+            }
+
+            if (!/^\d{6}$/.test(code)) {
+                alert('请选择正确的6位基金代码');
+                return;
+            }
+
+            const codes = loadFundCodes();
+            if (codes.includes(code)) {
+                alert('该基金已添加');
+                return;
+            }
+
+            codes.push(code);
+            saveFundCodes(codes);
+            input.value = '';
+            
+            // 隐藏自动补全列表
+            document.getElementById('autocompleteList').classList.remove('active');
+            
+            // 先加载基金数据
+            fetchFundData(code);
+            
+            // 弹出初始申购模态框
+            setTimeout(() => {
+                openInitialPurchaseModal(code);
+            }, 500);
+        }
+
+        // 删除基金
+        async function removeFund(code, skipConfirm = false) {
+            if (!skipConfirm) {
+                // 构建详细的确认信息
+                const data = fundsData[code];
+                const posInfo = calculatePosition(code);
+                
+                // 构建HTML格式的确认信息
+                let messageHtml = '';
+                
+                // 基金信息卡片
+                messageHtml += '<div class="confirm-fund-info">';
+                messageHtml += '<div class="confirm-fund-name">📊 ' + (data ? data.name : '未知基金') + '</div>';
+                messageHtml += '<div class="confirm-fund-code">代码：' + code + '</div>';
+                messageHtml += '</div>';
+                
+                // 持仓信息
+                if (posInfo && posInfo.totalShares > 0) {
+                    messageHtml += '<div class="confirm-section">';
+                    messageHtml += '<div class="confirm-section-title">💼 持仓信息</div>';
+                    messageHtml += '<div class="confirm-detail-grid">';
+                    messageHtml += '<div class="confirm-detail-item">';
+                    messageHtml += '<div class="confirm-detail-label">持有份额</div>';
+                    messageHtml += '<div class="confirm-detail-value">' + posInfo.totalShares.toFixed(2) + '</div>';
+                    messageHtml += '</div>';
+                    messageHtml += '<div class="confirm-detail-item">';
+                    messageHtml += '<div class="confirm-detail-label">平均成本</div>';
+                    messageHtml += '<div class="confirm-detail-value">¥' + posInfo.avgCost.toFixed(4) + '</div>';
+                    messageHtml += '</div>';
+                    messageHtml += '<div class="confirm-detail-item">';
+                    messageHtml += '<div class="confirm-detail-label">持仓成本</div>';
+                    messageHtml += '<div class="confirm-detail-value highlight">¥' + posInfo.totalCost.toFixed(2) + '</div>';
+                    messageHtml += '</div>';
+                    messageHtml += '<div class="confirm-detail-item">';
+                    messageHtml += '<div class="confirm-detail-label">交易记录</div>';
+                    messageHtml += '<div class="confirm-detail-value">' + posInfo.transactions.length + ' 笔</div>';
+                    messageHtml += '</div>';
+                    messageHtml += '</div>';
+                    messageHtml += '</div>';
+                }
+                
+                // 历史数据
+                let hasOtherData = false;
+                let otherDataHtml = '<div class="confirm-section"><div class="confirm-section-title">📦 其他数据</div><div class="confirm-detail-grid">';
+                
+                if (historyData[code] && historyData[code].length > 0) {
+                    hasOtherData = true;
+                    otherDataHtml += '<div class="confirm-detail-item">';
+                    otherDataHtml += '<div class="confirm-detail-label">历史数据</div>';
+                    otherDataHtml += '<div class="confirm-detail-value">' + historyData[code].length + ' 条记录</div>';
+                    otherDataHtml += '</div>';
+                }
+                
+                otherDataHtml += '</div></div>';
+                if (hasOtherData) {
+                    messageHtml += otherDataHtml;
+                }
+                
+                // 警告信息
+                messageHtml += '<div class="confirm-warning">';
+                messageHtml += '<div class="confirm-warning-title">⚠️ 重要提醒</div>';
+                messageHtml += '<div class="confirm-warning-text">删除后将永久清除该基金的所有数据，包括：<br>';
+                messageHtml += '• 持仓信息和交易记录<br>';
+                messageHtml += '• 历史涨跌数据<br><br>';
+                messageHtml += '此操作无法撤销！建议删除前先导出数据备份。</div>';
+                messageHtml += '</div>';
+                
+                const confirmed = await showCustomConfirm('删除基金', messageHtml, '确定删除', true);
+                if (!confirmed) {
+                    return;
+                }
+                
+                // 如果有持仓，再次确认
+                if (posInfo && posInfo.totalShares > 0) {
+                    let finalMessageHtml = '<div class="confirm-final-warning">';
+                    finalMessageHtml += '<div class="confirm-final-icon">⚠️</div>';
+                    finalMessageHtml += '<div class="confirm-final-title">最后确认</div>';
+                    finalMessageHtml += '<div class="confirm-final-content">';
+                    finalMessageHtml += '您还持有 <strong>' + posInfo.totalShares.toFixed(2) + '</strong> 份该基金<br>';
+                    finalMessageHtml += '持仓成本 <strong>¥' + posInfo.totalCost.toFixed(2) + '</strong><br><br>';
+                    finalMessageHtml += '<strong>删除后无法恢复！</strong>';
+                    finalMessageHtml += '</div>';
+                    finalMessageHtml += '<div class="confirm-final-note">💡 建议：如不再持有该基金，可将份额卖出至0，保留交易记录供日后参考</div>';
+                    finalMessageHtml += '</div>';
+                    
+                    const finalConfirmed = await showCustomConfirm('最后确认', finalMessageHtml, '确定删除', true);
+                    if (!finalConfirmed) {
+                        return;
+                    }
+                }
+            }
+
+            const codes = loadFundCodes();
+            const index = codes.indexOf(code);
+            if (index > -1) {
+                codes.splice(index, 1);
+                saveFundCodes(codes);
+            }
+
+            delete fundsData[code];
+            delete charts[code];
+            delete charts[`net-worth-${code}`]; // 清理净值图表
+            delete historyData[code];
+            delete positions[code];
+            delete dailyRanges[code];
+            delete fundDetails[code];
+            saveHistoryData();
+            savePositions();
+            saveDailyRanges();
+            localStorage.removeItem(`fundDetail_${code}`); // 清理详细信息缓存
+            
+            renderFunds();
+            
+            // 显示删除成功提示
+            if (!skipConfirm) {
+                alert('✅ 基金已删除\n\n建议定期导出数据备份，以防误操作');
+            }
+        }
+
+        // 计算持仓信息
+        function calculatePosition(code) {
+            const position = positions[code];
+            if (!position || !position.transactions || position.transactions.length === 0) {
+                return null;
+            }
+
+            let totalShares = 0;
+            let totalCost = 0;
+
+            position.transactions.forEach(trans => {
+                if (trans.type === 'buy') {
+                    totalShares += trans.shares;
+                    totalCost += trans.amount;  // 包含手续费的总成本
+                } else if (trans.type === 'sell') {
+                    totalShares -= trans.shares;
+                    // 卖出时按比例减少成本
+                    const sellRatio = trans.shares / (totalShares + trans.shares);
+                    totalCost -= totalCost * sellRatio;
+                }
+            });
+
+            const avgCost = totalShares > 0 ? totalCost / totalShares : 0;
+
+            return {
+                totalShares: totalShares,
+                totalCost: totalCost,
+                avgCost: avgCost,
+                transactions: position.transactions
+            };
+        }
+
+        // 打开初始申购模态框
+        function openInitialPurchaseModal(code) {
+            currentModalFundCode = code;
+            document.getElementById('initialNetValue').value = '';
+            document.getElementById('initialAmount').value = '';
+            document.getElementById('initialFee').value = '0';
+            document.getElementById('initialShares').value = '';
+            document.getElementById('initialPurchaseModal').classList.add('active');
+        }
+
+        // 关闭初始申购模态框
+        function closeInitialPurchaseModal() {
+            document.getElementById('initialPurchaseModal').classList.remove('active');
+            currentModalFundCode = null;
+        }
+
+        // 保存初始申购
+        function saveInitialPurchase() {
+            if (!currentModalFundCode) return;
+
+            const netValue = parseFloat(document.getElementById('initialNetValue').value);
+            const amount = parseFloat(document.getElementById('initialAmount').value);
+            const fee = parseFloat(document.getElementById('initialFee').value) || 0;
+
+            if (!netValue || !amount || netValue <= 0 || amount <= 0) {
+                alert('请输入有效的申购净值和申购金额');
+                return;
+            }
+
+            const shares = (amount - fee) / netValue;
+
+            // 确保格式正确，兼容旧数据
+            if (!positions[currentModalFundCode] || !positions[currentModalFundCode].transactions) {
+                positions[currentModalFundCode] = { transactions: [] };
+            }
+
+            positions[currentModalFundCode].transactions.push({
+                type: 'buy',
+                date: new Date().toISOString(),
+                netValue: netValue,
+                amount: amount,
+                fee: fee,
+                shares: shares
+            });
+
+            savePositions();
+            closeInitialPurchaseModal();
+            renderFunds();
+        }
+
+        // 打开买入模态框
+        function openBuyModal(code) {
+            currentModalFundCode = code;
+            document.getElementById('buyNetValue').value = '';
+            document.getElementById('buyAmount').value = '';
+            document.getElementById('buyFee').value = '0';
+            document.getElementById('buyShares').value = '';
+            document.getElementById('buyModal').classList.add('active');
+        }
+
+        // 关闭买入模态框
+        function closeBuyModal() {
+            document.getElementById('buyModal').classList.remove('active');
+            currentModalFundCode = null;
+        }
+
+        // 保存买入
+        function saveBuy() {
+            if (!currentModalFundCode) return;
+
+            const netValue = parseFloat(document.getElementById('buyNetValue').value);
+            const amount = parseFloat(document.getElementById('buyAmount').value);
+            const fee = parseFloat(document.getElementById('buyFee').value) || 0;
+
+            if (!netValue || !amount || netValue <= 0 || amount <= 0) {
+                alert('请输入有效的买入净值和买入金额');
+                return;
+            }
+
+            const shares = (amount - fee) / netValue;
+
+            // 确保格式正确，兼容旧数据
+            if (!positions[currentModalFundCode] || !positions[currentModalFundCode].transactions) {
+                positions[currentModalFundCode] = { transactions: [] };
+            }
+
+            positions[currentModalFundCode].transactions.push({
+                type: 'buy',
+                date: new Date().toISOString(),
+                netValue: netValue,
+                amount: amount,
+                fee: fee,
+                shares: shares
+            });
+
+            savePositions();
+            closeBuyModal();
+            renderFunds();
+        }
+
+        // 打开卖出模态框
+        function openSellModal(code) {
+            currentModalFundCode = code;
+            const posInfo = calculatePosition(code);
+            
+            if (!posInfo || posInfo.totalShares <= 0) {
+                alert('当前没有可卖出的份额');
+                return;
+            }
+
+            // 保存可卖出份额
+            currentAvailableShares = posInfo.totalShares;
+
+            document.getElementById('sellNetValue').value = '';
+            document.getElementById('sellShares').value = '';
+            document.getElementById('sellFee').value = '0';
+            document.getElementById('sellAmount').value = '';
+            document.getElementById('sellSharesHint').textContent = `可卖出份额：${posInfo.totalShares.toFixed(2)}`;
+            document.getElementById('sellModal').classList.add('active');
+        }
+
+        // 快速设置卖出份额
+        function setQuickSellShares(ratio) {
+            if (currentAvailableShares <= 0) return;
+            
+            const shares = currentAvailableShares * ratio;
+            document.getElementById('sellShares').value = shares.toFixed(2);
+            
+            // 触发input事件，让金额自动计算
+            const event = new Event('input', { bubbles: true });
+            document.getElementById('sellShares').dispatchEvent(event);
+        }
+
+        // 关闭卖出模态框
+        function closeSellModal() {
+            document.getElementById('sellModal').classList.remove('active');
+            currentModalFundCode = null;
+            currentAvailableShares = 0;
+        }
+
+        // 保存卖出
+        function saveSell() {
+            if (!currentModalFundCode) return;
+
+            const netValue = parseFloat(document.getElementById('sellNetValue').value);
+            const shares = parseFloat(document.getElementById('sellShares').value);
+            const fee = parseFloat(document.getElementById('sellFee').value) || 0;
+
+            if (!netValue || !shares || netValue <= 0 || shares <= 0) {
+                alert('请输入有效的卖出净值和卖出份额');
+                return;
+            }
+
+            const posInfo = calculatePosition(currentModalFundCode);
+            if (!posInfo || shares > posInfo.totalShares) {
+                alert(`卖出份额不能超过持有份额 ${posInfo ? posInfo.totalShares.toFixed(2) : 0}`);
+                return;
+            }
+
+            const amount = shares * netValue - fee;
+
+            positions[currentModalFundCode].transactions.push({
+                type: 'sell',
+                date: new Date().toISOString(),
+                netValue: netValue,
+                amount: amount,
+                fee: fee,
+                shares: shares
+            });
+
+            savePositions();
+            closeSellModal();
+            renderFunds();
+        }
+
+        // 打开交易历史模态框
+        function openTransactionHistoryModal(code) {
+            currentModalFundCode = code;
+            const position = positions[code];
+            const content = document.getElementById('transactionHistoryContent');
+            
+            if (!position || !position.transactions || position.transactions.length === 0) {
+                content.innerHTML = '<div style="text-align: center; padding: 40px; color: #999;">暂无交易记录</div>';
+            } else {
+                const transHtml = position.transactions.map((trans, index) => {
+                    const date = new Date(trans.date).toLocaleString('zh-CN');
+                    const typeText = trans.type === 'buy' ? '买入' : '卖出';
+                    const typeClass = trans.type;
+                    
+                    return `
+                        <div class="transaction-item">
+                            <div class="transaction-info">
+                                <div>
+                                    <span class="transaction-type ${typeClass}">${typeText}</span>
+                                    <span style="font-weight: 600;">${trans.shares.toFixed(2)} 份</span>
+                                </div>
+                                <div class="transaction-details">
+                                    净值: ${trans.netValue.toFixed(4)} | 
+                                    ${trans.type === 'buy' ? '投入' : '收回'}: ¥${trans.amount.toFixed(2)} | 
+                                    手续费: ¥${trans.fee.toFixed(2)}
+                                </div>
+                                <div class="transaction-date">${date}</div>
+                            </div>
+                        </div>
+                    `;
+                }).reverse().join('');  // 倒序显示，最新的在上面
+                
+                content.innerHTML = transHtml;
+            }
+            
+            document.getElementById('transactionHistoryModal').classList.add('active');
+        }
+
+        // 关闭交易历史模态框
+        function closeTransactionHistoryModal() {
+            document.getElementById('transactionHistoryModal').classList.remove('active');
+            currentModalFundCode = null;
+        }
+
+        // 更新今日最高最低
+        function updateDailyRange(code, percentage) {
+            if (!dailyRanges[code]) {
+                dailyRanges[code] = { high: percentage, low: percentage };
+            } else {
+                if (percentage > dailyRanges[code].high) {
+                    dailyRanges[code].high = percentage;
+                }
+                if (percentage < dailyRanges[code].low) {
+                    dailyRanges[code].low = percentage;
+                }
+            }
+            saveDailyRanges();
+        }
+
+        // 获取基金数据（JSONP）
+        function fetchFundData(code) {
+            // 清理旧的script标签
+            const oldScript = document.getElementById(`fund-script-${code}`);
+            if (oldScript) {
+                oldScript.remove();
+            }
+
+            loadingFundCodes.add(code);
+            const script = document.createElement('script');
+            script.id = `fund-script-${code}`;
+            script.src = `http://fundgz.1234567.com.cn/js/${code}.js?t=${Date.now()}`;
+            script.onerror = () => {
+                console.error(`加载基金 ${code} 数据失败`);
+                alert(`加载基金 ${code} 数据失败，请检查基金代码是否正确`);
+                loadingFundCodes.delete(code);
+                removeFund(code, true); // 跳过确认对话框
+            };
+            document.body.appendChild(script);
+            
+            // 同时获取基金详细信息
+            fetchFundDetails(code);
+        }
+
+        // 处理基金详细信息加载队列
+        function processFundDetailsQueue() {
+            if (isLoadingFundDetails || fundDetailsQueue.length === 0) {
+                return;
+            }
+            
+            const { code, skipRender } = fundDetailsQueue.shift();
+            isLoadingFundDetails = true;
+            
+            console.log(`[processFundDetailsQueue] 开始加载基金 ${code}，队列剩余: ${fundDetailsQueue.length}`);
+            fetchFundDetailsInternal(code, skipRender);
+        }
+        
+        // 将基金详细信息加载请求加入队列
+        function fetchFundDetails(code, skipRender = false) {
+            console.log(`[fetchFundDetails] 基金 ${code} 加入加载队列`);
+            
+            // 检查是否已在队列中
+            const exists = fundDetailsQueue.some(item => item.code === code);
+            if (!exists) {
+                fundDetailsQueue.push({ code, skipRender });
+                console.log(`[fetchFundDetails] 基金 ${code} 已加入队列，队列长度: ${fundDetailsQueue.length}`);
+            } else {
+                console.log(`[fetchFundDetails] 基金 ${code} 已在队列中，跳过`);
+            }
+            
+            // 开始处理队列
+            processFundDetailsQueue();
+        }
+        
+        // 内部函数：实际加载基金详细信息
+        function fetchFundDetailsInternal(code, skipRender = false) {
+            console.log(`[fetchFundDetailsInternal] 开始获取基金 ${code} 的详细信息，skipRender=${skipRender}`);
+            // 检查缓存
+            const cached = localStorage.getItem(`fundDetail_${code}`);
+            if (cached) {
+                try {
+                    const cacheData = JSON.parse(cached);
+                    const now = Date.now();
+                    const oneDay = 24 * 60 * 60 * 1000;
+                    
+                    console.log(`[fetchFundDetailsInternal] 基金 ${code} 找到缓存，时间戳: ${cacheData.timestamp}`);
+                    console.log(`[fetchFundDetailsInternal] 基金 ${code} 缓存数据:`, cacheData.data);
+                    console.log(`[fetchFundDetailsInternal] 基金 ${code} 缓存中netWorthData长度:`, cacheData.data.netWorthData ? cacheData.data.netWorthData.length : 0);
+                    
+                    // 如果缓存未过期（1天内），使用缓存
+                    if (now - cacheData.timestamp < oneDay) {
+                        // 检查缓存中是否有净值数据
+                        const hasNetWorthData = cacheData.data.netWorthData && cacheData.data.netWorthData.length > 0;
+                        
+                        if (!hasNetWorthData) {
+                            console.log(`[fetchFundDetailsInternal] 基金 ${code} 缓存中没有净值数据，重新从API获取`);
+                            // 缓存中没有净值数据，继续从API获取
+                        } else {
+                            fundDetails[code] = cacheData.data;
+                            console.log(`[fetchFundDetailsInternal] 基金 ${code} 使用缓存，netWorthData长度:`, fundDetails[code].netWorthData.length);
+                            if (!skipRender) {
+                                const updated = updateFundDetailsTab(code);
+                                // 如果更新失败（可能是DOM还没创建），需要renderFunds
+                                if (!updated) {
+                                    console.log(`[fetchFundDetailsInternal] 基金 ${code} updateFundDetailsTab失败，调用renderFunds`);
+                                    renderFunds();
+                                }
+                            }
+                            
+                            // 标记加载完成，处理队列中的下一个
+                            isLoadingFundDetails = false;
+                            processFundDetailsQueue();
+                            return;
+                        }
+                    } else {
+                        console.log(`[fetchFundDetailsInternal] 基金 ${code} 缓存已过期`);
+                    }
+                } catch (e) {
+                    console.error(`[fetchFundDetailsInternal] 基金 ${code} 解析缓存失败`, e);
+                }
+            } else {
+                console.log(`[fetchFundDetailsInternal] 基金 ${code} 没有缓存，从API获取`);
+            }
+            
+            // 清理旧的script标签
+            const oldScript = document.getElementById(`fund-detail-script-${code}`);
+            if (oldScript) {
+                oldScript.remove();
+            }
+
+            const script = document.createElement('script');
+            script.id = `fund-detail-script-${code}`;
+            script.src = `http://fund.eastmoney.com/pingzhongdata/${code}.js?t=${Date.now()}`;
+            
+            script.onload = () => {
+                console.log(`[fetchFundDetailsInternal] 基金 ${code} - script.onload 触发`);
+                
+                // 需要稍微延迟，让脚本中的赋值语句完全执行
+                setTimeout(() => {
+                    console.log(`[fetchFundDetailsInternal] 基金 ${code} - 开始捕获全局变量`);
+                    console.log(`[fetchFundDetailsInternal] 基金 ${code} - window.fS_code =`, window.fS_code);
+                    console.log(`[fetchFundDetailsInternal] 基金 ${code} - window.fS_name =`, window.fS_name);
+                    
+                    // 立即捕获全局变量，避免被其他script覆盖
+                    const immediateCapture = {
+                        fS_code: window.fS_code,
+                        fS_name: window.fS_name,
+                        fund_sourceRate: window.fund_sourceRate,
+                        fund_Rate: window.fund_Rate,
+                        fund_minsg: window.fund_minsg,
+                        syl_1y: window.syl_1y,
+                        syl_3y: window.syl_3y,
+                        syl_6y: window.syl_6y,
+                        syl_1n: window.syl_1n,
+                        Data_currentFundManager: window.Data_currentFundManager ? JSON.parse(JSON.stringify(window.Data_currentFundManager)) : null,
+                        Data_netWorthTrend: window.Data_netWorthTrend ? JSON.parse(JSON.stringify(window.Data_netWorthTrend)) : null
+                    };
+                    
+                    console.log(`[fetchFundDetailsInternal] 基金 ${code} - 捕获完成，立即清理全局变量`);
+                    
+                    // 立即清理全局变量，避免影响其他基金
+                    delete window.fS_name;
+                    delete window.fS_code;
+                    delete window.fund_sourceRate;
+                    delete window.fund_Rate;
+                    delete window.fund_minsg;
+                    delete window.syl_1y;
+                    delete window.syl_3y;
+                    delete window.syl_6y;
+                    delete window.syl_1n;
+                    delete window.Data_currentFundManager;
+                    delete window.Data_netWorthTrend;
+                
+                // 现在可以安全地处理捕获的数据
+                try {
+                    console.log(`[fetchFundDetailsInternal] ========== 开始处理基金 ${code} ==========`);
+                    console.log(`[fetchFundDetailsInternal] 基金 ${code} - 期望代码: ${code}`);
+                    console.log(`[fetchFundDetailsInternal] 基金 ${code} - 捕获的fS_code:`, immediateCapture.fS_code);
+                    console.log(`[fetchFundDetailsInternal] 基金 ${code} - 捕获的fS_name:`, immediateCapture.fS_name);
+                    
+                    // 验证捕获的数据是否属于当前基金
+                    if (!immediateCapture.fS_code) {
+                        console.error(`[fetchFundDetailsInternal] 基金 ${code} - 无法获取fS_code，数据可能未加载`);
+                        script.remove();
+                        
+                        // 延迟后重新加入队列重试
+                        setTimeout(() => {
+                            console.log(`[fetchFundDetailsInternal] 基金 ${code} - 1秒后重新加入队列`);
+                            fundDetailsQueue.unshift({ code, skipRender }); // 重新加到队列前面
+                            isLoadingFundDetails = false;
+                            processFundDetailsQueue();
+                        }, 1000);
+                        return;
+                    }
+                    
+                    if (immediateCapture.fS_code !== code) {
+                        console.error(`[fetchFundDetailsInternal] 基金 ${code} - 数据不匹配！`);
+                        console.error(`[fetchFundDetailsInternal] 基金 ${code} - 捕获的fS_code='${immediateCapture.fS_code}'，期望='${code}'`);
+                        console.error(`[fetchFundDetailsInternal] 基金 ${code} - 这不应该发生，因为使用了队列机制`);
+                        script.remove();
+                        
+                        // 标记加载完成，处理队列中的下一个
+                        isLoadingFundDetails = false;
+                        processFundDetailsQueue();
+                        return;
+                    }
+                    
+                    console.log(`[fetchFundDetailsInternal] 基金 ${code} - 数据验证通过，fS_code匹配`);
+                    console.log(`[fetchFundDetailsInternal] 基金 ${code} - Data_netWorthTrend 是否存在:`, !!immediateCapture.Data_netWorthTrend);
+                    console.log(`[fetchFundDetailsInternal] 基金 ${code} - Data_netWorthTrend 长度:`, immediateCapture.Data_netWorthTrend ? immediateCapture.Data_netWorthTrend.length : 0);
+                    
+                    // 检查前几个净值数据点
+                    if (immediateCapture.Data_netWorthTrend && immediateCapture.Data_netWorthTrend.length > 0) {
+                        console.log(`[fetchFundDetailsInternal] 基金 ${code} - 前3个净值数据点:`, immediateCapture.Data_netWorthTrend.slice(0, 3));
+                        console.log(`[fetchFundDetailsInternal] 基金 ${code} - 后3个净值数据点:`, immediateCapture.Data_netWorthTrend.slice(-3));
+                    }
+                    
+                    // 构造最终的数据对象
+                    const capturedData = {
+                        name: immediateCapture.fS_name || '',
+                        sourceRate: immediateCapture.fund_sourceRate || '',
+                        currentRate: immediateCapture.fund_Rate || '',
+                        minAmount: immediateCapture.fund_minsg || '',
+                        syl_1y: immediateCapture.syl_1y || '',
+                        syl_3y: immediateCapture.syl_3y || '',
+                        syl_6y: immediateCapture.syl_6y || '',
+                        syl_1n: immediateCapture.syl_1n || '',
+                        managers: immediateCapture.Data_currentFundManager || [],
+                        netWorthData: immediateCapture.Data_netWorthTrend || []
+                    };
+                    
+                    console.log(`[fetchFundDetailsInternal] 基金 ${code} - 最终数据名称:`, capturedData.name);
+                    console.log(`[fetchFundDetailsInternal] 基金 ${code} - 最终netWorthData长度:`, capturedData.netWorthData.length);
+                    if (capturedData.netWorthData.length > 0) {
+                        console.log(`[fetchFundDetailsInternal] 基金 ${code} - 最终前3个数据点:`, capturedData.netWorthData.slice(0, 3));
+                    }
+                    
+                    // 最终验证：确保捕获的数据名称包含预期的基金代码或名称
+                    console.log(`[fetchFundDetailsInternal] 基金 ${code} - 最终验证，准备存储数据`);
+                    console.log(`[fetchFundDetailsInternal] 基金 ${code} - 捕获的基金代码: ${immediateCapture.fS_code}`);
+                    console.log(`[fetchFundDetailsInternal] 基金 ${code} - 捕获的基金名称: ${immediateCapture.fS_name}`);
+                    console.log(`[fetchFundDetailsInternal] 基金 ${code} - 期望的基金代码: ${code}`);
+                    
+                    fundDetails[code] = capturedData;
+                    console.log(`[fetchFundDetailsInternal] 基金 ${code} - 已存储到 fundDetails['${code}']`);
+                    console.log(`[fetchFundDetailsInternal] 基金 ${code} - fundDetails['${code}'].name =`, fundDetails[code].name);
+                    console.log(`[fetchFundDetailsInternal] 基金 ${code} - fundDetails['${code}'].netWorthData.length =`, fundDetails[code].netWorthData.length);
+                    
+                    // 验证存储后的数据
+                    if (fundDetails[code] && fundDetails[code].netWorthData && fundDetails[code].netWorthData.length > 0) {
+                        console.log(`[fetchFundDetailsInternal] 基金 ${code} - 验证存储成功，前2个数据点:`, fundDetails[code].netWorthData.slice(0, 2));
+                    }
+                    
+                    // 保存到缓存（注意：净值数据可能较大，考虑是否缓存）
+                    const cacheData = {
+                        data: capturedData,
+                        timestamp: Date.now()
+                    };
+                    try {
+                        localStorage.setItem(`fundDetail_${code}`, JSON.stringify(cacheData));
+                    } catch (e) {
+                        console.warn(`基金 ${code} 详细信息缓存失败（数据可能过大）`, e);
+                        // 如果缓存失败（可能因为数据太大），尝试不缓存净值数据
+                        const lightDetails = { ...capturedData };
+                        delete lightDetails.netWorthData;
+                        const lightCacheData = {
+                            data: lightDetails,
+                            timestamp: Date.now()
+                        };
+                        localStorage.setItem(`fundDetail_${code}`, JSON.stringify(lightCacheData));
+                    }
+                    
+                    console.log(`[fetchFundDetailsInternal] 基金 ${code} 详细信息已加载完成，净值数据点: ${capturedData.netWorthData.length}`);
+                    console.log(`[fetchFundDetailsInternal] ========== 基金 ${code} 处理完成 ==========\n`);
+                    
+                    // 只更新该基金的详情选项卡，而不是重新渲染整个页面
+                    const updated = updateFundDetailsTab(code);
+                    
+                    // 如果更新失败（可能是DOM还没创建），说明是初次加载，需要renderFunds
+                    if (!updated && !skipRender) {
+                        renderFunds();
+                    }
+                    
+                    // 检查该基金的详情选项卡是否处于激活状态
+                    setTimeout(() => {
+                        const detailsTab = document.getElementById(`tab-details-${code}`);
+                        if (detailsTab && detailsTab.classList.contains('active')) {
+                            console.log(`[fetchFundDetailsInternal] 基金 ${code} 的详情选项卡已激活，立即绘制图表`);
+                            drawNetWorthChart(code);
+                        }
+                        
+                        // 标记当前加载完成，处理队列中的下一个
+                        isLoadingFundDetails = false;
+                        processFundDetailsQueue();
+                    }, 150);
+                } catch (e) {
+                    console.error(`[fetchFundDetailsInternal] 解析基金 ${code} 详细信息失败`, e);
+                    // 即使出错也要处理队列
+                    isLoadingFundDetails = false;
+                    processFundDetailsQueue();
+                }
+                script.remove();
+                }, 50); // setTimeout 延迟 50ms，确保脚本中的赋值语句已执行
+            };
+            
+            script.onerror = () => {
+                console.error(`[fetchFundDetailsInternal] 获取基金 ${code} 详细信息失败`);
+                script.remove();
+                
+                // 标记加载完成，处理队列中的下一个
+                isLoadingFundDetails = false;
+                processFundDetailsQueue();
+            };
+            
+            document.body.appendChild(script);
+        }
+
+        // JSONP回调函数
+        window.jsonpgz = function(data) {
+            // 验证数据是否有效
+            if (!data || !data.fundcode || !data.name || !data.gszzl || !data.dwjz || !data.gsz) {
+                // 尝试找出是哪个基金的数据有问题
+                // 如果只有一个正在加载，就是它
+                if (loadingFundCodes.size === 1) {
+                    const code = Array.from(loadingFundCodes)[0];
+                    console.error(`基金 ${code} 数据不完整或无效`);
+                    alert(`基金代码 ${code} 的数据有问题，可能该基金不支持实时估值或代码错误`);
+                    loadingFundCodes.delete(code);
+                    removeFund(code, true); // 跳过确认对话框
+                } else if (loadingFundCodes.size > 1) {
+                    // 多个同时加载时无法确定是哪个，显示通用提示
+                    console.error('某个基金数据不完整或无效');
+                    alert('有基金数据加载失败，可能该基金不支持实时估值');
+                }
+                return;
+            }
+            
+            fundsData[data.fundcode] = data;
+            loadingFundCodes.delete(data.fundcode);
+            
+            // 保存历史数据
+            if (!historyData[data.fundcode]) {
+                historyData[data.fundcode] = [];
+            }
+            
+            // 添加新的数据点
+            const history = historyData[data.fundcode];
+            const now = new Date();
+            const today = now.toLocaleDateString('zh-CN');
+            const time = now.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' });
+            const percentage = parseFloat(parseFloat(data.gszzl).toFixed(2));
+            
+            // 获取当前小时和分钟
+            const hour = now.getHours();
+            const minute = now.getMinutes();
+            
+            // 清理非当天的数据
+            const todayHistory = history.filter(item => item.date === today);
+            historyData[data.fundcode] = todayHistory;
+            
+            // 判断是否在交易时段（9:30-15:00）
+            const isInTradingHours = (hour === 9 && minute >= 30) || (hour >= 10 && hour < 15) || (hour === 15 && minute === 0);
+            
+            // 避免重复添加相同时间的数据
+            const currentHistory = historyData[data.fundcode];
+            const shouldAddData = currentHistory.length === 0 || currentHistory[currentHistory.length - 1].time !== time;
+            
+            if (shouldAddData) {
+                if (isInTradingHours) {
+                    // 在交易时段内，保存所有数据点
+                    currentHistory.push({ time, percentage, date: today, tradingHours: true });
+                } else {
+                    // 非交易时段，如果没有交易时段的数据，则添加当前点
+                    // 如果已有交易时段的数据，则不添加（保持交易时段数据的纯净）
+                    const hasTradingData = currentHistory.some(item => item.tradingHours === true);
+                    if (!hasTradingData) {
+                        // 非交易时段且没有交易数据，保留最近3个点以便形成图表
+                        if (currentHistory.length >= 3) {
+                            currentHistory.shift();
+                        }
+                        currentHistory.push({ time, percentage, date: today, tradingHours: false });
+                    }
+                }
+            }
+            
+            // 更新今日最高最低
+            updateDailyRange(data.fundcode, percentage);
+            
+            saveHistoryData();
+            renderFunds();
+        };
+
+        // 改变排序方式
+        function changeSortOrder() {
+            sortOrder = document.getElementById('sortSelect').value;
+            localStorage.setItem('sortOrder', sortOrder);
+            renderFunds();
+        }
+
+        // 加载排序设置
+        function loadSortOrder() {
+            const saved = localStorage.getItem('sortOrder');
+            if (saved) {
+                sortOrder = saved;
+                document.getElementById('sortSelect').value = saved;
+            }
+        }
+
+        // 更新总览看板
+        function updateOverviewPanel() {
+            const codes = loadFundCodes();
+            
+            // 如果没有基金，隐藏总览
+            if (codes.length === 0) {
+                document.getElementById('overviewPanel').style.display = 'none';
+                return;
+            }
+
+            let totalMarketValue = 0;
+            let totalCost = 0;
+            let todayProfit = 0;
+            let hasPosition = false;
+
+            // 计算所有基金的总值
+            codes.forEach(code => {
+                const data = fundsData[code];
+                const posInfo = calculatePosition(code);
+                
+                if (posInfo && posInfo.totalShares > 0 && data) {
+                    hasPosition = true;
+                    const currentValue = posInfo.totalShares * parseFloat(data.gsz);
+                    totalMarketValue += currentValue;
+                    totalCost += posInfo.totalCost;
+                    
+                    // 计算今日盈亏 = 持有份额 × 昨日净值 × 涨跌幅百分比
+                    const percentage = parseFloat(data.gszzl);
+                    const yesterdayValue = parseFloat(data.dwjz);
+                    const dailyProfit = posInfo.totalShares * yesterdayValue * (percentage / 100);
+                    todayProfit += dailyProfit;
+                }
+            });
+
+            // 如果没有持仓，隐藏总览
+            if (!hasPosition) {
+                document.getElementById('overviewPanel').style.display = 'none';
+                return;
+            }
+
+            // 显示总览
+            document.getElementById('overviewPanel').style.display = 'block';
+
+            // 计算总收益和收益率
+            const totalProfit = totalMarketValue - totalCost;
+            const totalProfitRate = totalCost > 0 ? (totalProfit / totalCost * 100) : 0;
+
+            // 更新显示
+            document.getElementById('totalMarketValue').textContent = `¥${totalMarketValue.toFixed(2)}`;
+            document.getElementById('totalCost').textContent = `¥${totalCost.toFixed(2)}`;
+            
+            const totalProfitEl = document.getElementById('totalProfit');
+            const profitSymbol = totalProfit >= 0 ? '+' : '';
+            totalProfitEl.textContent = `${profitSymbol}¥${totalProfit.toFixed(2)}`;
+            totalProfitEl.className = 'stat-value ' + (totalProfit >= 0 ? 'positive' : 'negative');
+            
+            const totalProfitRateEl = document.getElementById('totalProfitRate');
+            const rateSymbol = totalProfitRate >= 0 ? '+' : '';
+            totalProfitRateEl.textContent = `${rateSymbol}${totalProfitRate.toFixed(2)}%`;
+            totalProfitRateEl.className = 'stat-value ' + (totalProfit >= 0 ? 'positive' : 'negative');
+            
+            const todayProfitEl = document.getElementById('todayProfit');
+            const todayProfitSymbol = todayProfit >= 0 ? '+' : '';
+            todayProfitEl.textContent = `${todayProfitSymbol}¥${todayProfit.toFixed(2)}`;
+            todayProfitEl.className = 'stat-value ' + (todayProfit >= 0 ? 'positive' : 'negative');
+            
+            // 更新时间
+            const now = new Date().toLocaleString('zh-CN', { 
+                month: '2-digit', 
+                day: '2-digit', 
+                hour: '2-digit', 
+                minute: '2-digit' 
+            });
+            document.getElementById('overviewUpdateTime').textContent = now;
+        }
+
+        // 渲染基金列表
+        function renderFunds() {
+            const container = document.getElementById('fundsContainer');
+            let codes = loadFundCodes();
+
+            if (codes.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <h2>还没有添加基金</h2>
+                        <p>请在上方输入基金代码来添加基金</p>
+                    </div>
+                `;
+                return;
+            }
+
+            // 根据排序方式对基金代码进行排序
+            if (sortOrder !== 'default') {
+                codes = [...codes].sort((a, b) => {
+                    const dataA = fundsData[a];
+                    const dataB = fundsData[b];
+                    
+                    // 如果数据还没加载完，保持原顺序
+                    if (!dataA || !dataB) return 0;
+                    
+                    const percentageA = parseFloat(dataA.gszzl);
+                    const percentageB = parseFloat(dataB.gszzl);
+                    
+                    if (sortOrder === 'desc') {
+                        return percentageB - percentageA; // 降序：从高到低
+                    } else {
+                        return percentageA - percentageB; // 升序：从低到高
+                    }
+                });
+            }
+
+            container.innerHTML = codes.map(code => {
+                const data = fundsData[code];
+                if (!data) {
+                    return `
+                        <div class="fund-card">
+                            <div class="loading">加载中...</div>
+                        </div>
+                    `;
+                }
+
+                const percentage = parseFloat(data.gszzl);
+                const isPositive = percentage >= 0;
+                const percentageClass = isPositive ? 'positive' : 'negative';
+                const percentageSymbol = isPositive ? '+' : '';
+                const formattedPercentage = percentage.toFixed(2);
+
+                // 持仓信息
+                const posInfo = calculatePosition(code);
+                
+                // 计算当日盈亏金额（仅针对有持仓的基金）
+                let dailyProfitHtml = '';
+                if (posInfo && posInfo.totalShares > 0) {
+                    // 当日盈亏 = 持有份额 × 昨日净值 × 涨跌幅百分比
+                    const yesterdayValue = parseFloat(data.dwjz); // 昨日净值
+                    const dailyProfit = posInfo.totalShares * yesterdayValue * (percentage / 100);
+                    const dailyProfitSymbol = dailyProfit >= 0 ? '+' : '';
+                    const dailyProfitClass = dailyProfit >= 0 ? 'positive' : 'negative';
+                    dailyProfitHtml = `
+                        <div class="daily-profit ${dailyProfitClass}">
+                            ${dailyProfitSymbol}¥${dailyProfit.toFixed(2)}
+                        </div>
+                    `;
+                }
+
+                let positionHtml = '';
+                if (posInfo && posInfo.totalShares > 0) {
+                    const currentValue = posInfo.totalShares * parseFloat(data.gsz);
+                    const profit = currentValue - posInfo.totalCost;
+                    const profitRate = ((parseFloat(data.gsz) - posInfo.avgCost) / posInfo.avgCost * 100).toFixed(2);
+                    const profitClass = profit >= 0 ? 'profit' : 'loss';
+                    const profitSymbol = profit >= 0 ? '+' : '';
+                    
+                    positionHtml = `
+                        <div class="position-info">
+                            <div class="position-header">
+                                <h4>💼 持仓信息 
+                                    <span style="cursor: pointer; color: #667eea; font-size: 13px; margin-left: 8px;" onclick="openTransactionHistoryModal('${code}')" title="查看交易历史">
+                                        📋 ${posInfo.transactions.length}笔
+                                    </span>
+                                </h4>
+                                <div class="position-actions">
+                                    <button class="btn btn-secondary" onclick="openBuyModal('${code}')">买入</button>
+                                    <button class="btn btn-warning" onclick="openSellModal('${code}')">卖出</button>
+                                </div>
+                            </div>
+                            <div class="position-grid">
+                                <div class="position-item">
+                                    <div class="position-label">持有份额</div>
+                                    <div class="position-value">${posInfo.totalShares.toFixed(2)}</div>
+                                </div>
+                                <div class="position-item">
+                                    <div class="position-label">平均成本</div>
+                                    <div class="position-value">${posInfo.avgCost.toFixed(4)}</div>
+                                </div>
+                                <div class="position-item">
+                                    <div class="position-label">当前市值</div>
+                                    <div class="position-value">¥${currentValue.toFixed(2)}</div>
+                                </div>
+                                <div class="position-item">
+                                    <div class="position-label">持仓成本</div>
+                                    <div class="position-value">¥${posInfo.totalCost.toFixed(2)}</div>
+                                </div>
+                                <div class="position-item">
+                                    <div class="position-label">收益金额</div>
+                                    <div class="position-value ${profitClass}">${profitSymbol}¥${profit.toFixed(2)}</div>
+                                </div>
+                                <div class="position-item">
+                                    <div class="position-label">收益率</div>
+                                    <div class="position-value ${profitClass}">${profitRate >= 0 ? '+' : ''}${profitRate}%</div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    positionHtml = `
+                        <div class="position-info">
+                            <div class="position-header">
+                                <h4>💼 持仓信息</h4>
+                                <div class="position-actions">
+                                    <button class="btn btn-secondary" onclick="openBuyModal('${code}')">买入</button>
+                                </div>
+                            </div>
+                            <div class="no-position">暂无持仓，点击买入开始交易</div>
+                        </div>
+                    `;
+                }
+
+                // 持有/自选标识
+                const hasPosition = posInfo && posInfo.totalShares > 0;
+                const fundBadge = hasPosition 
+                    ? '<span class="fund-badge holding">持有</span>' 
+                    : '<span class="fund-badge watching">自选</span>';
+
+                // 基金详细信息
+                const details = fundDetails[code];
+
+                // 构建基金详情选项卡内容
+                let detailTabContent = '<div class="fund-details"><div class="no-position">基金详情加载中...</div></div>';
+                if (details) {
+                    // 构建收益率信息
+                    const ratesHtml = [];
+                    if (details.syl_1y) {
+                        const rate1y = parseFloat(details.syl_1y);
+                        const rateClass = rate1y >= 0 ? 'positive' : 'negative';
+                        ratesHtml.push(`
+                            <div class="fund-detail-item">
+                                <div class="fund-detail-label">近1月收益</div>
+                                <div class="fund-detail-value ${rateClass}">${rate1y >= 0 ? '+' : ''}${details.syl_1y}%</div>
+                            </div>
+                        `);
+                    }
+                    if (details.syl_3y) {
+                        const rate3y = parseFloat(details.syl_3y);
+                        const rateClass = rate3y >= 0 ? 'positive' : 'negative';
+                        ratesHtml.push(`
+                            <div class="fund-detail-item">
+                                <div class="fund-detail-label">近3月收益</div>
+                                <div class="fund-detail-value ${rateClass}">${rate3y >= 0 ? '+' : ''}${details.syl_3y}%</div>
+                            </div>
+                        `);
+                    }
+                    if (details.syl_6y) {
+                        const rate6y = parseFloat(details.syl_6y);
+                        const rateClass = rate6y >= 0 ? 'positive' : 'negative';
+                        ratesHtml.push(`
+                            <div class="fund-detail-item">
+                                <div class="fund-detail-label">近6月收益</div>
+                                <div class="fund-detail-value ${rateClass}">${rate6y >= 0 ? '+' : ''}${details.syl_6y}%</div>
+                            </div>
+                        `);
+                    }
+                    if (details.syl_1n) {
+                        const rate1n = parseFloat(details.syl_1n);
+                        const rateClass = rate1n >= 0 ? 'positive' : 'negative';
+                        ratesHtml.push(`
+                            <div class="fund-detail-item">
+                                <div class="fund-detail-label">近1年收益</div>
+                                <div class="fund-detail-value ${rateClass}">${rate1n >= 0 ? '+' : ''}${details.syl_1n}%</div>
+                            </div>
+                        `);
+                    }
+                    
+                    // 基金经理信息
+                    let managerHtml = '';
+                    if (details.managers && details.managers.length > 0) {
+                        const managerNames = details.managers.map(m => m.name).join('、');
+                        const workTime = details.managers[0].workTime || '';
+                        managerHtml = `
+                            <div class="fund-manager-info">
+                                👨‍💼 基金经理：<span class="fund-manager-name">${managerNames}</span>
+                                ${workTime ? ` (任职${workTime})` : ''}
+                            </div>
+                        `;
+                    }
+                    
+                    // 构建详情内容（包括收益率信息、经理信息和图表容器）
+                    const hasRateInfo = ratesHtml.length > 0 || managerHtml;
+                    const hasNetWorthData = details.netWorthData && details.netWorthData.length > 0;
+                    
+                    if (hasRateInfo || hasNetWorthData) {
+                        let detailsInfoHtml = '';
+                        if (hasRateInfo) {
+                            detailsInfoHtml = `
+                                <div class="fund-details">
+                                    <div class="fund-details-header">
+                                        <h4>📊 历史收益率</h4>
+                                    </div>
+                                    <div class="fund-details-grid">
+                                        ${ratesHtml.join('')}
+                                    </div>
+                                    ${managerHtml}
+                                </div>
+                            `;
+                        }
+                        
+                        let chartHtml = '';
+                        if (hasNetWorthData) {
+                            chartHtml = `
+                                <div class="net-worth-chart-container">
+                                    <canvas id="net-worth-chart-${code}"></canvas>
+                                </div>
+                            `;
+                        } else {
+                            chartHtml = `
+                                <div class="fund-details">
+                                    <div class="no-position">净值数据加载中...</div>
+                                </div>
+                            `;
+                        }
+                        
+                        detailTabContent = detailsInfoHtml + chartHtml;
+                    }
+                }
+
+                return `
+                    <div class="fund-card">
+                        <div class="fund-header">
+                            <div class="fund-title">
+                                <div class="fund-name">
+                                    <span>${data.name}</span>
+                                    ${fundBadge}
+                                </div>
+                                <div class="fund-code">${data.fundcode}</div>
+                            </div>
+                            <button class="btn btn-danger" onclick="removeFund('${code}')">删除</button>
+                        </div>
+
+                        <div class="fund-tabs">
+                            <button type="button" class="fund-tab active" data-fund-code="${code}" data-tab-name="realtime">
+                                📈 实时数据
+                            </button>
+                            <button type="button" class="fund-tab" data-fund-code="${code}" data-tab-name="details">
+                                📊 基金详情
+                            </button>
+                        </div>
+
+                        <div id="tab-realtime-${code}" class="fund-tab-content active">
+                            <div class="percentage-container">
+                                <div class="percentage ${percentageClass}">
+                                    ${percentageSymbol}${formattedPercentage}%
+                                </div>
+                                ${dailyProfitHtml}
+                            </div>
+
+                            ${positionHtml}
+
+                            <div class="fund-info">
+                                <div class="info-item">
+                                    <div class="info-label">单位净值</div>
+                                    <div class="info-value">${data.dwjz}</div>
+                                </div>
+                                <div class="info-item">
+                                    <div class="info-label">估算值</div>
+                                    <div class="info-value ${percentageClass}">${data.gsz}</div>
+                                </div>
+                            </div>
+
+                            <div class="chart-container">
+                                <canvas id="chart-${code}"></canvas>
+                            </div>
+
+                            <div class="update-time">
+                                更新时间：${data.gztime} | 净值日期：${data.jzrq}
+                            </div>
+                        </div>
+
+                        <div id="tab-details-${code}" class="fund-tab-content">
+                            ${detailTabContent}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            // 绘制图表
+            codes.forEach(code => {
+                if (fundsData[code]) {
+                    drawChart(code);
+                    // 注意：净值走势图会在切换到详情选项卡时才绘制
+                }
+            });
+
+            // 更新总览看板
+            updateOverviewPanel();
+        }
+
+        // 只更新指定基金的详情选项卡内容（不重新渲染整个页面）
+        function updateFundDetailsTab(code) {
+            console.log(`[updateFundDetailsTab] 开始更新基金 ${code} 的详情选项卡`);
+            const details = fundDetails[code];
+            if (!details) {
+                console.log(`[updateFundDetailsTab] 基金 ${code} 没有详细信息`);
+                return false;
+            }
+            
+            console.log(`[updateFundDetailsTab] 基金 ${code} 详细信息:`, details);
+            console.log(`[updateFundDetailsTab] 净值数据点数量: ${details.netWorthData ? details.netWorthData.length : 0}`);
+            
+            const detailsTabElement = document.getElementById(`tab-details-${code}`);
+            if (!detailsTabElement) {
+                console.log(`[updateFundDetailsTab] 找不到基金 ${code} 的详情选项卡DOM元素`);
+                return false;
+            }
+            
+            // 构建收益率信息
+            const ratesHtml = [];
+            if (details.syl_1y) {
+                const rate1y = parseFloat(details.syl_1y);
+                const rateClass = rate1y >= 0 ? 'positive' : 'negative';
+                ratesHtml.push(`
+                    <div class="fund-detail-item">
+                        <div class="fund-detail-label">近1月收益</div>
+                        <div class="fund-detail-value ${rateClass}">${rate1y >= 0 ? '+' : ''}${details.syl_1y}%</div>
+                    </div>
+                `);
+            }
+            if (details.syl_3y) {
+                const rate3y = parseFloat(details.syl_3y);
+                const rateClass = rate3y >= 0 ? 'positive' : 'negative';
+                ratesHtml.push(`
+                    <div class="fund-detail-item">
+                        <div class="fund-detail-label">近3月收益</div>
+                        <div class="fund-detail-value ${rateClass}">${rate3y >= 0 ? '+' : ''}${details.syl_3y}%</div>
+                    </div>
+                `);
+            }
+            if (details.syl_6y) {
+                const rate6y = parseFloat(details.syl_6y);
+                const rateClass = rate6y >= 0 ? 'positive' : 'negative';
+                ratesHtml.push(`
+                    <div class="fund-detail-item">
+                        <div class="fund-detail-label">近6月收益</div>
+                        <div class="fund-detail-value ${rateClass}">${rate6y >= 0 ? '+' : ''}${details.syl_6y}%</div>
+                    </div>
+                `);
+            }
+            if (details.syl_1n) {
+                const rate1n = parseFloat(details.syl_1n);
+                const rateClass = rate1n >= 0 ? 'positive' : 'negative';
+                ratesHtml.push(`
+                    <div class="fund-detail-item">
+                        <div class="fund-detail-label">近1年收益</div>
+                        <div class="fund-detail-value ${rateClass}">${rate1n >= 0 ? '+' : ''}${details.syl_1n}%</div>
+                    </div>
+                `);
+            }
+            
+            // 基金经理信息
+            let managerHtml = '';
+            if (details.managers && details.managers.length > 0) {
+                const managerNames = details.managers.map(m => m.name).join('、');
+                const workTime = details.managers[0].workTime || '';
+                managerHtml = `
+                    <div class="fund-manager-info">
+                        👨‍💼 基金经理：<span class="fund-manager-name">${managerNames}</span>
+                        ${workTime ? ` (任职${workTime})` : ''}
+                    </div>
+                `;
+            }
+            
+            // 构建详情内容
+            const hasRateInfo = ratesHtml.length > 0 || managerHtml;
+            const hasNetWorthData = details.netWorthData && details.netWorthData.length > 0;
+            
+            let detailTabContent = '<div class="fund-details"><div class="no-position">基金详情加载中...</div></div>';
+            
+            if (hasRateInfo || hasNetWorthData) {
+                let detailsInfoHtml = '';
+                if (hasRateInfo) {
+                    detailsInfoHtml = `
+                        <div class="fund-details">
+                            <div class="fund-details-header">
+                                <h4>📊 历史收益率</h4>
+                            </div>
+                            <div class="fund-details-grid">
+                                ${ratesHtml.join('')}
+                            </div>
+                            ${managerHtml}
+                        </div>
+                    `;
+                }
+                
+                let chartHtml = '';
+                if (hasNetWorthData) {
+                    chartHtml = `
+                        <div class="net-worth-chart-container">
+                            <canvas id="net-worth-chart-${code}"></canvas>
+                        </div>
+                    `;
+                } else {
+                    chartHtml = `
+                        <div class="fund-details">
+                            <div class="no-position">净值数据加载中...</div>
+                        </div>
+                    `;
+                }
+                
+                detailTabContent = detailsInfoHtml + chartHtml;
+            }
+            
+            // 更新DOM
+            detailsTabElement.innerHTML = detailTabContent;
+            
+            console.log(`基金 ${code} 的详情选项卡内容已更新`);
+            return true;
+        }
+
+        // 切换选项卡
+        function switchTab(code, tabName, event) {
+            // 阻止默认行为
+            if (event) {
+                event.preventDefault();
+                event.stopPropagation();
+            }
+            
+            console.log(`切换基金 ${code} 到选项卡: ${tabName}`);
+            
+            // 获取该基金的所有选项卡和内容
+            const card = document.querySelector(`[id^="tab-realtime-${code}"]`).closest('.fund-card');
+            if (!card) {
+                console.error(`找不到基金 ${code} 的卡片`);
+                return;
+            }
+            
+            const tabs = card.querySelectorAll('.fund-tab');
+            const contents = card.querySelectorAll('.fund-tab-content');
+            
+            // 移除所有active类
+            tabs.forEach(tab => tab.classList.remove('active'));
+            contents.forEach(content => content.classList.remove('active'));
+            
+            // 添加active类到当前选项卡
+            const targetTab = Array.from(tabs).find(tab => 
+                tab.textContent.includes(tabName === 'realtime' ? '实时数据' : '基金详情')
+            );
+            if (targetTab) {
+                targetTab.classList.add('active');
+            }
+            
+            // 显示对应内容
+            const targetContent = document.getElementById(`tab-${tabName}-${code}`);
+            if (targetContent) {
+                targetContent.classList.add('active');
+                
+                // 如果切换到详情选项卡，绘制净值走势图
+                if (tabName === 'details') {
+                    console.log(`[switchTab] 切换到基金 ${code} 的详情选项卡`);
+                    console.log(`[switchTab] 基金 ${code} - 当前 fundDetails 中的所有代码:`, Object.keys(fundDetails));
+                    const details = fundDetails[code];
+                    console.log(`[switchTab] 基金 ${code} - 通过 fundDetails['${code}'] 获取的详细信息:`, details);
+                    if (details) {
+                        console.log(`[switchTab] 基金 ${code} - 详细信息中的基金名称:`, details.name);
+                        console.log(`[switchTab] 基金 ${code} - 详细信息中的净值数据点数量:`, details.netWorthData ? details.netWorthData.length : 0);
+                    }
+                    
+                    if (details && details.netWorthData && details.netWorthData.length > 0) {
+                        console.log(`准备绘制基金 ${code} 的净值走势图，数据点数量: ${details.netWorthData.length}`);
+                        // 延迟绘制，确保DOM已经可见
+                        setTimeout(() => {
+                            drawNetWorthChart(code);
+                        }, 100);
+                    } else {
+                        console.warn(`基金 ${code} 没有净值数据或数据为空`);
+                        // 如果没有数据，尝试重新获取详细信息
+                        if (!details || !details.netWorthData) {
+                            console.log(`尝试重新获取基金 ${code} 的详细信息`);
+                            fetchFundDetails(code, true); // skipRender=true，不重新渲染整个页面
+                        }
+                    }
+                }
+            }
+        }
+
+        // 绘制图表
+        function drawChart(code) {
+            const history = historyData[code] || [];
+            if (history.length === 0) return;
+
+            const ctx = document.getElementById(`chart-${code}`);
+            if (!ctx) return;
+
+            // 销毁旧图表
+            if (charts[code]) {
+                charts[code].destroy();
+            }
+
+            const labels = history.map(d => d.time);
+            const data = history.map(d => d.percentage);
+            // 根据最新（最后一个）数据点的涨跌判断颜色：涨红跌绿
+            const latestValue = data[data.length - 1];
+            const lineColor = latestValue >= 0 ? '#ff4d4f' : '#00b96b';
+
+            // 找出最高点和最低点的索引
+            let maxIndex = 0;
+            let minIndex = 0;
+            let maxValue = data[0];
+            let minValue = data[0];
+            
+            data.forEach((value, index) => {
+                if (value > maxValue) {
+                    maxValue = value;
+                    maxIndex = index;
+                }
+                if (value < minValue) {
+                    minValue = value;
+                    minIndex = index;
+                }
+            });
+
+            // 为每个点设置不同的样式（普通点不显示，只显示最高最低点）
+            const pointRadius = data.map((_, index) => {
+                if (index === maxIndex || index === minIndex) return 6;
+                return 0; // 普通点隐藏
+            });
+
+            const pointBackgroundColor = data.map((_, index) => {
+                if (index === maxIndex) return '#ff4d4f'; // 最高点红色
+                if (index === minIndex) return '#00b96b'; // 最低点绿色
+                return lineColor;
+            });
+
+            const pointBorderColor = data.map((_, index) => {
+                if (index === maxIndex || index === minIndex) return '#fff';
+                return lineColor;
+            });
+
+            const pointBorderWidth = data.map((_, index) => {
+                if (index === maxIndex || index === minIndex) return 2;
+                return 0;
+            });
+
+            charts[code] = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: '涨跌幅 (%)',
+                        data: data,
+                        borderColor: lineColor,
+                        backgroundColor: `${lineColor}20`,
+                        borderWidth: 2,
+                        tension: 0.4,
+                        fill: true,
+                        pointRadius: pointRadius,
+                        pointHoverRadius: data.map((_, index) => {
+                            if (index === maxIndex || index === minIndex) return 8;
+                            return 5; // 普通点悬停时显示小一点的圆点
+                        }),
+                        pointBackgroundColor: pointBackgroundColor,
+                        pointBorderColor: pointBorderColor,
+                        pointBorderWidth: pointBorderWidth,
+                        pointHoverBackgroundColor: pointBackgroundColor,
+                        pointHoverBorderColor: pointBorderColor,
+                        pointHoverBorderWidth: data.map((_, index) => {
+                            if (index === maxIndex || index === minIndex) return 2;
+                            return 1;
+                        })
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            mode: 'index',
+                            intersect: false,
+                            callbacks: {
+                                label: function(context) {
+                                    let label = parseFloat(context.parsed.y).toFixed(2);
+                                    if (context.parsed.y >= 0) {
+                                        label = '+' + label;
+                                    }
+                                    label = label + '%';
+                                    
+                                    // 标注最高最低点
+                                    if (context.dataIndex === maxIndex) {
+                                        label += ' 📈 今日最高';
+                                    } else if (context.dataIndex === minIndex) {
+                                        label += ' 📉 今日最低';
+                                    }
+                                    
+                                    return label;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            display: true,
+                            grid: {
+                                display: false
+                            },
+                            ticks: {
+                                maxRotation: 45,
+                                minRotation: 45,
+                                font: {
+                                    size: 10
+                                }
+                            }
+                        },
+                        y: {
+                            display: true,
+                            grace: '5%', // 在最大最小值基础上增加5%的空间
+                            ticks: {
+                                callback: function(value) {
+                                    return value.toFixed(2) + '%';
+                                },
+                                // 确保0值刻度总是显示
+                                includeBounds: true
+                            },
+                            grid: {
+                                color: function(context) {
+                                    // 0值线使用深色，其他网格线使用浅色
+                                    if (context.tick.value === 0) {
+                                        return 'rgba(100, 100, 100, 0.5)';
+                                    }
+                                    return 'rgba(0, 0, 0, 0.05)';
+                                },
+                                lineWidth: function(context) {
+                                    // 0值线稍粗一点
+                                    if (context.tick.value === 0) {
+                                        return 2;
+                                    }
+                                    return 1;
+                                },
+                                borderDash: function(context) {
+                                    // 0值线使用虚线
+                                    if (context.tick.value === 0) {
+                                        return [6, 4]; // 6px实线，4px间隔
+                                    }
+                                    return [];
+                                }
+                            },
+                            // 确保y轴范围包含0值
+                            afterDataLimits: function(axis) {
+                                const range = axis.max - axis.min;
+                                if (axis.max < 0) {
+                                    axis.max = 0;
+                                } else if (axis.min > 0) {
+                                    axis.min = 0;
+                                }
+                                // 在顶部和底部留出一些空间
+                                const padding = range * 0.1;
+                                axis.max += padding;
+                                axis.min -= padding;
+                            }
+                        }
+                    },
+                    interaction: {
+                        mode: 'nearest',
+                        axis: 'x',
+                        intersect: false
+                    }
+                }
+            });
+        }
+
+        // 绘制净值走势图表
+        function drawNetWorthChart(code) {
+            console.log(`[drawNetWorthChart] ========== 开始绘制基金 ${code} 的净值走势图 ==========`);
+            console.log(`[drawNetWorthChart] 基金 ${code} - 请求绘制代码: ${code}`);
+            console.log(`[drawNetWorthChart] 基金 ${code} - fundDetails 对象:`, fundDetails);
+            console.log(`[drawNetWorthChart] 基金 ${code} - fundDetails 中的所有基金代码:`, Object.keys(fundDetails));
+            
+            const details = fundDetails[code];
+            console.log(`[drawNetWorthChart] 基金 ${code} - 通过 fundDetails['${code}'] 获取的数据:`, details);
+            
+            if (!details || !details.netWorthData || details.netWorthData.length === 0) {
+                console.error(`[drawNetWorthChart] 基金 ${code} 没有净值数据`);
+                console.error(`[drawNetWorthChart] 基金 ${code} - details:`, details);
+                return;
+            }
+            
+            console.log(`[drawNetWorthChart] 基金 ${code} - 基金名称:`, details.name);
+            console.log(`[drawNetWorthChart] 基金 ${code} - 净值数据点数量:`, details.netWorthData.length);
+            console.log(`[drawNetWorthChart] 基金 ${code} - 前3个净值数据点:`, details.netWorthData.slice(0, 3));
+            console.log(`[drawNetWorthChart] 基金 ${code} - 后3个净值数据点:`, details.netWorthData.slice(-3));
+
+            const ctx = document.getElementById(`net-worth-chart-${code}`);
+            if (!ctx) {
+                console.error(`[drawNetWorthChart] 找不到图表canvas元素: net-worth-chart-${code}`);
+                return;
+            }
+
+            // 销毁旧图表
+            if (charts[`net-worth-${code}`]) {
+                console.log(`[drawNetWorthChart] 销毁旧图表: net-worth-${code}`);
+                charts[`net-worth-${code}`].destroy();
+            }
+
+            // 取最近180天的数据
+            const recentData = details.netWorthData.slice(-180);
+            console.log(`[drawNetWorthChart] 基金 ${code} - 使用最近180天的数据，实际数据点: ${recentData.length}`);
+            
+            // 提取日期和净值数据
+            const labels = recentData.map(item => {
+                const date = new Date(item.x);
+                return `${date.getMonth() + 1}/${date.getDate()}`;
+            });
+            const netWorthValues = recentData.map(item => item.y);
+            
+            console.log(`[drawNetWorthChart] 基金 ${code} - 前5个净值:`, netWorthValues.slice(0, 5));
+            console.log(`[drawNetWorthChart] 基金 ${code} - 后5个净值:`, netWorthValues.slice(-5));
+            
+            // 计算涨跌（相比第一个数据点）
+            const firstValue = netWorthValues[0];
+            const lastValue = netWorthValues[netWorthValues.length - 1];
+            const isPositive = lastValue >= firstValue;
+            const lineColor = isPositive ? '#ff4d4f' : '#00b96b';
+            
+            console.log(`[drawNetWorthChart] 基金 ${code} - 首个净值: ${firstValue}, 最后净值: ${lastValue}, 涨跌: ${isPositive ? '上涨' : '下跌'}`);
+
+            charts[`net-worth-${code}`] = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: '单位净值',
+                        data: netWorthValues,
+                        borderColor: lineColor,
+                        backgroundColor: `${lineColor}15`,
+                        borderWidth: 2,
+                        tension: 0.3,
+                        fill: true,
+                        pointRadius: 0,
+                        pointHoverRadius: 4,
+                        pointHoverBackgroundColor: lineColor,
+                        pointHoverBorderColor: '#fff',
+                        pointHoverBorderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            mode: 'index',
+                            intersect: false,
+                            callbacks: {
+                                label: function(context) {
+                                    return '净值：' + context.parsed.y.toFixed(4);
+                                }
+                            }
+                        },
+                        title: {
+                            display: true,
+                            text: '单位净值走势（近180天）',
+                            font: {
+                                size: 14,
+                                weight: 'bold'
+                            },
+                            padding: {
+                                top: 10,
+                                bottom: 20
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            display: true,
+                            grid: {
+                                display: false
+                            },
+                            ticks: {
+                                maxRotation: 45,
+                                minRotation: 45,
+                                font: {
+                                    size: 10
+                                },
+                                maxTicksLimit: 12
+                            }
+                        },
+                        y: {
+                            display: true,
+                            position: 'right',
+                            ticks: {
+                                callback: function(value) {
+                                    return value.toFixed(4);
+                                },
+                                font: {
+                                    size: 11
+                                }
+                            },
+                            grid: {
+                                color: 'rgba(0, 0, 0, 0.05)'
+                            }
+                        }
+                    },
+                    interaction: {
+                        mode: 'nearest',
+                        axis: 'x',
+                        intersect: false
+                    }
+                }
+            });
+            
+            console.log(`[drawNetWorthChart] 基金 ${code} 的净值走势图创建成功`);
+            console.log(`[drawNetWorthChart] ========== 基金 ${code} 绘制完成 ==========\n`);
+        }
+
+        // 刷新所有基金数据
+        function refreshAllFunds() {
+            const codes = loadFundCodes();
+            codes.forEach(code => {
+                fetchFundData(code);
+            });
+        }
+
+        // 迁移旧格式数据
+        function migrateOldPositionData() {
+            let needsSave = false;
+            Object.keys(positions).forEach(code => {
+                const pos = positions[code];
+                // 检查是否是旧格式 { shares, costPrice }
+                if (pos && pos.shares && pos.costPrice && !pos.transactions) {
+                    console.log(`迁移基金 ${code} 的旧数据到新格式`);
+                    // 转换为新格式
+                    positions[code] = {
+                        transactions: [{
+                            type: 'buy',
+                            date: new Date().toISOString(),
+                            netValue: pos.costPrice,
+                            amount: pos.shares * pos.costPrice,
+                            fee: 0,
+                            shares: pos.shares
+                        }]
+                    };
+                    needsSave = true;
+                }
+            });
+            
+            if (needsSave) {
+                savePositions();
+                console.log('旧数据已迁移到新格式');
+            }
+        }
+
+        // 检查备份提醒
+        function checkBackupReminder() {
+            const codes = loadFundCodes();
+            if (codes.length === 0) return; // 没有基金就不提醒
+
+            const lastBackupDate = localStorage.getItem('lastBackupDate');
+            const now = new Date();
+            
+            if (!lastBackupDate) {
+                // 首次使用，7天后提醒
+                localStorage.setItem('lastBackupDate', now.toISOString());
+                return;
+            }
+
+            const lastBackup = new Date(lastBackupDate);
+            const daysSinceBackup = Math.floor((now - lastBackup) / (1000 * 60 * 60 * 24));
+
+            // 超过30天未备份，提醒用户
+            if (daysSinceBackup >= 30) {
+                setTimeout(() => {
+                    if (confirm(`💾 备份提醒\n\n已经 ${daysSinceBackup} 天没有备份数据了！\n\n为避免数据丢失，建议立即备份。\n\n点击"确定"立即导出备份文件`)) {
+                        exportData();
+                        localStorage.setItem('lastBackupDate', now.toISOString());
+                    } else {
+                        // 用户点了取消，7天后再提醒
+                        const remindDate = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+                        localStorage.setItem('lastBackupDate', remindDate.toISOString());
+                    }
+                }, 2000); // 延迟2秒弹出，避免影响页面加载
+            }
+        }
+
+        // 更新最后备份时间（在导出成功后调用）
+        function updateLastBackupDate() {
+            localStorage.setItem('lastBackupDate', new Date().toISOString());
+        }
+
+        // 初始化
+        function init() {
+            // 加载历史数据
+            historyData = loadHistoryData();
+            
+            // 清理非当天的历史数据
+            const today = new Date().toLocaleDateString('zh-CN');
+            Object.keys(historyData).forEach(code => {
+                if (historyData[code] && Array.isArray(historyData[code])) {
+                    historyData[code] = historyData[code].filter(item => item.date === today);
+                }
+            });
+            saveHistoryData();
+            
+            // 加载持仓数据
+            positions = loadPositions();
+            
+            // 迁移旧格式数据
+            migrateOldPositionData();
+            
+            // 加载今日范围数据
+            const rangeData = loadDailyRanges();
+            dailyRanges = rangeData.ranges || {}
+            
+            // 加载排序设置
+            loadSortOrder();
+            
+            // 检查备份提醒
+            checkBackupReminder();
+            
+            // 加载基金列表（优先使用缓存）
+            const cachedList = loadFundListCache();
+            if (!cachedList || cachedList.length === 0) {
+                // 如果没有缓存或缓存为空，立即获取
+                fetchFundList();
+            } else {
+                // 有缓存，在后台检查更新
+                setTimeout(() => {
+                    const cached = localStorage.getItem('fundListCache');
+                    if (cached) {
+                        const cacheData = JSON.parse(cached);
+                        const now = Date.now();
+                        const oneDay = 24 * 60 * 60 * 1000;
+                        // 如果缓存即将过期（超过20小时），在后台更新
+                        if (now - cacheData.timestamp > oneDay * 0.83) {
+                            fetchFundList();
+                        }
+                    }
+                }, 5000); // 延迟5秒后检查
+            }
+            
+            // 加载已有基金的详细信息缓存
+            const codes = loadFundCodes();
+            console.log(`[init] 开始加载基金详细信息缓存，当前基金代码列表:`, codes);
+            codes.forEach(code => {
+                const cached = localStorage.getItem(`fundDetail_${code}`);
+                if (cached) {
+                    try {
+                        const cacheData = JSON.parse(cached);
+                        const now = Date.now();
+                        const oneDay = 24 * 60 * 60 * 1000;
+                        
+                        console.log(`[init] 基金 ${code} - 找到缓存`);
+                        console.log(`[init] 基金 ${code} - 缓存中的基金名称:`, cacheData.data.name);
+                        
+                        // 如果缓存未过期，加载到内存
+                        if (now - cacheData.timestamp < oneDay) {
+                            fundDetails[code] = cacheData.data;
+                            console.log(`[init] 基金 ${code} - 缓存有效，已加载到内存`);
+                            console.log(`[init] 基金 ${code} - fundDetails['${code}'].name =`, fundDetails[code].name);
+                        } else {
+                            console.log(`[init] 基金 ${code} - 缓存已过期，跳过`);
+                        }
+                    } catch (e) {
+                        console.error(`[init] 加载基金 ${code} 详细信息缓存失败`, e);
+                    }
+                } else {
+                    console.log(`[init] 基金 ${code} - 没有缓存`);
+                }
+            });
+            
+            console.log(`[init] 缓存加载完成，fundDetails 中的所有基金:`, Object.keys(fundDetails));
+            
+            // 渲染空状态或加载基金
+            renderFunds();
+            
+            // 加载基金数据
+            codes.forEach(code => {
+                fetchFundData(code);
+            });
+
+            // 每30秒刷新一次数据
+            setInterval(refreshAllFunds, 30000);
+            
+            // 每天凌晨2点自动更新基金列表
+            setInterval(() => {
+                const now = new Date();
+                if (now.getHours() === 2 && now.getMinutes() === 0) {
+                    fetchFundList();
+                }
+            }, 60000); // 每分钟检查一次
+        }
+
+        // 页面加载完成后初始化
+        window.addEventListener('DOMContentLoaded', init);
+
+        // 支持回车键添加基金
+        document.addEventListener('DOMContentLoaded', () => {
+            const fundInput = document.getElementById('fundCodeInput');
+            
+            // 回车键添加基金
+            fundInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    addFund();
+                }
+            });
+
+            // 输入时显示自动补全
+            fundInput.addEventListener('input', (e) => {
+                const keyword = e.target.value.trim();
+                showAutocompleteSuggestions(keyword);
+            });
+
+            // 失去焦点时隐藏列表
+            fundInput.addEventListener('blur', () => {
+                hideAutocompleteList();
+            });
+
+            // 获得焦点时如果有内容则显示建议
+            fundInput.addEventListener('focus', (e) => {
+                const keyword = e.target.value.trim();
+                if (keyword) {
+                    showAutocompleteSuggestions(keyword);
+                }
+            });
+
+            // 初始申购实时计算份额
+            ['initialNetValue', 'initialAmount', 'initialFee'].forEach(id => {
+                document.getElementById(id).addEventListener('input', () => {
+                    const netValue = parseFloat(document.getElementById('initialNetValue').value);
+                    const amount = parseFloat(document.getElementById('initialAmount').value);
+                    const fee = parseFloat(document.getElementById('initialFee').value) || 0;
+                    
+                    if (netValue && amount && netValue > 0 && amount > 0) {
+                        const shares = (amount - fee) / netValue;
+                        document.getElementById('initialShares').value = shares.toFixed(2);
+                    } else {
+                        document.getElementById('initialShares').value = '';
+                    }
+                });
+            });
+
+            // 买入实时计算份额
+            ['buyNetValue', 'buyAmount', 'buyFee'].forEach(id => {
+                document.getElementById(id).addEventListener('input', () => {
+                    const netValue = parseFloat(document.getElementById('buyNetValue').value);
+                    const amount = parseFloat(document.getElementById('buyAmount').value);
+                    const fee = parseFloat(document.getElementById('buyFee').value) || 0;
+                    
+                    if (netValue && amount && netValue > 0 && amount > 0) {
+                        const shares = (amount - fee) / netValue;
+                        document.getElementById('buyShares').value = shares.toFixed(2);
+                    } else {
+                        document.getElementById('buyShares').value = '';
+                    }
+                });
+            });
+
+            // 卖出实时计算金额
+            ['sellNetValue', 'sellShares', 'sellFee'].forEach(id => {
+                document.getElementById(id).addEventListener('input', () => {
+                    const netValue = parseFloat(document.getElementById('sellNetValue').value);
+                    const shares = parseFloat(document.getElementById('sellShares').value);
+                    const fee = parseFloat(document.getElementById('sellFee').value) || 0;
+                    
+                    if (netValue && shares && netValue > 0 && shares > 0) {
+                        const amount = shares * netValue - fee;
+                        document.getElementById('sellAmount').value = amount.toFixed(2);
+                    } else {
+                        document.getElementById('sellAmount').value = '';
+                    }
+                });
+            });
+
+            // 点击模态框背景关闭
+            document.getElementById('initialPurchaseModal').addEventListener('click', (e) => {
+                if (e.target.id === 'initialPurchaseModal') {
+                    closeInitialPurchaseModal();
+                }
+            });
+
+            document.getElementById('buyModal').addEventListener('click', (e) => {
+                if (e.target.id === 'buyModal') {
+                    closeBuyModal();
+                }
+            });
+
+            document.getElementById('sellModal').addEventListener('click', (e) => {
+                if (e.target.id === 'sellModal') {
+                    closeSellModal();
+                }
+            });
+
+            document.getElementById('transactionHistoryModal').addEventListener('click', (e) => {
+                if (e.target.id === 'transactionHistoryModal') {
+                    closeTransactionHistoryModal();
+                }
+            });
+
+            document.getElementById('customConfirmModal').addEventListener('click', (e) => {
+                if (e.target.id === 'customConfirmModal') {
+                    closeCustomConfirm(false);
+                }
+            });
+
+            // 点击页面其他位置关闭自动补全列表
+            document.addEventListener('click', (e) => {
+                const autocompleteWrapper = document.querySelector('.autocomplete-wrapper');
+                if (autocompleteWrapper && !autocompleteWrapper.contains(e.target)) {
+                    document.getElementById('autocompleteList').classList.remove('active');
+                }
+            });
+
+            // 使用事件委托处理选项卡点击
+            document.getElementById('fundsContainer').addEventListener('click', (e) => {
+                const tabButton = e.target.closest('.fund-tab');
+                if (tabButton) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    
+                    const fundCode = tabButton.getAttribute('data-fund-code');
+                    const tabName = tabButton.getAttribute('data-tab-name');
+                    
+                    if (fundCode && tabName) {
+                        switchTab(fundCode, tabName, e);
+                    }
+                }
+            });
+        });
+    </script>
+</body>
+</html>
