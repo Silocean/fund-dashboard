@@ -1528,7 +1528,7 @@
             
             const script = document.createElement('script');
             script.id = 'fundListScript';
-            script.src = `http://fund.eastmoney.com/js/fundcode_search.js?t=${Date.now()}`;
+            script.src = `https://fund.eastmoney.com/js/fundcode_search.js?t=${Date.now()}`;
             
             script.onload = () => {
                 // Script加载完成后，r变量应该已经定义
@@ -2355,7 +2355,7 @@
             loadingFundCodes.add(code);
             const script = document.createElement('script');
             script.id = `fund-script-${code}`;
-            script.src = `http://fundgz.1234567.com.cn/js/${code}.js?t=${Date.now()}`;
+            script.src = `https://fundgz.1234567.com.cn/js/${code}.js?t=${Date.now()}`;
             script.onerror = () => {
                 console.error(`加载基金 ${code} 数据失败`);
                 alert(`加载基金 ${code} 数据失败，请检查基金代码是否正确`);
@@ -2456,7 +2456,7 @@
 
             const script = document.createElement('script');
             script.id = `fund-detail-script-${code}`;
-            script.src = `http://fund.eastmoney.com/pingzhongdata/${code}.js?t=${Date.now()}`;
+            script.src = `https://fund.eastmoney.com/pingzhongdata/${code}.js?t=${Date.now()}`;
             
             script.onload = () => {
                 console.log(`[fetchFundDetailsInternal] 基金 ${code} - script.onload 触发`);
