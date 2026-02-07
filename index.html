@@ -3568,9 +3568,23 @@
                     console.warn(`[drawNetWorthChart][DEBUG] 目标基金 ${code} 百分比范围: ${minPerc.toFixed(2)}% ~ ${maxPerc.toFixed(2)}%`);
                 }
 
-                // 强制 y 轴从 0 开始；为上限添加少量余量，避免曲线靠顶
-                var yMin = 0;
-                var yMax = Math.max(maxPerc * 1.05, 1); // 至少显示到 1% 的上限，或稍高于最大值
+                // 根据数据范围动态计算 y 轴上下限，允许负值区间（不强制从0开始）
+                var range = maxPerc - minPerc;
+                var padding = 0;
+                if (range === 0) {
+                    // 如果没有变化，设置一个小的绝对padding，保证图表可读
+                    padding = Math.max(Math.abs(maxPerc) * 0.05, 1);
+                } else {
+                    padding = range * 0.12; // 留出12%空间
+                }
+
+                var yMin = minPerc - padding;
+                var yMax = maxPerc + padding;
+                // 兜底：确保 yMin 小于 yMax
+                if (!(isFinite(yMin) && isFinite(yMax)) || yMin >= yMax) {
+                    yMin = Math.min(minPerc, 0) - 5;
+                    yMax = Math.max(maxPerc, 0) + 5;
+                }
             } catch (e) {
                 console.error('[drawNetWorthChart][DEBUG] 计算百分比范围出错', e);
                 var yMin = 0;
