@@ -517,11 +517,23 @@
             box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
             transition: transform 0.3s, box-shadow 0.3s;
             position: relative;
+            border: 2px solid transparent;
         }
 
         .fund-card:hover {
             transform: translateY(-5px);
             box-shadow: 0 12px 48px rgba(0, 0, 0, 0.15);
+        }
+
+        /* 持有 / 自选 卡片边框颜色 */
+        .fund-card.holding {
+            border-color: #ff4d4f; /* 红色边框 表示持有 */
+            box-shadow: 0 12px 48px rgba(255, 77, 79, 0.08);
+        }
+
+        .fund-card.watching {
+            border-color: #ffd93d; /* 黄色边框 表示自选 */
+            box-shadow: 0 12px 48px rgba(255, 217, 61, 0.06);
         }
 
         .fund-header {
@@ -3061,7 +3073,7 @@
                 }
 
                 return `
-                    <div class="fund-card">
+                    <div class="fund-card ${hasPosition ? 'holding' : 'watching'}">
                         <div class="fund-header">
                             <div class="fund-title">
                                 <div class="fund-name">
