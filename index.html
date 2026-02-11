@@ -311,7 +311,48 @@
 
         .net-worth-chart-container {
             margin-top: 15px;
-            min-height: 300px;
+        }
+
+        .net-worth-chart-wrapper {
+            position: relative;
+            height: 280px;
+        }
+
+        .chart-range-selector {
+            display: flex;
+            justify-content: center;
+            gap: 4px;
+            margin-bottom: 8px;
+            padding: 3px;
+            background: #f0f2f5;
+            border-radius: 8px;
+            width: fit-content;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .chart-range-btn {
+            padding: 5px 14px;
+            border: none;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 500;
+            cursor: pointer;
+            background: transparent;
+            color: #666;
+            transition: all 0.2s ease;
+            white-space: nowrap;
+        }
+
+        .chart-range-btn:hover {
+            color: #333;
+            background: rgba(255, 255, 255, 0.6);
+        }
+
+        .chart-range-btn.active {
+            background: #fff;
+            color: #1890ff;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
         }
 
         .btn {
@@ -1410,6 +1451,8 @@
         let fundList = []; // 所有基金列表
         let isFetchingFundList = false; // 是否正在获取基金列表
         let fundDetails = {}; // 基金详细信息：{ code: { rates, managers, etc } }
+        let netWorthRefreshed = new Set(); // 已触发净值数据刷新的基金（防止重复刷新）
+        let chartRangeSelection = {}; // 每个基金的图表时间范围选择：{ code: days }
         // 渲染防抖器：避免短时间内多次整体重绘引起闪烁
         let _renderTimer = null;
         function scheduleRender(delay = 250) {
@@ -3055,9 +3098,18 @@
                         
                         let chartHtml = '';
                         if (hasNetWorthData) {
+                            const selectedRange = chartRangeSelection[code] || 180;
                             chartHtml = `
                                 <div class="net-worth-chart-container">
-                                    <canvas id="net-worth-chart-${code}"></canvas>
+                                    <div class="chart-range-selector" id="chart-range-selector-${code}">
+                                        <button class="chart-range-btn ${selectedRange === 30 ? 'active' : ''}" onclick="changeChartRange('${code}', 30)">近1月</button>
+                                        <button class="chart-range-btn ${selectedRange === 90 ? 'active' : ''}" onclick="changeChartRange('${code}', 90)">近3月</button>
+                                        <button class="chart-range-btn ${selectedRange === 180 ? 'active' : ''}" onclick="changeChartRange('${code}', 180)">近半年</button>
+                                        <button class="chart-range-btn ${selectedRange === 365 ? 'active' : ''}" onclick="changeChartRange('${code}', 365)">近1年</button>
+                                    </div>
+                                    <div class="net-worth-chart-wrapper">
+                                        <canvas id="net-worth-chart-${code}"></canvas>
+                                    </div>
                                 </div>
                             `;
                         } else {
@@ -3241,9 +3293,18 @@
                 
                 let chartHtml = '';
                 if (hasNetWorthData) {
+                    const selectedRange = chartRangeSelection[code] || 180;
                     chartHtml = `
                         <div class="net-worth-chart-container">
-                            <canvas id="net-worth-chart-${code}"></canvas>
+                            <div class="chart-range-selector" id="chart-range-selector-${code}">
+                                <button class="chart-range-btn ${selectedRange === 30 ? 'active' : ''}" onclick="changeChartRange('${code}', 30)">近1月</button>
+                                <button class="chart-range-btn ${selectedRange === 90 ? 'active' : ''}" onclick="changeChartRange('${code}', 90)">近3月</button>
+                                <button class="chart-range-btn ${selectedRange === 180 ? 'active' : ''}" onclick="changeChartRange('${code}', 180)">近半年</button>
+                                <button class="chart-range-btn ${selectedRange === 365 ? 'active' : ''}" onclick="changeChartRange('${code}', 365)">近1年</button>
+                            </div>
+                            <div class="net-worth-chart-wrapper">
+                                <canvas id="net-worth-chart-${code}"></canvas>
+                            </div>
                         </div>
                     `;
                 } else {
@@ -3520,23 +3581,13 @@
         // 绘制净值走势图表
         function drawNetWorthChart(code) {
             console.log(`[drawNetWorthChart] ========== 开始绘制基金 ${code} 的净值走势图 ==========`);
-            console.log(`[drawNetWorthChart] 基金 ${code} - 请求绘制代码: ${code}`);
-            console.log(`[drawNetWorthChart] 基金 ${code} - fundDetails 对象:`, fundDetails);
-            console.log(`[drawNetWorthChart] 基金 ${code} - fundDetails 中的所有基金代码:`, Object.keys(fundDetails));
             
             const details = fundDetails[code];
-            console.log(`[drawNetWorthChart] 基金 ${code} - 通过 fundDetails['${code}'] 获取的数据:`, details);
             
             if (!details || !details.netWorthData || details.netWorthData.length === 0) {
                 console.error(`[drawNetWorthChart] 基金 ${code} 没有净值数据`);
-                console.error(`[drawNetWorthChart] 基金 ${code} - details:`, details);
                 return;
             }
-            
-            console.log(`[drawNetWorthChart] 基金 ${code} - 基金名称:`, details.name);
-            console.log(`[drawNetWorthChart] 基金 ${code} - 净值数据点数量:`, details.netWorthData.length);
-            console.log(`[drawNetWorthChart] 基金 ${code} - 前3个净值数据点:`, details.netWorthData.slice(0, 3));
-            console.log(`[drawNetWorthChart] 基金 ${code} - 后3个净值数据点:`, details.netWorthData.slice(-3));
 
             const ctx = document.getElementById(`net-worth-chart-${code}`);
             if (!ctx) {
@@ -3546,19 +3597,42 @@
 
             // 销毁旧图表
             if (charts[`net-worth-${code}`]) {
-                console.log(`[drawNetWorthChart] 销毁旧图表: net-worth-${code}`);
                 charts[`net-worth-${code}`].destroy();
             }
 
-            // 取最近180天的数据
-            const recentData = details.netWorthData.slice(-180);
-            console.log(`[drawNetWorthChart] 基金 ${code} - 使用最近180天的数据，实际数据点: ${recentData.length}`);
+            // 根据选择的时间范围筛选数据（按日历天数过滤）
+            const rangeDays = chartRangeSelection[code] || 180;
+            const rangeLabels = { 30: '近1月', 90: '近3月', 180: '近半年', 365: '近1年' };
+            const cutoffDate = Date.now() - rangeDays * 24 * 60 * 60 * 1000;
+            let recentData = details.netWorthData.filter(item => item.x >= cutoffDate);
+            
+            // 如果按日历过滤后数据太少（<5个点），回退到取最后N个数据点
+            if (recentData.length < 5) {
+                const fallbackCount = { 30: 22, 90: 66, 180: 132, 365: 252 }[rangeDays] || 132;
+                recentData = details.netWorthData.slice(-fallbackCount);
+            }
+            
+            console.log(`[drawNetWorthChart] 基金 ${code} - 时间范围: ${rangeLabels[rangeDays] || rangeDays + '天'}，数据点: ${recentData.length}`);
+            
+            // 检查数据新鲜度：如果最后一个数据点距今超过3天且本次会话未刷新过，则触发后台刷新
+            const lastDataTimestamp = recentData[recentData.length - 1].x;
+            const lastDataDateObj = new Date(lastDataTimestamp);
+            const daysSinceLastData = (Date.now() - lastDataDateObj.getTime()) / (24 * 60 * 60 * 1000);
+            if (daysSinceLastData > 3 && !netWorthRefreshed.has(code)) {
+                console.warn(`[drawNetWorthChart] 基金 ${code} 净值数据可能过期（最后数据: ${lastDataDateObj.toLocaleDateString('zh-CN')}），触发后台刷新`);
+                netWorthRefreshed.add(code);
+                localStorage.removeItem(`fundDetail_${code}`);
+                fetchFundDetails(code, true);
+            }
             
             // 提取日期和净值数据
+            const firstDataDateObj = new Date(recentData[0].x);
             const labels = recentData.map(item => {
                 const date = new Date(item.x);
                 return `${date.getMonth() + 1}/${date.getDate()}`;
             });
+            // 用于图表标题显示的日期范围
+            const dateRangeStr = `${firstDataDateObj.getMonth() + 1}/${firstDataDateObj.getDate()} ~ ${lastDataDateObj.getMonth() + 1}/${lastDataDateObj.getDate()}`;
             const netWorthValues = recentData.map(item => item.y);
             
             console.log(`[drawNetWorthChart] 基金 ${code} - 前5个净值:`, netWorthValues.slice(0, 5));
@@ -3570,6 +3644,53 @@
             const percentageValues = netWorthValues.map(v => ((v - firstValue) / firstValue) * 100);
             const isPositive = lastValue >= firstValue;
             const lineColor = isPositive ? '#ff4d4f' : '#00b96b';
+
+            // 获取该基金的买入交易记录，用于在图表上标注买入点
+            const fundPosition = positions[code];
+            const buyTransactions = (fundPosition && fundPosition.transactions) ? 
+                fundPosition.transactions.filter(t => t.type === 'buy') : [];
+            const buyPointData = new Array(recentData.length).fill(null);
+            const buyTooltipInfo = {};
+            
+            if (buyTransactions.length > 0) {
+                // 将 recentData 的日期建立索引映射（YYYY-MM-DD -> index）
+                const dateIndexMap = {};
+                recentData.forEach((item, index) => {
+                    const d = new Date(item.x);
+                    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+                    dateIndexMap[key] = index;
+                });
+                
+                buyTransactions.forEach(trans => {
+                    const d = new Date(trans.date);
+                    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+                    
+                    // 精确匹配日期
+                    let matchIdx = dateIndexMap[key];
+                    
+                    // 如果精确匹配失败，尝试查找最近的交易日（前后3天内）
+                    if (matchIdx === undefined) {
+                        const transTime = d.getTime();
+                        let minDiff = Infinity;
+                        recentData.forEach((item, index) => {
+                            const diff = Math.abs(new Date(item.x).getTime() - transTime);
+                            if (diff < minDiff && diff <= 3 * 24 * 60 * 60 * 1000) {
+                                minDiff = diff;
+                                matchIdx = index;
+                            }
+                        });
+                    }
+                    
+                    if (matchIdx !== undefined) {
+                        buyPointData[matchIdx] = percentageValues[matchIdx];
+                        if (!buyTooltipInfo[matchIdx]) buyTooltipInfo[matchIdx] = [];
+                        buyTooltipInfo[matchIdx].push(trans);
+                    }
+                });
+                
+                console.log(`[drawNetWorthChart] 基金 ${code} - 买入交易 ${buyTransactions.length} 笔，匹配到图表上 ${Object.keys(buyTooltipInfo).length} 个点`);
+            }
+            const hasBuyPoints = buyPointData.some(v => v !== null);
 
             // 调试：记录百分比数据的范围，以便排查刻度问题
             try {
@@ -3620,34 +3741,82 @@
                         pointHoverBackgroundColor: lineColor,
                         pointHoverBorderColor: '#fff',
                         pointHoverBorderWidth: 2
-                    }]
+                    }].concat(hasBuyPoints ? [{
+                        label: '买入点',
+                        data: buyPointData,
+                        borderColor: 'transparent',
+                        backgroundColor: '#1890ff',
+                        pointRadius: buyPointData.map(v => v !== null ? 8 : 0),
+                        pointHoverRadius: buyPointData.map(v => v !== null ? 10 : 0),
+                        pointStyle: 'triangle',
+                        pointBackgroundColor: '#1890ff',
+                        pointBorderColor: '#fff',
+                        pointBorderWidth: 2,
+                        showLine: false,
+                        fill: false,
+                        order: -1
+                    }] : [])
                 },
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
                     plugins: {
-                        legend: { display: false },
+                        legend: {
+                            display: hasBuyPoints,
+                            labels: {
+                                filter: function(item) {
+                                    // 只显示买入点的图例
+                                    return item.text === '买入点';
+                                },
+                                usePointStyle: true,
+                                pointStyle: 'triangle',
+                                font: { size: 11 },
+                                color: '#1890ff',
+                                padding: 10
+                            },
+                            position: 'top',
+                            align: 'end'
+                        },
                         tooltip: {
                             mode: 'index',
                             intersect: false,
+                            filter: function(tooltipItem) {
+                                // 隐藏买入点数据集中值为 null 的 tooltip 项
+                                if (tooltipItem.dataset.label === '买入点' && tooltipItem.parsed.y === null) {
+                                    return false;
+                                }
+                                return true;
+                            },
                             callbacks: {
                                 label: function(context) {
+                                    if (context.dataset.label === '买入点') {
+                                        if (context.parsed.y === null) return null;
+                                        const idx = context.dataIndex;
+                                        const infos = buyTooltipInfo[idx];
+                                        if (infos && infos.length > 0) {
+                                            return infos.map(t => {
+                                                const dateStr = new Date(t.date).toLocaleDateString('zh-CN');
+                                                return `▲ 买入 ¥${t.amount.toFixed(2)}｜净值 ${t.netValue.toFixed(4)}｜${t.shares.toFixed(2)}份`;
+                                            });
+                                        }
+                                        return '▲ 买入点';
+                                    }
                                     return '涨跌幅：' + context.parsed.y.toFixed(2) + '%';
                                 }
                             }
                         },
                         title: {
                             display: true,
-                            text: '单位净值涨跌幅（近180天）',
+                            text: `单位净值涨跌幅（${dateRangeStr}）`,
                             font: { size: 14, weight: 'bold' },
-                            padding: { top: 10, bottom: 20 }
+                            padding: { top: 4, bottom: 12 }
                         }
                     },
                     scales: {
                         x: {
                             display: true,
                             grid: { display: false },
-                            ticks: { maxRotation: 45, minRotation: 45, font: { size: 10 }, maxTicksLimit: 12 }
+                            ticks: { maxRotation: 45, minRotation: 45, font: { size: 10 }, maxTicksLimit: rangeDays <= 30 ? 8 : rangeDays <= 90 ? 10 : 12 }
                         },
                         y: {
                             display: true,
@@ -3674,7 +3843,28 @@
             });
             
             console.log(`[drawNetWorthChart] 基金 ${code} 的净值走势图创建成功`);
-            console.log(`[drawNetWorthChart] ========== 基金 ${code} 绘制完成 ==========\n`);
+        }
+
+        // 切换图表时间范围
+        function changeChartRange(code, days) {
+            chartRangeSelection[code] = days;
+            
+            // 更新按钮选中状态（不重新渲染整个页面）
+            const selector = document.getElementById(`chart-range-selector-${code}`);
+            if (selector) {
+                selector.querySelectorAll('.chart-range-btn').forEach(btn => {
+                    btn.classList.remove('active');
+                });
+                // 根据 days 值找到对应按钮并激活
+                const daysList = [30, 90, 180, 365];
+                const idx = daysList.indexOf(days);
+                if (idx >= 0 && selector.children[idx]) {
+                    selector.children[idx].classList.add('active');
+                }
+            }
+            
+            // 重绘图表
+            drawNetWorthChart(code);
         }
 
         // 刷新所有基金数据
