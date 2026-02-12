@@ -2504,9 +2504,12 @@
             // 先加载基金数据
             fetchFundData(code);
             
-            // 弹出初始申购模态框
-            setTimeout(() => {
-                openInitialPurchaseModal(code);
+            // 弹出初始申购模态框（延迟等待数据加载，加载失败时取消）
+            const purchaseTimer = setTimeout(() => {
+                // 只有基金未被删除（加载成功）时才弹出
+                if (loadFundCodes().includes(code)) {
+                    openInitialPurchaseModal(code);
+                }
             }, 500);
         }
 
