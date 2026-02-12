@@ -625,7 +625,7 @@
 
         .overview-stats {
             display: grid;
-            grid-template-columns: repeat(5, 1fr);
+            grid-template-columns: repeat(4, 1fr);
             gap: 20px;
         }
 
@@ -702,6 +702,133 @@
         .stat-item.stat-primary .stat-value.positive,
         .stat-item.stat-primary .stat-value.negative {
             color: white;
+        }
+
+        /* 累计收益卡片样式 */
+        .stat-item.stat-cumulative {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        }
+
+        .stat-item.stat-cumulative .stat-label,
+        .stat-item.stat-cumulative .stat-value {
+            color: white;
+        }
+
+        .stat-item.stat-cumulative .stat-value.positive,
+        .stat-item.stat-cumulative .stat-value.negative {
+            color: white;
+        }
+
+        /* 总览面板分区标签 */
+        .overview-section-label {
+            font-size: 13px;
+            font-weight: 600;
+            color: #888;
+            margin-bottom: 10px;
+            padding-left: 2px;
+        }
+
+        /* 总览面板分隔线 */
+        .overview-divider {
+            height: 1px;
+            background: linear-gradient(to right, transparent, #e0e0e0, transparent);
+            margin: 18px 0 14px;
+        }
+
+        /* 统一4列布局 */
+        .overview-stats-4col {
+            grid-template-columns: repeat(4, 1fr);
+        }
+
+        /* 可点击的统计卡片 */
+        .stat-item.stat-clickable {
+            cursor: pointer;
+            position: relative;
+        }
+
+        .stat-item.stat-clickable:hover {
+            box-shadow: 0 4px 16px rgba(102, 126, 234, 0.25);
+            border: 1px solid #667eea;
+        }
+
+        /* 历史收益明细样式 */
+        .historical-profit-summary {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 14px 18px;
+            background: linear-gradient(135deg, #f8f9fa, #fff);
+            border-radius: 10px;
+            margin-bottom: 16px;
+            border: 1px solid #e8e8e8;
+        }
+
+        .historical-profit-summary .summary-label {
+            font-size: 14px;
+            color: #666;
+        }
+
+        .historical-profit-summary .summary-value {
+            font-size: 22px;
+            font-weight: 700;
+        }
+
+        .historical-fund-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 14px 16px;
+            border-radius: 8px;
+            background: #fafafa;
+            margin-bottom: 10px;
+            transition: background 0.15s;
+        }
+
+        .historical-fund-item:hover {
+            background: #f0f2f5;
+        }
+
+        .historical-fund-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .historical-fund-name {
+            font-weight: 600;
+            font-size: 14px;
+            color: #333;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .historical-fund-code {
+            font-size: 12px;
+            color: #999;
+            margin-top: 2px;
+        }
+
+        .historical-fund-detail {
+            font-size: 12px;
+            color: #888;
+            margin-top: 4px;
+        }
+
+        .historical-fund-profit {
+            text-align: right;
+            margin-left: 16px;
+            flex-shrink: 0;
+        }
+
+        .historical-fund-profit .profit-amount {
+            font-size: 18px;
+            font-weight: 700;
+        }
+
+        .historical-fund-profit .profit-sells {
+            font-size: 11px;
+            color: #999;
+            margin-top: 2px;
         }
 
         .funds-grid {
@@ -1310,7 +1437,7 @@
 
         @media (max-width: 1200px) {
             .overview-stats {
-                grid-template-columns: repeat(3, 1fr);
+                grid-template-columns: repeat(2, 1fr);
             }
         }
 
@@ -1435,26 +1562,43 @@
                     <h2>📊 投资总览</h2>
                     <div class="overview-date">更新时间: <span id="overviewUpdateTime">--</span></div>
                 </div>
-                <div class="overview-stats">
+                <div class="overview-section-label">💼 持仓</div>
+                <div class="overview-stats overview-stats-4col">
                     <div class="stat-item stat-primary">
                         <div class="stat-label">总市值</div>
                         <div class="stat-value" id="totalMarketValue">¥0.00</div>
                     </div>
                     <div class="stat-item">
-                        <div class="stat-label">总成本</div>
+                        <div class="stat-label">持仓成本</div>
                         <div class="stat-value" id="totalCost">¥0.00</div>
                     </div>
                     <div class="stat-item">
-                        <div class="stat-label">总收益</div>
+                        <div class="stat-label">持仓收益</div>
                         <div class="stat-value" id="totalProfit">¥0.00</div>
                     </div>
                     <div class="stat-item">
-                        <div class="stat-label">收益率</div>
+                        <div class="stat-label">持仓收益率</div>
                         <div class="stat-value" id="totalProfitRate">0.00%</div>
                     </div>
+                </div>
+                <div class="overview-divider"></div>
+                <div class="overview-section-label">📜 收益总览</div>
+                <div class="overview-stats overview-stats-4col">
                     <div class="stat-item stat-highlight">
                         <div class="stat-label">今日盈亏</div>
                         <div class="stat-value" id="todayProfit">¥0.00</div>
+                    </div>
+                    <div class="stat-item stat-clickable" onclick="openHistoricalProfitDetail()" title="点击查看历史收益明细">
+                        <div class="stat-label">历史收益（已实现） <span style="font-size: 11px; color: #aaa;">▶ 明细</span></div>
+                        <div class="stat-value" id="historicalProfit">¥0.00</div>
+                    </div>
+                    <div class="stat-item stat-cumulative">
+                        <div class="stat-label">累计收益</div>
+                        <div class="stat-value" id="cumulativeProfit">¥0.00</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-label">累计收益率</div>
+                        <div class="stat-value" id="cumulativeProfitRate">0.00%</div>
                     </div>
                 </div>
             </div>
@@ -1624,6 +1768,19 @@
             </div>
             <div id="transactionHistoryContent" style="max-height: 400px; overflow-y: auto;">
                 <!-- 交易历史内容 -->
+            </div>
+        </div>
+    </div>
+
+    <!-- 历史收益明细模态框 -->
+    <div id="historicalProfitModal" class="modal">
+        <div class="modal-content" style="max-width: 600px;">
+            <div class="modal-header">
+                <h2>📜 历史收益明细</h2>
+                <button class="close-btn" onclick="closeHistoricalProfitDetail()">&times;</button>
+            </div>
+            <div id="historicalProfitContent" style="max-height: 500px; overflow-y: auto;">
+                <!-- 历史收益明细内容 -->
             </div>
         </div>
     </div>
@@ -2654,6 +2811,13 @@
                 }
             });
 
+            // 修正浮点精度：份额保留2位小数，消除极小残余值（如 0.0000000001）
+            totalShares = parseFloat(totalShares.toFixed(2));
+            if (totalShares <= 0) {
+                totalShares = 0;
+                totalCost = 0;
+            }
+
             const avgCost = totalShares > 0 ? totalCost / totalShares : 0;
 
             return {
@@ -2836,8 +3000,11 @@
             }
 
             const posInfo = calculatePosition(currentModalFundCode);
-            if (!posInfo || shares > posInfo.totalShares) {
-                alert(`卖出份额不能超过持有份额 ${posInfo ? posInfo.totalShares.toFixed(2) : 0}`);
+            // 使用 toFixed(2) 对齐精度，避免浮点误差导致相同份额被判定为超额
+            const sellSharesRounded = parseFloat(shares.toFixed(2));
+            const holdSharesRounded = posInfo ? parseFloat(posInfo.totalShares.toFixed(2)) : 0;
+            if (!posInfo || sellSharesRounded > holdSharesRounded) {
+                alert(`卖出份额不能超过持有份额 ${holdSharesRounded}`);
                 return;
             }
 
@@ -2855,6 +3022,107 @@
             savePositions();
             closeSellModal();
             renderFunds();
+        }
+
+        // 打开历史收益明细弹窗
+        function openHistoricalProfitDetail() {
+            const codes = loadFundCodes();
+            const content = document.getElementById('historicalProfitContent');
+            
+            // 计算每个基金的历史收益
+            const fundProfits = [];
+            let totalHistorical = 0;
+
+            codes.forEach(code => {
+                const position = positions[code];
+                if (!position || !position.transactions) return;
+
+                let runningShares = 0;
+                let runningCost = 0;
+                let fundProfit = 0;
+                let sellCount = 0;
+                let totalSellAmount = 0;
+                let totalCostBasis = 0;
+
+                position.transactions.forEach(trans => {
+                    if (trans.type === 'buy') {
+                        runningShares += trans.shares;
+                        runningCost += trans.amount;
+                    } else if (trans.type === 'sell') {
+                        const sellRatio = runningShares > 0 ? trans.shares / runningShares : 0;
+                        const costBasis = runningCost * sellRatio;
+                        const profit = trans.amount - costBasis;
+                        fundProfit += profit;
+                        totalSellAmount += trans.amount;
+                        totalCostBasis += costBasis;
+                        sellCount++;
+                        runningShares -= trans.shares;
+                        runningCost -= costBasis;
+                    }
+                });
+
+                if (sellCount > 0) {
+                    const data = fundsData[code];
+                    fundProfits.push({
+                        code: code,
+                        name: data ? data.name : code,
+                        profit: fundProfit,
+                        sellCount: sellCount,
+                        totalSellAmount: totalSellAmount,
+                        totalCostBasis: totalCostBasis
+                    });
+                    totalHistorical += fundProfit;
+                }
+            });
+
+            if (fundProfits.length === 0) {
+                content.innerHTML = '<div style="text-align: center; padding: 40px; color: #999;">暂无历史卖出记录</div>';
+            } else {
+                // 按收益金额降序排列
+                fundProfits.sort((a, b) => b.profit - a.profit);
+
+                const totalClass = totalHistorical >= 0 ? 'positive' : 'negative';
+                const totalSymbol = totalHistorical >= 0 ? '+' : '';
+
+                let html = `
+                    <div class="historical-profit-summary">
+                        <div class="summary-label">历史收益合计</div>
+                        <div class="summary-value ${totalClass}">${totalSymbol}¥${totalHistorical.toFixed(2)}</div>
+                    </div>
+                `;
+
+                html += fundProfits.map(fp => {
+                    const profitClass = fp.profit >= 0 ? 'positive' : 'negative';
+                    const profitSymbol = fp.profit >= 0 ? '+' : '';
+                    const profitRate = fp.totalCostBasis > 0 ? (fp.profit / fp.totalCostBasis * 100).toFixed(2) : '0.00';
+                    const rateSymbol = fp.profit >= 0 ? '+' : '';
+
+                    return `
+                        <div class="historical-fund-item">
+                            <div class="historical-fund-info">
+                                <div class="historical-fund-name">${fp.name}</div>
+                                <div class="historical-fund-code">${fp.code}</div>
+                                <div class="historical-fund-detail">
+                                    卖出 ${fp.sellCount} 笔 · 收回 ¥${fp.totalSellAmount.toFixed(2)} · 成本 ¥${fp.totalCostBasis.toFixed(2)} · 收益率 ${rateSymbol}${profitRate}%
+                                </div>
+                            </div>
+                            <div class="historical-fund-profit">
+                                <div class="profit-amount ${profitClass}">${profitSymbol}¥${fp.profit.toFixed(2)}</div>
+                                <div class="profit-sells">${fp.sellCount} 笔卖出</div>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+
+                content.innerHTML = html;
+            }
+
+            document.getElementById('historicalProfitModal').classList.add('active');
+        }
+
+        // 关闭历史收益明细弹窗
+        function closeHistoricalProfitDetail() {
+            document.getElementById('historicalProfitModal').classList.remove('active');
         }
 
         // 打开交易历史模态框
@@ -2917,7 +3185,8 @@
         }
 
         // 获取基金数据（JSONP）
-        function fetchFundData(code) {
+        // skipDetails: 定时刷新时跳过详情获取，避免不必要的渲染
+        function fetchFundData(code, skipDetails = false) {
             // 清理旧的script标签
             const oldScript = document.getElementById(`fund-script-${code}`);
             if (oldScript) {
@@ -2936,8 +3205,10 @@
             };
             document.body.appendChild(script);
             
-            // 同时获取基金详细信息
-            fetchFundDetails(code);
+            // 同时获取基金详细信息（定时刷新时跳过）
+            if (!skipDetails) {
+                fetchFundDetails(code);
+            }
         }
 
         // 处理基金详细信息加载队列
@@ -3285,7 +3556,15 @@
             updateDailyRange(data.fundcode, percentage);
             
             saveHistoryData();
-            scheduleRender();
+
+            // 尝试原地更新卡片，避免整体innerHTML重建导致的闪烁
+            if (!updateFundCardInPlace(data.fundcode)) {
+                // 卡片不存在（首次加载），需要完整渲染
+                scheduleRender();
+            } else {
+                // 原地更新成功，单独更新总览面板和标签计数
+                updateOverviewPanel();
+            }
         };
 
         // 切换主视图（持有/自选）
@@ -3330,28 +3609,55 @@
             let totalCost = 0;
             let todayProfit = 0;
             let hasPosition = false;
+            let historicalProfit = 0;    // 历史已实现收益
+            let totalHistoricalCost = 0; // 历史总投入成本（用于计算累计收益率）
+            let hasHistory = false;
 
-            // 计算所有基金的总值
             codes.forEach(code => {
                 const data = fundsData[code];
                 const posInfo = calculatePosition(code);
                 
+                // 持仓收益计算
                 if (posInfo && posInfo.totalShares > 0 && data) {
                     hasPosition = true;
                     const currentValue = posInfo.totalShares * parseFloat(data.gsz);
                     totalMarketValue += currentValue;
                     totalCost += posInfo.totalCost;
                     
-                    // 计算今日盈亏 = 持有份额 × 昨日净值 × 涨跌幅百分比
+                    // 今日盈亏 = 持有份额 × 昨日净值 × 涨跌幅百分比
                     const percentage = parseFloat(data.gszzl);
                     const yesterdayValue = parseFloat(data.dwjz);
                     const dailyProfit = posInfo.totalShares * yesterdayValue * (percentage / 100);
                     todayProfit += dailyProfit;
                 }
+
+                // 历史收益计算：回放交易记录，计算每笔卖出的已实现盈亏
+                const position = positions[code];
+                if (position && position.transactions && position.transactions.length > 0) {
+                    let runningShares = 0;
+                    let runningCost = 0;
+
+                    position.transactions.forEach(trans => {
+                        if (trans.type === 'buy') {
+                            runningShares += trans.shares;
+                            runningCost += trans.amount;
+                            totalHistoricalCost += trans.amount; // 累计所有买入成本
+                        } else if (trans.type === 'sell') {
+                            hasHistory = true;
+                            // 卖出时的成本基准 = 按比例分摊的持仓成本
+                            const sellRatio = runningShares > 0 ? trans.shares / runningShares : 0;
+                            const costBasis = runningCost * sellRatio;
+                            // 已实现收益 = 卖出所得 - 成本基准
+                            historicalProfit += trans.amount - costBasis;
+                            runningShares -= trans.shares;
+                            runningCost -= costBasis;
+                        }
+                    });
+                }
             });
 
-            // 如果没有持仓，隐藏总览
-            if (!hasPosition) {
+            // 如果既没有持仓也没有历史交易，隐藏总览
+            if (!hasPosition && !hasHistory) {
                 document.getElementById('overviewPanel').style.display = 'none';
                 return;
             }
@@ -3359,28 +3665,46 @@
             // 显示总览
             document.getElementById('overviewPanel').style.display = 'block';
 
-            // 计算总收益和收益率
-            const totalProfit = totalMarketValue - totalCost;
-            const totalProfitRate = totalCost > 0 ? (totalProfit / totalCost * 100) : 0;
+            // === 持仓收益 ===
+            const holdingProfit = totalMarketValue - totalCost;
+            const holdingProfitRate = totalCost > 0 ? (holdingProfit / totalCost * 100) : 0;
 
-            // 更新显示
             document.getElementById('totalMarketValue').textContent = `¥${totalMarketValue.toFixed(2)}`;
             document.getElementById('totalCost').textContent = `¥${totalCost.toFixed(2)}`;
             
             const totalProfitEl = document.getElementById('totalProfit');
-            const profitSymbol = totalProfit >= 0 ? '+' : '';
-            totalProfitEl.textContent = `${profitSymbol}¥${totalProfit.toFixed(2)}`;
-            totalProfitEl.className = 'stat-value ' + (totalProfit >= 0 ? 'positive' : 'negative');
+            const profitSymbol = holdingProfit >= 0 ? '+' : '';
+            totalProfitEl.textContent = `${profitSymbol}¥${holdingProfit.toFixed(2)}`;
+            totalProfitEl.className = 'stat-value ' + (holdingProfit >= 0 ? 'positive' : 'negative');
             
             const totalProfitRateEl = document.getElementById('totalProfitRate');
-            const rateSymbol = totalProfitRate >= 0 ? '+' : '';
-            totalProfitRateEl.textContent = `${rateSymbol}${totalProfitRate.toFixed(2)}%`;
-            totalProfitRateEl.className = 'stat-value ' + (totalProfit >= 0 ? 'positive' : 'negative');
+            const rateSymbol = holdingProfitRate >= 0 ? '+' : '';
+            totalProfitRateEl.textContent = `${rateSymbol}${holdingProfitRate.toFixed(2)}%`;
+            totalProfitRateEl.className = 'stat-value ' + (holdingProfit >= 0 ? 'positive' : 'negative');
             
             const todayProfitEl = document.getElementById('todayProfit');
             const todayProfitSymbol = todayProfit >= 0 ? '+' : '';
             todayProfitEl.textContent = `${todayProfitSymbol}¥${todayProfit.toFixed(2)}`;
             todayProfitEl.className = 'stat-value ' + (todayProfit >= 0 ? 'positive' : 'negative');
+
+            // === 历史收益 & 累计收益 ===
+            const cumulativeProfit = holdingProfit + historicalProfit;
+            const cumulativeProfitRate = totalHistoricalCost > 0 ? (cumulativeProfit / totalHistoricalCost * 100) : 0;
+
+            const historicalProfitEl = document.getElementById('historicalProfit');
+            const hSymbol = historicalProfit >= 0 ? '+' : '';
+            historicalProfitEl.textContent = `${hSymbol}¥${historicalProfit.toFixed(2)}`;
+            historicalProfitEl.className = 'stat-value ' + (historicalProfit >= 0 ? 'positive' : 'negative');
+
+            const cumulativeProfitEl = document.getElementById('cumulativeProfit');
+            const cSymbol = cumulativeProfit >= 0 ? '+' : '';
+            cumulativeProfitEl.textContent = `${cSymbol}¥${cumulativeProfit.toFixed(2)}`;
+            cumulativeProfitEl.className = 'stat-value ' + (cumulativeProfit >= 0 ? 'positive' : 'negative');
+
+            const cumulativeProfitRateEl = document.getElementById('cumulativeProfitRate');
+            const crSymbol = cumulativeProfitRate >= 0 ? '+' : '';
+            cumulativeProfitRateEl.textContent = `${crSymbol}${cumulativeProfitRate.toFixed(2)}%`;
+            cumulativeProfitRateEl.className = 'stat-value ' + (cumulativeProfitRate >= 0 ? 'positive' : 'negative');
             
             // 更新时间
             const now = new Date().toLocaleString('zh-CN', { 
@@ -3390,6 +3714,84 @@
                 minute: '2-digit' 
             });
             document.getElementById('overviewUpdateTime').textContent = now;
+        }
+
+        // 原地更新单个基金卡片的动态数据（避免整体innerHTML重建导致的闪烁）
+        function updateFundCardInPlace(code) {
+            const data = fundsData[code];
+            if (!data) return false;
+
+            const realtimeTab = document.getElementById(`tab-realtime-${code}`);
+            if (!realtimeTab) return false;
+
+            const percentage = parseFloat(data.gszzl);
+            const isPositive = percentage >= 0;
+            const percentageClass = isPositive ? 'positive' : 'negative';
+            const percentageSymbol = isPositive ? '+' : '';
+
+            // 1. 更新涨跌幅百分比
+            const percentageEl = realtimeTab.querySelector('.percentage');
+            if (percentageEl) {
+                percentageEl.className = 'percentage ' + percentageClass;
+                percentageEl.textContent = percentageSymbol + percentage.toFixed(2) + '%';
+            }
+
+            // 2. 更新当日盈亏（持有基金）
+            const posInfo = calculatePosition(code);
+            const dailyProfitEl = realtimeTab.querySelector('.daily-profit');
+            if (dailyProfitEl && posInfo && posInfo.totalShares > 0) {
+                const yesterdayValue = parseFloat(data.dwjz);
+                const dailyProfit = posInfo.totalShares * yesterdayValue * (percentage / 100);
+                const dailyProfitSymbol = dailyProfit >= 0 ? '+' : '';
+                const dailyProfitClass = dailyProfit >= 0 ? 'positive' : 'negative';
+                dailyProfitEl.className = 'daily-profit ' + dailyProfitClass;
+                dailyProfitEl.textContent = dailyProfitSymbol + '¥' + dailyProfit.toFixed(2);
+            }
+
+            // 3. 更新估算值和单位净值
+            const infoItems = realtimeTab.querySelectorAll('.fund-info .info-item');
+            if (infoItems.length >= 2) {
+                const dwjzValue = infoItems[0].querySelector('.info-value');
+                if (dwjzValue) dwjzValue.textContent = data.dwjz;
+
+                const gszValue = infoItems[1].querySelector('.info-value');
+                if (gszValue) {
+                    gszValue.textContent = data.gsz;
+                    gszValue.className = 'info-value ' + percentageClass;
+                }
+            }
+
+            // 4. 更新时间
+            const timeEl = realtimeTab.querySelector('.update-time');
+            if (timeEl) {
+                timeEl.textContent = '更新时间：' + data.gztime + ' | 净值日期：' + data.jzrq;
+            }
+
+            // 5. 更新持仓动态数值（市值、收益金额、收益率）
+            if (posInfo && posInfo.totalShares > 0) {
+                const positionValues = realtimeTab.querySelectorAll('.position-grid .position-value');
+                if (positionValues.length >= 6) {
+                    const currentValue = posInfo.totalShares * parseFloat(data.gsz);
+                    const profit = currentValue - posInfo.totalCost;
+                    const profitRate = ((parseFloat(data.gsz) - posInfo.avgCost) / posInfo.avgCost * 100).toFixed(2);
+                    const profitClass = profit >= 0 ? 'profit' : 'loss';
+                    const profitSymbol = profit >= 0 ? '+' : '';
+
+                    // 当前市值（第3个）
+                    positionValues[2].textContent = '¥' + currentValue.toFixed(2);
+                    // 收益金额（第5个）
+                    positionValues[4].textContent = profitSymbol + '¥' + profit.toFixed(2);
+                    positionValues[4].className = 'position-value ' + profitClass;
+                    // 收益率（第6个）
+                    positionValues[5].textContent = (profitRate >= 0 ? '+' : '') + profitRate + '%';
+                    positionValues[5].className = 'position-value ' + profitClass;
+                }
+            }
+
+            // 6. 重绘日内涨跌幅图表（canvas保留，只更新数据）
+            drawChart(code);
+
+            return true;
         }
 
         // 渲染基金列表
@@ -3549,15 +3951,20 @@
                         </div>
                     `;
                 } else {
+                    // 有交易记录但已清仓（全部卖出），显示历史交易入口
+                    const hasHistory = posInfo && posInfo.transactions && posInfo.transactions.length > 0;
+                    const historyLink = hasHistory 
+                        ? `<span style="cursor: pointer; color: #667eea; font-size: 13px; margin-left: 8px;" onclick="openTransactionHistoryModal('${code}')" title="查看交易历史">📋 ${posInfo.transactions.length}笔交易记录</span>`
+                        : '';
                     positionHtml = `
                         <div class="position-info">
                             <div class="position-header">
-                                <h4>💼 持仓信息</h4>
+                                <h4>💼 持仓信息 ${historyLink}</h4>
                                 <div class="position-actions">
                                     <button class="btn btn-secondary" onclick="openBuyModal('${code}')">买入</button>
                                 </div>
                             </div>
-                            <div class="no-position">暂无持仓，点击买入开始交易</div>
+                            <div class="no-position">${hasHistory ? '已清仓' : '暂无持仓，点击买入开始交易'}</div>
                         </div>
                     `;
                 }
@@ -3945,18 +4352,13 @@
             }
         }
 
-        // 绘制图表
+        // 绘制图表（支持原地更新，避免闪烁）
         function drawChart(code) {
             const history = historyData[code] || [];
             if (history.length === 0) return;
 
             const ctx = document.getElementById(`chart-${code}`);
             if (!ctx) return;
-
-            // 销毁旧图表
-            if (charts[code]) {
-                charts[code].destroy();
-            }
 
             const labels = history.map(d => d.time);
             const data = history.map(d => d.percentage);
@@ -4003,6 +4405,60 @@
                 return 0;
             });
 
+            const pointHoverRadius = data.map((_, index) => {
+                if (index === maxIndex || index === minIndex) return 8;
+                return 5;
+            });
+
+            const pointHoverBorderWidth = data.map((_, index) => {
+                if (index === maxIndex || index === minIndex) return 2;
+                return 1;
+            });
+
+            // 如果图表已存在，检查 canvas 是否仍是同一个（renderFunds innerHTML 重建后 canvas 会变）
+            if (charts[code]) {
+                if (charts[code].canvas !== ctx) {
+                    // canvas 已被替换（如 renderFunds 重建了 DOM），销毁旧图表，后续会创建新的
+                    charts[code].destroy();
+                    delete charts[code];
+                } else {
+                    // 同一个 canvas，原地更新数据（避免 destroy/recreate 造成的闪烁）
+                    const chart = charts[code];
+                    const ds = chart.data.datasets[0];
+
+                    chart.data.labels = labels;
+                    ds.data = data;
+                    ds.borderColor = lineColor;
+                    ds.backgroundColor = `${lineColor}20`;
+                    ds.pointRadius = pointRadius;
+                    ds.pointHoverRadius = pointHoverRadius;
+                    ds.pointBackgroundColor = pointBackgroundColor;
+                    ds.pointBorderColor = pointBorderColor;
+                    ds.pointBorderWidth = pointBorderWidth;
+                    ds.pointHoverBackgroundColor = pointBackgroundColor;
+                    ds.pointHoverBorderColor = pointBorderColor;
+                    ds.pointHoverBorderWidth = pointHoverBorderWidth;
+
+                    // 更新 tooltip 回调中引用的 maxIndex/minIndex（通过闭包更新）
+                    chart.options.plugins.tooltip.callbacks.label = function(context) {
+                        let label = parseFloat(context.parsed.y).toFixed(2);
+                        if (context.parsed.y >= 0) {
+                            label = '+' + label;
+                        }
+                        label = label + '%';
+                        if (context.dataIndex === maxIndex) {
+                            label += ' 📈 今日最高';
+                        } else if (context.dataIndex === minIndex) {
+                            label += ' 📉 今日最低';
+                        }
+                        return label;
+                    };
+
+                    chart.update('none'); // 无动画立即更新
+                    return;
+                }
+            }
+
             charts[code] = new Chart(ctx, {
                 type: 'line',
                 data: {
@@ -4016,19 +4472,13 @@
                         tension: 0.4,
                         fill: true,
                         pointRadius: pointRadius,
-                        pointHoverRadius: data.map((_, index) => {
-                            if (index === maxIndex || index === minIndex) return 8;
-                            return 5; // 普通点悬停时显示小一点的圆点
-                        }),
+                        pointHoverRadius: pointHoverRadius,
                         pointBackgroundColor: pointBackgroundColor,
                         pointBorderColor: pointBorderColor,
                         pointBorderWidth: pointBorderWidth,
                         pointHoverBackgroundColor: pointBackgroundColor,
                         pointHoverBorderColor: pointBorderColor,
-                        pointHoverBorderWidth: data.map((_, index) => {
-                            if (index === maxIndex || index === minIndex) return 2;
-                            return 1;
-                        })
+                        pointHoverBorderWidth: pointHoverBorderWidth
                     }]
                 },
                 options: {
@@ -4421,11 +4871,11 @@
             drawNetWorthChart(code);
         }
 
-        // 刷新所有基金数据
+        // 刷新所有基金数据（定时刷新只获取实时估值，不重新加载详情）
         function refreshAllFunds() {
             const codes = loadFundCodes();
             codes.forEach(code => {
-                fetchFundData(code);
+                fetchFundData(code, true);
             });
         }
 
@@ -4707,6 +5157,12 @@
             document.getElementById('cloudSettingsModal').addEventListener('click', (e) => {
                 if (e.target.id === 'cloudSettingsModal') {
                     closeCloudSettingsModal();
+                }
+            });
+
+            document.getElementById('historicalProfitModal').addEventListener('click', (e) => {
+                if (e.target.id === 'historicalProfitModal') {
+                    closeHistoricalProfitDetail();
                 }
             });
 
