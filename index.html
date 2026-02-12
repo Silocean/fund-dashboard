@@ -355,6 +355,65 @@
             box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
         }
 
+        /* 主视图切换标签 */
+        .main-view-tabs {
+            display: flex;
+            gap: 0;
+            margin-bottom: 20px;
+            background: #f0f2f5;
+            border-radius: 12px;
+            padding: 4px;
+            width: 100%;
+        }
+
+        .main-view-tab {
+            flex: 1;
+            padding: 10px 28px;
+            border: none;
+            border-radius: 10px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            background: transparent;
+            color: #999;
+            transition: all 0.25s ease;
+            position: relative;
+        }
+
+        .main-view-tab:hover {
+            color: #666;
+        }
+
+        .main-view-tab.active {
+            background: #fff;
+            color: #333;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+        }
+
+        .main-view-tab .tab-count {
+            display: inline-block;
+            min-width: 18px;
+            height: 18px;
+            line-height: 18px;
+            padding: 0 5px;
+            border-radius: 9px;
+            font-size: 11px;
+            font-weight: 600;
+            text-align: center;
+            margin-left: 6px;
+            vertical-align: middle;
+        }
+
+        .main-view-tab.active .tab-count {
+            background: #667eea;
+            color: #fff;
+        }
+
+        .main-view-tab:not(.active) .tab-count {
+            background: #ddd;
+            color: #999;
+        }
+
         .btn {
             padding: 12px 24px;
             border: none;
@@ -1297,6 +1356,16 @@
             </div>
         </div>
 
+        <!-- 持有/自选切换标签 -->
+        <div class="main-view-tabs" id="mainViewTabs">
+            <button class="main-view-tab active" data-view="holding" onclick="switchMainView('holding')">
+                💼 持有 <span class="tab-count" id="holdingCount">0</span>
+            </button>
+            <button class="main-view-tab" data-view="watching" onclick="switchMainView('watching')">
+                ⭐ 自选 <span class="tab-count" id="watchingCount">0</span>
+            </button>
+        </div>
+
         <div id="fundsContainer" class="funds-grid"></div>
     </div>
 
@@ -1443,6 +1512,7 @@
         let historyData = {}; // 存储历史数据用于绘制图表
         let loadingFundCodes = new Set(); // 正在加载的基金代码集合
         let sortOrder = 'default'; // 排序方式：default, desc, asc
+        let currentMainView = 'holding'; // 主视图：holding（持有）、watching（自选）
         let positions = {}; // 持仓数据：{ code: { transactions: [], totalShares, totalCost, avgCost } }
         let dailyRanges = {}; // 今日最高最低：{ code: { high, low } }
         let currentModalFundCode = null; // 当前操作的基金代码
@@ -2188,10 +2258,20 @@
             document.getElementById('initialPurchaseModal').classList.add('active');
         }
 
-        // 关闭初始申购模态框
+        // 关闭初始申购模态框（跳过申购 = 自选基金）
         function closeInitialPurchaseModal() {
+            const skippedCode = currentModalFundCode;
             document.getElementById('initialPurchaseModal').classList.remove('active');
             currentModalFundCode = null;
+            
+            // 如果是跳过申购（基金无持仓），自动切到自选视图
+            if (skippedCode) {
+                const posInfo = calculatePosition(skippedCode);
+                const isWatching = !posInfo || posInfo.totalShares <= 0;
+                if (isWatching && currentMainView !== 'watching') {
+                    switchMainView('watching');
+                }
+            }
         }
 
         // 保存初始申购
@@ -2225,7 +2305,11 @@
 
             savePositions();
             closeInitialPurchaseModal();
-            renderFunds();
+            if (currentMainView !== 'holding') {
+                switchMainView('holding');
+            } else {
+                renderFunds();
+            }
         }
 
         // 打开买入模态框
@@ -2275,7 +2359,11 @@
 
             savePositions();
             closeBuyModal();
-            renderFunds();
+            if (currentMainView !== 'holding') {
+                switchMainView('holding');
+            } else {
+                renderFunds();
+            }
         }
 
         // 打开卖出模态框
@@ -2784,6 +2872,18 @@
             scheduleRender();
         };
 
+        // 切换主视图（持有/自选）
+        function switchMainView(view) {
+            currentMainView = view;
+            
+            // 更新标签按钮选中状态
+            document.querySelectorAll('.main-view-tab').forEach(tab => {
+                tab.classList.toggle('active', tab.dataset.view === view);
+            });
+            
+            renderFunds();
+        }
+
         // 改变排序方式
         function changeSortOrder() {
             sortOrder = document.getElementById('sortSelect').value;
@@ -2881,6 +2981,27 @@
             const container = document.getElementById('fundsContainer');
             let codes = loadFundCodes();
 
+            // 将基金分为持有和自选两组
+            const holdingCodes = [];
+            const watchingCodes = [];
+            codes.forEach(code => {
+                const posInfo = calculatePosition(code);
+                if (posInfo && posInfo.totalShares > 0) {
+                    holdingCodes.push(code);
+                } else {
+                    watchingCodes.push(code);
+                }
+            });
+
+            // 更新标签上的计数
+            const holdingCountEl = document.getElementById('holdingCount');
+            const watchingCountEl = document.getElementById('watchingCount');
+            if (holdingCountEl) holdingCountEl.textContent = holdingCodes.length;
+            if (watchingCountEl) watchingCountEl.textContent = watchingCodes.length;
+
+            // 根据当前视图选择要显示的基金
+            let displayCodes = currentMainView === 'holding' ? holdingCodes : watchingCodes;
+
             if (codes.length === 0) {
                 container.innerHTML = `
                     <div class="empty-state">
@@ -2888,12 +3009,29 @@
                         <p>请在上方输入基金代码来添加基金</p>
                     </div>
                 `;
+                document.getElementById('overviewPanel').style.display = 'none';
                 return;
             }
 
-            // 根据排序方式对基金代码进行排序
+            if (displayCodes.length === 0) {
+                const emptyMsg = currentMainView === 'holding' 
+                    ? '暂无持有基金，买入基金后会显示在这里'
+                    : '暂无自选基金，添加基金后未买入的会显示在这里';
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <h2>${currentMainView === 'holding' ? '💼' : '⭐'} ${emptyMsg}</h2>
+                    </div>
+                `;
+                // 持有为空时也需要更新总览
+                if (currentMainView === 'holding') {
+                    updateOverviewPanel();
+                }
+                return;
+            }
+
+            // 根据排序方式对显示的基金代码进行排序
             if (sortOrder !== 'default') {
-                codes = [...codes].sort((a, b) => {
+                displayCodes = [...displayCodes].sort((a, b) => {
                     const dataA = fundsData[a];
                     const dataB = fundsData[b];
                     
@@ -2911,7 +3049,7 @@
                 });
             }
 
-            container.innerHTML = codes.map(code => {
+            container.innerHTML = displayCodes.map(code => {
                 const data = fundsData[code];
                 if (!data) {
                     return `
@@ -3183,8 +3321,8 @@
                 `;
             }).join('');
 
-            // 绘制图表
-            codes.forEach(code => {
+            // 绘制图表（只绘制当前视图中显示的基金）
+            displayCodes.forEach(code => {
                 if (fundsData[code]) {
                     drawChart(code);
                     // 注意：净值走势图会在切换到详情选项卡时才绘制
