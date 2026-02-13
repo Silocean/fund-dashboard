@@ -28,8 +28,8 @@
             background: rgba(255, 255, 255, 0.95);
             backdrop-filter: blur(10px);
             border-radius: 15px;
-            padding: 25px;
-            margin-bottom: 30px;
+            padding: 18px 22px;
+            margin-bottom: 20px;
             box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
             position: relative;
             z-index: 100;
@@ -37,8 +37,8 @@
 
         h1 {
             color: #333;
-            margin-bottom: 20px;
-            font-size: 28px;
+            margin-bottom: 14px;
+            font-size: 24px;
         }
 
         .controls {
@@ -530,9 +530,9 @@
             background: #7f8c8d;
         }
 
-        /* 同步提醒标记 */
+        /* 同步提醒标记（已移除红点，保留下方提醒条） */
         .sync-badge {
-            display: none;
+            display: none !important;
             position: absolute;
             top: -4px;
             right: -4px;
@@ -668,7 +668,7 @@
 
         /* 总览看板样式 */
         .overview-panel {
-            margin-bottom: 30px;
+            margin-bottom: 20px;
             position: relative;
             z-index: 10;
         }
@@ -677,7 +677,7 @@
             background: rgba(255, 255, 255, 0.95);
             backdrop-filter: blur(10px);
             border-radius: 15px;
-            padding: 25px;
+            padding: 18px 22px;
             box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
         }
 
@@ -685,41 +685,138 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 25px;
-            padding-bottom: 15px;
+            margin-bottom: 0;
+            cursor: pointer;
+            user-select: none;
+            transition: margin-bottom 0.25s;
+        }
+
+        .overview-header.expanded {
+            margin-bottom: 16px;
+            padding-bottom: 12px;
             border-bottom: 2px solid #e0e0e0;
         }
 
         .overview-header h2 {
-            font-size: 24px;
+            font-size: 20px;
             color: #333;
             margin: 0;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .overview-expand-toggle {
+            font-size: 12px;
+            color: #999;
+            transition: transform 0.25s;
+            display: inline-block;
+        }
+
+        .overview-header.expanded .overview-expand-toggle {
+            transform: rotate(90deg);
         }
 
         .overview-date {
-            font-size: 13px;
+            font-size: 12px;
             color: #999;
+        }
+
+        /* 紧凑模式：关键指标横条 */
+        .overview-compact {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            margin-top: 14px;
+            padding: 0 4px;
+            flex-wrap: wrap;
+        }
+
+        .overview-compact.hidden {
+            display: none;
+        }
+
+        .overview-compact-item {
+            display: flex;
+            align-items: baseline;
+            gap: 6px;
+            white-space: nowrap;
+        }
+
+        .overview-compact-label {
+            font-size: 12px;
+            color: #999;
+            font-weight: 500;
+        }
+
+        .overview-compact-value {
+            font-size: 18px;
+            font-weight: 700;
+            color: #333;
+        }
+
+        .overview-compact-value.positive {
+            color: #ff4d4f;
+        }
+
+        .overview-compact-value.negative {
+            color: #00b96b;
+        }
+
+        .overview-compact-sub {
+            font-size: 12px;
+            font-weight: 500;
+            margin-left: -2px;
+        }
+
+        .overview-compact-sub.positive {
+            color: #ff4d4f;
+        }
+
+        .overview-compact-sub.negative {
+            color: #00b96b;
+        }
+
+        .overview-compact-divider {
+            width: 1px;
+            height: 20px;
+            background: #e0e0e0;
+            flex-shrink: 0;
+        }
+
+        /* 展开模式：完整面板 */
+        .overview-full {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.35s ease-out, opacity 0.25s ease-out;
+            opacity: 0;
+        }
+
+        .overview-full.expanded {
+            max-height: 1000px;
+            opacity: 1;
+            transition: max-height 0.4s ease-in, opacity 0.3s ease-in;
         }
 
         .overview-stats {
             display: grid;
             grid-template-columns: repeat(4, 1fr);
-            gap: 20px;
+            gap: 14px;
         }
 
         .stat-item {
             display: flex;
             flex-direction: column;
             align-items: center;
-            padding: 20px;
+            padding: 14px 16px;
             border-radius: 10px;
             background: #f8f9fa;
             transition: transform 0.2s;
         }
 
         .stat-item:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
         }
 
         .stat-item.stat-primary {
@@ -752,7 +849,7 @@
         }
 
         .stat-value {
-            font-size: 26px;
+            font-size: 22px;
             font-weight: 700;
             color: #333;
         }
@@ -799,10 +896,10 @@
 
         /* 总览面板分区标签 */
         .overview-section-label {
-            font-size: 13px;
+            font-size: 12px;
             font-weight: 600;
             color: #888;
-            margin-bottom: 10px;
+            margin-bottom: 8px;
             padding-left: 2px;
         }
 
@@ -810,7 +907,7 @@
         .overview-divider {
             height: 1px;
             background: linear-gradient(to right, transparent, #e0e0e0, transparent);
-            margin: 18px 0 14px;
+            margin: 12px 0 10px;
         }
 
         /* 统一4列布局 */
@@ -825,7 +922,7 @@
 
         .profit-trend-chart-wrapper {
             position: relative;
-            height: 220px;
+            height: 180px;
         }
 
         /* 可点击的统计卡片 */
@@ -1725,6 +1822,18 @@
             }
 
             /* 总览面板 */
+            .overview-compact {
+                gap: 12px;
+            }
+
+            .overview-compact-value {
+                font-size: 15px;
+            }
+
+            .overview-compact-divider {
+                display: none;
+            }
+
             .overview-stats {
                 grid-template-columns: 1fr 1fr;
                 gap: 10px;
@@ -1740,12 +1849,6 @@
 
             .overview-header h2 {
                 font-size: 18px;
-            }
-
-            .overview-header {
-                flex-direction: column;
-                align-items: flex-start;
-                gap: 8px;
             }
 
             /* 基金卡片 */
@@ -1832,6 +1935,18 @@
                 font-size: 14px;
             }
 
+            .overview-compact {
+                gap: 6px 14px;
+            }
+
+            .overview-compact-value {
+                font-size: 14px;
+            }
+
+            .overview-compact-label {
+                font-size: 11px;
+            }
+
             .overview-stats {
                 grid-template-columns: 1fr;
                 gap: 8px;
@@ -1879,7 +1994,7 @@
                 </div>
                 <div class="backup-controls">
                     <button class="backup-toggle" onclick="toggleBackupMenu()" id="backupToggle">
-                        ⚙️ 更多 <span class="sync-badge" id="syncBadge"></span>
+                        ⚙️ 更多
                     </button>
                     <div class="backup-dropdown" id="backupDropdown">
                         <button class="backup-dropdown-item" onclick="exportData(); closeBackupMenu();">💾 导出数据</button>
@@ -1901,54 +2016,80 @@
         <!-- 总览看板 -->
         <div id="overviewPanel" class="overview-panel" style="display: none;">
             <div class="overview-card">
-                <div class="overview-header">
-                    <h2>📊 投资总览</h2>
+                <div class="overview-header" onclick="toggleOverviewPanel()">
+                    <h2><span class="overview-expand-toggle">▶</span> 📊 投资总览</h2>
                     <div class="overview-date">更新时间: <span id="overviewUpdateTime">--</span></div>
                 </div>
-                <div class="overview-section-label">💼 持仓</div>
-                <div class="overview-stats overview-stats-4col">
-                    <div class="stat-item stat-primary">
-                        <div class="stat-label">总市值</div>
-                        <div class="stat-value" id="totalMarketValue">¥0.00</div>
+                <!-- 紧凑模式：一行关键指标 -->
+                <div class="overview-compact" id="overviewCompact">
+                    <div class="overview-compact-item">
+                        <span class="overview-compact-label">总市值</span>
+                        <span class="overview-compact-value" id="compactMarketValue">¥0.00</span>
                     </div>
-                    <div class="stat-item">
-                        <div class="stat-label">持仓成本</div>
-                        <div class="stat-value" id="totalCost">¥0.00</div>
+                    <div class="overview-compact-divider"></div>
+                    <div class="overview-compact-item">
+                        <span class="overview-compact-label">今日</span>
+                        <span class="overview-compact-value" id="compactTodayProfit">¥0.00</span>
                     </div>
-                    <div class="stat-item">
-                        <div class="stat-label">持仓收益</div>
-                        <div class="stat-value" id="totalProfit">¥0.00</div>
+                    <div class="overview-compact-divider"></div>
+                    <div class="overview-compact-item">
+                        <span class="overview-compact-label">持仓收益</span>
+                        <span class="overview-compact-value" id="compactHoldingProfit">¥0.00</span>
+                        <span class="overview-compact-sub" id="compactHoldingRate"></span>
                     </div>
-                    <div class="stat-item">
-                        <div class="stat-label">持仓收益率</div>
-                        <div class="stat-value" id="totalProfitRate">0.00%</div>
-                    </div>
-                </div>
-                <div class="overview-divider"></div>
-                <div class="overview-section-label">📜 收益总览</div>
-                <div class="overview-stats overview-stats-4col">
-                    <div class="stat-item stat-highlight">
-                        <div class="stat-label">今日盈亏</div>
-                        <div class="stat-value" id="todayProfit">¥0.00</div>
-                    </div>
-                    <div class="stat-item stat-clickable" onclick="openHistoricalProfitDetail()" title="点击查看历史收益明细">
-                        <div class="stat-label">历史收益（已实现） <span style="font-size: 11px; color: #aaa;">▶ 明细</span></div>
-                        <div class="stat-value" id="historicalProfit">¥0.00</div>
-                    </div>
-                    <div class="stat-item stat-cumulative">
-                        <div class="stat-label">累计收益</div>
-                        <div class="stat-value" id="cumulativeProfit">¥0.00</div>
-                    </div>
-                    <div class="stat-item">
-                        <div class="stat-label">累计收益率</div>
-                        <div class="stat-value" id="cumulativeProfitRate">0.00%</div>
+                    <div class="overview-compact-divider"></div>
+                    <div class="overview-compact-item">
+                        <span class="overview-compact-label">累计收益</span>
+                        <span class="overview-compact-value" id="compactCumulativeProfit">¥0.00</span>
                     </div>
                 </div>
-                <div class="overview-divider"></div>
-                <div class="overview-section-label">📈 收益趋势</div>
-                <div class="profit-trend-chart-container">
-                    <div class="profit-trend-chart-wrapper">
-                        <canvas id="profitTrendChart"></canvas>
+                <!-- 展开模式：完整面板 -->
+                <div class="overview-full" id="overviewFull">
+                    <div class="overview-section-label">💼 持仓</div>
+                    <div class="overview-stats overview-stats-4col">
+                        <div class="stat-item stat-primary">
+                            <div class="stat-label">总市值</div>
+                            <div class="stat-value" id="totalMarketValue">¥0.00</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-label">持仓成本</div>
+                            <div class="stat-value" id="totalCost">¥0.00</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-label">持仓收益</div>
+                            <div class="stat-value" id="totalProfit">¥0.00</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-label">持仓收益率</div>
+                            <div class="stat-value" id="totalProfitRate">0.00%</div>
+                        </div>
+                    </div>
+                    <div class="overview-divider"></div>
+                    <div class="overview-section-label">📜 收益总览</div>
+                    <div class="overview-stats overview-stats-4col">
+                        <div class="stat-item stat-highlight">
+                            <div class="stat-label">今日盈亏</div>
+                            <div class="stat-value" id="todayProfit">¥0.00</div>
+                        </div>
+                        <div class="stat-item stat-clickable" onclick="openHistoricalProfitDetail()" title="点击查看历史收益明细">
+                            <div class="stat-label">历史收益（已实现） <span style="font-size: 11px; color: #aaa;">▶ 明细</span></div>
+                            <div class="stat-value" id="historicalProfit">¥0.00</div>
+                        </div>
+                        <div class="stat-item stat-cumulative">
+                            <div class="stat-label">累计收益</div>
+                            <div class="stat-value" id="cumulativeProfit">¥0.00</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-label">累计收益率</div>
+                            <div class="stat-value" id="cumulativeProfitRate">0.00%</div>
+                        </div>
+                    </div>
+                    <div class="overview-divider"></div>
+                    <div class="overview-section-label">📈 收益趋势</div>
+                    <div class="profit-trend-chart-container">
+                        <div class="profit-trend-chart-wrapper">
+                            <canvas id="profitTrendChart"></canvas>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -2252,9 +2393,7 @@
 
         function clearSyncReminder() {
             localStorage.removeItem('hasUnsyncedChanges');
-            const badge = document.getElementById('syncBadge');
             const reminder = document.getElementById('syncReminder');
-            if (badge) badge.classList.remove('active');
             if (reminder) reminder.style.display = 'none';
         }
 
@@ -2262,10 +2401,33 @@
             const settings = loadCloudSettings();
             // 只有配置了 token 才提示同步
             if (!settings.token) return;
-            const badge = document.getElementById('syncBadge');
             const reminder = document.getElementById('syncReminder');
-            if (badge) badge.classList.add('active');
             if (reminder) reminder.style.display = 'flex';
+        }
+
+        // 总览面板折叠
+        let overviewExpanded = localStorage.getItem('overviewExpanded') === 'true';
+
+        function toggleOverviewPanel() {
+            overviewExpanded = !overviewExpanded;
+            localStorage.setItem('overviewExpanded', overviewExpanded);
+            applyOverviewState();
+        }
+
+        function applyOverviewState() {
+            const header = document.querySelector('.overview-header');
+            const compact = document.getElementById('overviewCompact');
+            const full = document.getElementById('overviewFull');
+            if (!header || !compact || !full) return;
+            if (overviewExpanded) {
+                header.classList.add('expanded');
+                compact.classList.add('hidden');
+                full.classList.add('expanded');
+            } else {
+                header.classList.remove('expanded');
+                compact.classList.remove('hidden');
+                full.classList.remove('expanded');
+            }
         }
 
         // 持仓详情折叠
@@ -4176,6 +4338,37 @@
             cumulativeProfitRateEl.textContent = `${crSymbol}${cumulativeProfitRate.toFixed(2)}%`;
             cumulativeProfitRateEl.className = 'stat-value ' + (cumulativeProfitRate >= 0 ? 'positive' : 'negative');
             
+            // === 更新紧凑模式指标 ===
+            const compactMV = document.getElementById('compactMarketValue');
+            if (compactMV) compactMV.textContent = `¥${totalMarketValue.toFixed(2)}`;
+
+            const compactToday = document.getElementById('compactTodayProfit');
+            if (compactToday) {
+                compactToday.textContent = `${todayProfitSymbol}¥${todayProfit.toFixed(2)}`;
+                compactToday.className = 'overview-compact-value ' + (todayProfit >= 0 ? 'positive' : 'negative');
+            }
+
+            const compactHP = document.getElementById('compactHoldingProfit');
+            if (compactHP) {
+                compactHP.textContent = `${profitSymbol}¥${holdingProfit.toFixed(2)}`;
+                compactHP.className = 'overview-compact-value ' + (holdingProfit >= 0 ? 'positive' : 'negative');
+            }
+
+            const compactHR = document.getElementById('compactHoldingRate');
+            if (compactHR) {
+                compactHR.textContent = `(${rateSymbol}${holdingProfitRate.toFixed(2)}%)`;
+                compactHR.className = 'overview-compact-sub ' + (holdingProfit >= 0 ? 'positive' : 'negative');
+            }
+
+            const compactCP = document.getElementById('compactCumulativeProfit');
+            if (compactCP) {
+                compactCP.textContent = `${cSymbol}¥${cumulativeProfit.toFixed(2)}`;
+                compactCP.className = 'overview-compact-value ' + (cumulativeProfit >= 0 ? 'positive' : 'negative');
+            }
+
+            // 应用折叠/展开状态
+            applyOverviewState();
+
             // 更新时间
             const now = new Date().toLocaleString('zh-CN', { 
                 month: '2-digit', 
