@@ -6,6 +6,42 @@
     <title>基金实时估值看板</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.js"></script>
     <style>
+        :root {
+            --bg-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            --card-bg: rgba(255, 255, 255, 0.95);
+            --card-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+            --text-primary: #333;
+            --text-secondary: #666;
+            --text-muted: #999;
+            --text-faint: #bbb;
+            --border-color: #e0e0e0;
+            --input-bg: white;
+            --stat-bg: #f8f9fa;
+            --data-bar-bg: #f8f9fa;
+            --position-bg: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            --dropdown-bg: white;
+            --modal-bg: white;
+            --hover-bg: rgba(102, 126, 234, 0.06);
+        }
+
+        [data-theme="dark"] {
+            --bg-gradient: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            --card-bg: rgba(30, 30, 50, 0.95);
+            --card-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+            --text-primary: #e0e0e0;
+            --text-secondary: #aaa;
+            --text-muted: #888;
+            --text-faint: #666;
+            --border-color: #3a3a5c;
+            --input-bg: #2a2a4a;
+            --stat-bg: #252545;
+            --data-bar-bg: #252545;
+            --position-bg: linear-gradient(135deg, #1e1e3a 0%, #2a2a4a 100%);
+            --dropdown-bg: #2a2a4a;
+            --modal-bg: #1e1e3a;
+            --hover-bg: rgba(102, 126, 234, 0.15);
+        }
+
         * {
             margin: 0;
             padding: 0;
@@ -14,7 +50,7 @@
 
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: var(--bg-gradient);
             min-height: 100vh;
             padding: 20px;
         }
@@ -25,18 +61,18 @@
         }
 
         .header {
-            background: rgba(255, 255, 255, 0.95);
+            background: var(--card-bg);
             backdrop-filter: blur(10px);
             border-radius: 15px;
             padding: 18px 22px;
             margin-bottom: 20px;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            box-shadow: var(--card-shadow);
             position: relative;
             z-index: 100;
         }
 
         h1 {
-            color: #333;
+            color: var(--text-primary);
             margin-bottom: 14px;
             font-size: 24px;
         }
@@ -65,9 +101,11 @@
             flex: 1;
             min-width: 200px;
             padding: 12px 16px;
-            border: 2px solid #e0e0e0;
+            border: 2px solid var(--border-color);
             border-radius: 8px;
             font-size: 16px;
+            background: var(--input-bg);
+            color: var(--text-primary);
             transition: all 0.3s;
         }
 
@@ -78,17 +116,18 @@
         }
 
         .sort-controls label {
-            color: #666;
+            color: var(--text-secondary);
             font-size: 14px;
             font-weight: 500;
         }
 
         .sort-controls select {
             padding: 10px 14px;
-            border: 2px solid #e0e0e0;
+            border: 2px solid var(--border-color);
             border-radius: 8px;
             font-size: 14px;
-            background: white;
+            background: var(--input-bg);
+            color: var(--text-primary);
             cursor: pointer;
             transition: all 0.3s;
         }
@@ -121,6 +160,22 @@
             box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
         }
 
+        /* 主题切换按钮 */
+        .theme-toggle {
+            padding: 8px 12px;
+            border: none;
+            border-radius: 8px;
+            background: var(--stat-bg);
+            cursor: pointer;
+            font-size: 16px;
+            transition: background 0.2s;
+            flex-shrink: 0;
+        }
+
+        .theme-toggle:hover {
+            background: var(--hover-bg);
+        }
+
         .backup-toggle:disabled {
             opacity: 0.6;
             cursor: not-allowed;
@@ -133,13 +188,13 @@
             position: absolute;
             top: calc(100% + 6px);
             right: 0;
-            background: white;
+            background: var(--dropdown-bg);
             border-radius: 10px;
-            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15);
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.2);
             min-width: 180px;
             z-index: 500;
             padding: 6px 0;
-            border: 1px solid #e8e8e8;
+            border: 1px solid var(--border-color);
         }
 
         .backup-dropdown.active {
@@ -156,19 +211,19 @@
             border: none;
             background: none;
             font-size: 14px;
-            color: #333;
+            color: var(--text-primary);
             cursor: pointer;
             text-align: left;
             transition: background 0.15s;
         }
 
         .backup-dropdown-item:hover {
-            background: #f5f7ff;
+            background: var(--hover-bg);
         }
 
         .backup-dropdown-divider {
             height: 1px;
-            background: #f0f0f0;
+            background: var(--border-color);
             margin: 4px 0;
         }
 
@@ -196,11 +251,11 @@
             right: 0;
             max-height: 300px;
             overflow-y: auto;
-            background: white;
+            background: var(--dropdown-bg);
             border: 2px solid #667eea;
             border-top: none;
             border-radius: 0 0 8px 8px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
             z-index: 2000;
             display: none;
         }
@@ -213,7 +268,7 @@
             padding: 12px 16px;
             cursor: pointer;
             transition: background 0.2s;
-            border-bottom: 1px solid #f0f0f0;
+            border-bottom: 1px solid var(--border-color);
         }
 
         .autocomplete-item:last-child {
@@ -221,19 +276,19 @@
         }
 
         .autocomplete-item:hover {
-            background: #f5f7ff;
+            background: var(--hover-bg);
         }
 
         .autocomplete-item-name {
             font-size: 14px;
-            color: #333;
+            color: var(--text-primary);
             font-weight: 500;
             margin-bottom: 4px;
         }
 
         .autocomplete-item-code {
             font-size: 12px;
-            color: #999;
+            color: var(--text-muted);
         }
 
         .autocomplete-item-type {
@@ -387,7 +442,7 @@
             display: flex;
             gap: 0;
             margin-bottom: 20px;
-            background: #f0f2f5;
+            background: var(--stat-bg);
             border-radius: 12px;
             padding: 4px;
             width: 100%;
@@ -402,7 +457,7 @@
             font-weight: 600;
             cursor: pointer;
             background: transparent;
-            color: #999;
+            color: var(--text-muted);
             transition: all 0.25s ease;
             position: relative;
         }
@@ -629,11 +684,11 @@
         }
 
         .overview-card {
-            background: rgba(255, 255, 255, 0.95);
+            background: var(--card-bg);
             backdrop-filter: blur(10px);
             border-radius: 15px;
             padding: 18px 22px;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            box-shadow: var(--card-shadow);
         }
 
         .overview-header {
@@ -649,12 +704,12 @@
         .overview-header.expanded {
             margin-bottom: 16px;
             padding-bottom: 12px;
-            border-bottom: 2px solid #e0e0e0;
+            border-bottom: 2px solid var(--border-color);
         }
 
         .overview-header h2 {
             font-size: 20px;
-            color: #333;
+            color: var(--text-primary);
             margin: 0;
             display: flex;
             align-items: center;
@@ -663,7 +718,7 @@
 
         .overview-expand-toggle {
             font-size: 12px;
-            color: #999;
+            color: var(--text-muted);
             transition: transform 0.25s;
             display: inline-block;
         }
@@ -700,14 +755,14 @@
 
         .overview-compact-label {
             font-size: 12px;
-            color: #999;
+            color: var(--text-muted);
             font-weight: 500;
         }
 
         .overview-compact-value {
             font-size: 18px;
             font-weight: 700;
-            color: #333;
+            color: var(--text-primary);
         }
 
         .overview-compact-value.positive {
@@ -765,7 +820,7 @@
             align-items: center;
             padding: 14px 16px;
             border-radius: 10px;
-            background: #f8f9fa;
+            background: var(--stat-bg);
             transition: transform 0.2s;
         }
 
@@ -784,21 +839,21 @@
         }
 
         .stat-item.stat-highlight {
-            background: linear-gradient(135deg, #f0f2f5 0%, #ffffff 100%);
-            border: 2px solid #e8e8e8;
+            background: var(--stat-bg);
+            border: 2px solid var(--border-color);
         }
 
         .stat-item.stat-highlight .stat-label {
-            color: #666;
+            color: var(--text-secondary);
         }
         
         .stat-item.stat-highlight .stat-value {
-            color: #333;
+            color: var(--text-primary);
         }
 
         .stat-label {
             font-size: 13px;
-            color: #666;
+            color: var(--text-secondary);
             margin-bottom: 8px;
             font-weight: 500;
         }
@@ -806,7 +861,7 @@
         .stat-value {
             font-size: 22px;
             font-weight: 700;
-            color: #333;
+            color: var(--text-primary);
         }
 
         .stat-value.positive {
@@ -853,7 +908,7 @@
         .overview-section-label {
             font-size: 12px;
             font-weight: 600;
-            color: #888;
+            color: var(--text-muted);
             margin-bottom: 8px;
             padding-left: 2px;
         }
@@ -861,7 +916,7 @@
         /* 总览面板分隔线 */
         .overview-divider {
             height: 1px;
-            background: linear-gradient(to right, transparent, #e0e0e0, transparent);
+            background: linear-gradient(to right, transparent, var(--border-color), transparent);
             margin: 12px 0 10px;
         }
 
@@ -993,12 +1048,26 @@
             gap: 20px;
         }
 
+        /* 拖拽排序 */
+        .fund-card[draggable="true"] {
+            cursor: grab;
+        }
+
+        .fund-card.dragging {
+            opacity: 0.4;
+            cursor: grabbing;
+        }
+
+        .fund-card.drag-over {
+            box-shadow: 0 0 0 2px #667eea;
+        }
+
         .fund-card {
-            background: rgba(255, 255, 255, 0.95);
+            background: var(--card-bg);
             backdrop-filter: blur(10px);
             border-radius: 12px;
             padding: 14px 16px;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+            box-shadow: var(--card-shadow);
             transition: transform 0.2s, box-shadow 0.2s;
             position: relative;
             border: 2px solid transparent;
@@ -1006,7 +1075,7 @@
 
         .fund-card:hover {
             transform: translateY(-3px);
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
         }
 
         /* 持有 / 自选 卡片左侧色条 */
@@ -1035,7 +1104,7 @@
         .fund-name {
             font-size: 16px;
             font-weight: 600;
-            color: #333;
+            color: var(--text-primary);
             margin-bottom: 2px;
             display: flex;
             align-items: center;
@@ -1065,7 +1134,7 @@
 
         .fund-code {
             font-size: 12px;
-            color: #999;
+            color: var(--text-muted);
         }
 
         .fund-meta {
@@ -1108,7 +1177,7 @@
             margin-bottom: 10px;
             padding: 8px 12px;
             border-radius: 8px;
-            background: #f8f9fa;
+            background: var(--data-bar-bg);
         }
 
         .percentage {
@@ -1163,14 +1232,14 @@
 
         .data-val-label {
             font-size: 10px;
-            color: #aaa;
+            color: var(--text-faint);
             line-height: 1;
         }
 
         .data-val-num {
             font-size: 15px;
             font-weight: 600;
-            color: #333;
+            color: var(--text-primary);
             line-height: 1.4;
         }
 
@@ -1197,7 +1266,7 @@
 
         /* 持仓信息样式 */
         .position-info {
-            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            background: var(--position-bg);
             border-radius: 8px;
             padding: 10px 12px;
             margin-bottom: 8px;
@@ -1295,14 +1364,14 @@
 
         .position-label {
             font-size: 11px;
-            color: #666;
+            color: var(--text-secondary);
             margin-bottom: 3px;
         }
 
         .position-value {
             font-size: 16px;
             font-weight: 600;
-            color: #333;
+            color: var(--text-primary);
         }
 
         .position-value.profit {
@@ -1330,9 +1399,9 @@
         .empty-state {
             text-align: center;
             padding: 60px 20px;
-            background: rgba(255, 255, 255, 0.95);
+            background: var(--card-bg);
             border-radius: 15px;
-            color: #666;
+            color: var(--text-secondary);
         }
 
         .empty-state h2 {
@@ -1359,11 +1428,20 @@
         }
 
         .modal-content {
-            background: white;
+            background: var(--modal-bg);
+            color: var(--text-primary);
             border-radius: 15px;
             padding: 30px;
             max-width: 500px;
             width: 90%;
+        }
+
+        .modal-content input,
+        .modal-content select,
+        .modal-content textarea {
+            background: var(--input-bg);
+            color: var(--text-primary);
+            border-color: var(--border-color);
             max-height: 80vh;
             overflow-y: auto;
         }
@@ -1984,12 +2062,14 @@
                         <option value="asc">涨跌幅从低到高</option>
                     </select>
                 </div>
+                <button class="theme-toggle" onclick="toggleTheme()" id="themeToggle" title="切换暗色/亮色模式">🌙</button>
                 <div class="backup-controls">
                     <button class="backup-toggle" onclick="toggleBackupMenu()" id="backupToggle">
                         ⚙️ 更多
                     </button>
                     <div class="backup-dropdown" id="backupDropdown">
-                        <button class="backup-dropdown-item" onclick="exportData(); closeBackupMenu();">💾 导出数据</button>
+                        <button class="backup-dropdown-item" onclick="exportData(); closeBackupMenu();">💾 导出JSON</button>
+                        <button class="backup-dropdown-item" onclick="exportCSV(); closeBackupMenu();">📊 导出CSV</button>
                         <button class="backup-dropdown-item" onclick="document.getElementById('importFileInput').click(); closeBackupMenu();">📥 导入数据</button>
                         <input type="file" id="importFileInput" accept=".json" style="display: none;" onchange="importData(event)">
                         <div class="backup-dropdown-divider"></div>
@@ -2449,6 +2529,25 @@
             }
         }
 
+        // 暗色模式
+        function toggleTheme() {
+            const html = document.documentElement;
+            const isDark = html.getAttribute('data-theme') === 'dark';
+            html.setAttribute('data-theme', isDark ? 'light' : 'dark');
+            localStorage.setItem('theme', isDark ? 'light' : 'dark');
+            document.getElementById('themeToggle').textContent = isDark ? '🌙' : '☀️';
+        }
+
+        function initTheme() {
+            const saved = localStorage.getItem('theme');
+            if (saved === 'dark') {
+                document.documentElement.setAttribute('data-theme', 'dark');
+                const btn = document.getElementById('themeToggle');
+                if (btn) btn.textContent = '☀️';
+            }
+        }
+        initTheme();
+
         // 更多菜单
         function toggleBackupMenu() {
             const dropdown = document.getElementById('backupDropdown');
@@ -2766,6 +2865,46 @@
             updateLastBackupDate();
 
             alert('✅ 数据导出成功！\n文件已保存到下载文件夹\n\n建议定期备份以防数据丢失');
+        }
+
+        // 导出CSV
+        function exportCSV() {
+            const codes = loadFundCodes();
+            const rows = [['基金代码', '基金名称', '当前估值', '涨跌幅%', '单位净值', '持有份额', '持仓成本', '当前市值', '持仓收益', '收益率%']];
+
+            codes.forEach(code => {
+                const data = fundsData[code];
+                const posInfo = calculatePosition(code);
+                const name = data ? data.name : code;
+                const gsz = data ? data.gsz : '';
+                const gszzl = data ? data.gszzl : '';
+                const dwjz = data ? data.dwjz : '';
+                const shares = posInfo ? posInfo.totalShares.toFixed(2) : '0';
+                const cost = posInfo ? posInfo.totalCost.toFixed(2) : '0';
+                let marketValue = '', profit = '', profitRate = '';
+                if (posInfo && posInfo.totalShares > 0 && data) {
+                    const mv = posInfo.totalShares * parseFloat(data.gsz);
+                    const p = mv - posInfo.totalCost;
+                    marketValue = mv.toFixed(2);
+                    profit = p.toFixed(2);
+                    profitRate = posInfo.avgCost > 0 ? ((parseFloat(data.gsz) - posInfo.avgCost) / posInfo.avgCost * 100).toFixed(2) : '0';
+                }
+                rows.push([code, name, gsz, gszzl, dwjz, shares, cost, marketValue, profit, profitRate]);
+            });
+
+            // BOM + CSV content for Excel compatibility
+            const csvContent = '\uFEFF' + rows.map(r => r.map(v => `"${v}"`).join(',')).join('\n');
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);
+            link.download = `fund-dashboard-${timestamp}.csv`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+            alert('✅ CSV导出成功！\n可用Excel或WPS打开查看');
         }
 
         // 导入数据
@@ -4903,7 +5042,7 @@
                     : '<span class="fund-badge watching">自选</span>';
 
                 return `
-                    <div class="fund-card ${hasPosition ? 'holding' : 'watching'}">
+                    <div class="fund-card ${hasPosition ? 'holding' : 'watching'}" draggable="true" data-code="${code}">
                         <div class="fund-header">
                             <div class="fund-title">
                                 <div class="fund-name">
@@ -4948,15 +5087,76 @@
                 `;
             }).join('');
 
-            // 绘制图表（只绘制当前视图中显示的基金）
-            displayCodes.forEach(code => {
-                if (fundsData[code]) {
-                    drawChart(code);
-                }
-            });
+            // 使用 IntersectionObserver 懒加载图表（只绘制可见卡片）
+            observeCharts();
 
             // 更新总览看板
             updateOverviewPanel();
+        }
+
+        // 拖拽排序
+        function initDragSort() {
+            const container = document.getElementById('fundsContainer');
+            let draggedEl = null;
+
+            container.addEventListener('dragstart', (e) => {
+                const card = e.target.closest('.fund-card[draggable]');
+                if (!card) return;
+                draggedEl = card;
+                card.classList.add('dragging');
+                e.dataTransfer.effectAllowed = 'move';
+            });
+
+            container.addEventListener('dragend', (e) => {
+                if (draggedEl) draggedEl.classList.remove('dragging');
+                container.querySelectorAll('.drag-over').forEach(el => el.classList.remove('drag-over'));
+                draggedEl = null;
+            });
+
+            container.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                e.dataTransfer.dropEffect = 'move';
+                const card = e.target.closest('.fund-card[draggable]');
+                if (card && card !== draggedEl) {
+                    container.querySelectorAll('.drag-over').forEach(el => el.classList.remove('drag-over'));
+                    card.classList.add('drag-over');
+                }
+            });
+
+            container.addEventListener('dragleave', (e) => {
+                const card = e.target.closest('.fund-card[draggable]');
+                if (card) card.classList.remove('drag-over');
+            });
+
+            container.addEventListener('drop', (e) => {
+                e.preventDefault();
+                const targetCard = e.target.closest('.fund-card[draggable]');
+                if (!targetCard || !draggedEl || targetCard === draggedEl) return;
+                targetCard.classList.remove('drag-over');
+
+                const fromCode = draggedEl.getAttribute('data-code');
+                const toCode = targetCard.getAttribute('data-code');
+                if (!fromCode || !toCode) return;
+
+                // 更新 fundCodes 数组顺序
+                const codes = loadFundCodes();
+                const fromIdx = codes.indexOf(fromCode);
+                const toIdx = codes.indexOf(toCode);
+                if (fromIdx === -1 || toIdx === -1) return;
+
+                codes.splice(fromIdx, 1);
+                codes.splice(toIdx, 0, fromCode);
+                saveFundCodes(codes);
+
+                // 如果当前排序不是默认，切回默认以尊重手动排序
+                if (sortOrder !== 'default') {
+                    sortOrder = 'default';
+                    localStorage.setItem('sortOrder', sortOrder);
+                    document.getElementById('sortSelect').value = 'default';
+                }
+
+                renderFunds();
+            });
         }
 
         // 更新基金详情（如果弹窗正在显示该基金则刷新内容）
@@ -5072,6 +5272,41 @@
 
         function closeFundDetailModal() {
             document.getElementById('fundDetailModal').classList.remove('active');
+        }
+
+        // Chart.js 懒加载：仅绘制视口内可见的图表
+        let chartObserver = null;
+
+        function observeCharts() {
+            // 断开旧观察器
+            if (chartObserver) chartObserver.disconnect();
+
+            chartObserver = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        const canvas = entry.target;
+                        const code = canvas.id.replace('chart-', '');
+                        if (fundsData[code]) {
+                            drawChart(code);
+                        }
+                        // 绘制后停止观察该元素
+                        chartObserver.unobserve(canvas);
+                    }
+                });
+            }, { rootMargin: '100px' }); // 提前100px开始加载
+
+            // 观察所有图表 canvas
+            document.querySelectorAll('.chart-container canvas').forEach(canvas => {
+                const code = canvas.id.replace('chart-', '');
+                // 如果旧 Chart 实例的 canvas 已不在 DOM 中（renderFunds 重建了 DOM），先清理
+                if (charts[code] && charts[code].canvas !== canvas) {
+                    charts[code].destroy();
+                    delete charts[code];
+                }
+                // 已有有效图表实例则跳过
+                if (charts[code]) return;
+                chartObserver.observe(canvas);
+            });
         }
 
         // 绘制图表（支持原地更新，避免闪烁）
@@ -5586,6 +5821,31 @@
             drawNetWorthChart(code);
         }
 
+        // 判断是否在A股交易时段（工作日 9:15-15:05，留5分钟缓冲）
+        function isTradingTime() {
+            const now = new Date();
+            const day = now.getDay(); // 0=周日, 6=周六
+            if (day === 0 || day === 6) return false;
+            const hhmm = now.getHours() * 100 + now.getMinutes();
+            return hhmm >= 915 && hhmm <= 1505;
+        }
+
+        // 获取轮询间隔：交易时段30秒，非交易时段5分钟
+        function getRefreshInterval() {
+            return isTradingTime() ? 30000 : 300000;
+        }
+
+        let refreshTimer = null;
+
+        function scheduleRefresh() {
+            if (refreshTimer) clearTimeout(refreshTimer);
+            const interval = getRefreshInterval();
+            refreshTimer = setTimeout(() => {
+                refreshAllFunds();
+                scheduleRefresh();
+            }, interval);
+        }
+
         // 刷新所有基金数据（定时刷新只获取实时估值，不重新加载详情）
         function refreshAllFunds() {
             const codes = loadFundCodes();
@@ -5738,14 +5998,17 @@
             
             // 渲染空状态或加载基金
             renderFunds();
+
+            // 初始化拖拽排序
+            initDragSort();
             
             // 加载基金数据
             codes.forEach(code => {
                 fetchFundData(code);
             });
 
-            // 每30秒刷新一次数据
-            setInterval(refreshAllFunds, 30000);
+            // 智能轮询：交易时段30秒，非交易时段5分钟
+            scheduleRefresh();
             
             // 每天凌晨2点自动更新基金列表
             setInterval(() => {
