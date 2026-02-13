@@ -304,14 +304,14 @@
         .autocomplete-loading {
             padding: 12px 16px;
             text-align: center;
-            color: #999;
+            color: var(--text-muted);
             font-size: 13px;
         }
 
         .autocomplete-empty {
             padding: 12px 16px;
             text-align: center;
-            color: #999;
+            color: var(--text-muted);
             font-size: 13px;
         }
 
@@ -328,7 +328,7 @@
 
         /* 基金详细信息样式 */
         .fund-details {
-            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            background: var(--stat-bg);
             border-radius: 10px;
             padding: 15px;
             margin-bottom: 15px;
@@ -343,7 +343,7 @@
 
         .fund-details-header h4 {
             font-size: 14px;
-            color: #555;
+            color: var(--text-secondary);
             margin: 0;
         }
 
@@ -360,14 +360,14 @@
 
         .fund-detail-label {
             font-size: 11px;
-            color: #666;
+            color: var(--text-secondary);
             margin-bottom: 3px;
         }
 
         .fund-detail-value {
             font-size: 15px;
             font-weight: 600;
-            color: #333;
+            color: var(--text-primary);
         }
 
         .fund-detail-value.positive {
@@ -380,15 +380,15 @@
 
         .fund-manager-info {
             font-size: 12px;
-            color: #666;
+            color: var(--text-secondary);
             margin-top: 8px;
             padding-top: 8px;
-            border-top: 1px solid #dee2e6;
+            border-top: 1px solid var(--border-color);
         }
 
         .fund-manager-name {
             font-weight: 600;
-            color: #333;
+            color: var(--text-primary);
         }
 
         .net-worth-chart-container {
@@ -406,7 +406,7 @@
             gap: 4px;
             margin-bottom: 8px;
             padding: 3px;
-            background: #f0f2f5;
+            background: var(--stat-bg);
             border-radius: 8px;
             width: fit-content;
             margin-left: auto;
@@ -421,20 +421,20 @@
             font-weight: 500;
             cursor: pointer;
             background: transparent;
-            color: #666;
+            color: var(--text-secondary);
             transition: all 0.2s ease;
             white-space: nowrap;
         }
 
         .chart-range-btn:hover {
-            color: #333;
-            background: rgba(255, 255, 255, 0.6);
+            color: var(--text-primary);
+            background: var(--hover-bg);
         }
 
         .chart-range-btn.active {
-            background: #fff;
+            background: var(--card-bg);
             color: #1890ff;
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
         }
 
         /* 主视图切换标签 */
@@ -463,13 +463,13 @@
         }
 
         .main-view-tab:hover {
-            color: #666;
+            color: var(--text-secondary);
         }
 
         .main-view-tab.active {
-            background: #fff;
-            color: #333;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+            background: var(--card-bg);
+            color: var(--text-primary);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
         }
 
         .main-view-tab .tab-count {
@@ -492,8 +492,8 @@
         }
 
         .main-view-tab:not(.active) .tab-count {
-            background: #ddd;
-            color: #999;
+            background: var(--border-color);
+            color: var(--text-muted);
         }
 
         .btn {
@@ -603,13 +603,13 @@
         }
 
         .cloud-settings-info {
-            background: #f6f8fa;
-            border: 1px solid #e1e4e8;
+            background: var(--stat-bg);
+            border: 1px solid var(--border-color);
             border-radius: 8px;
             padding: 14px;
             margin-bottom: 16px;
             font-size: 13px;
-            color: #586069;
+            color: var(--text-secondary);
             line-height: 1.6;
         }
 
@@ -661,7 +661,7 @@
             border: none;
             cursor: pointer;
             font-size: 16px;
-            color: #999;
+            color: var(--text-muted);
             padding: 4px;
         }
 
@@ -729,7 +729,7 @@
 
         .overview-date {
             font-size: 12px;
-            color: #999;
+            color: var(--text-muted);
         }
 
         /* 紧凑模式：关键指标横条 */
@@ -790,7 +790,7 @@
         .overview-compact-divider {
             width: 1px;
             height: 20px;
-            background: #e0e0e0;
+            background: var(--border-color);
             flex-shrink: 0;
         }
 
@@ -952,15 +952,15 @@
             justify-content: space-between;
             align-items: center;
             padding: 14px 18px;
-            background: linear-gradient(135deg, #f8f9fa, #fff);
+            background: var(--stat-bg);
             border-radius: 10px;
             margin-bottom: 16px;
-            border: 1px solid #e8e8e8;
+            border: 1px solid var(--border-color);
         }
 
         .historical-profit-summary .summary-label {
             font-size: 14px;
-            color: #666;
+            color: var(--text-secondary);
         }
 
         .historical-profit-summary .summary-value {
@@ -982,13 +982,13 @@
             align-items: center;
             padding: 14px 16px;
             border-radius: 8px;
-            background: #fafafa;
+            background: var(--stat-bg);
             margin-bottom: 10px;
             transition: background 0.15s;
         }
 
         .historical-fund-item:hover {
-            background: #f0f2f5;
+            background: var(--hover-bg);
         }
 
         .historical-fund-info {
@@ -999,7 +999,7 @@
         .historical-fund-name {
             font-weight: 600;
             font-size: 14px;
-            color: #333;
+            color: var(--text-primary);
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
@@ -1007,13 +1007,13 @@
 
         .historical-fund-code {
             font-size: 12px;
-            color: #999;
+            color: var(--text-muted);
             margin-top: 2px;
         }
 
         .historical-fund-detail {
             font-size: 12px;
-            color: #888;
+            color: var(--text-muted);
             margin-top: 4px;
         }
 
@@ -1038,7 +1038,7 @@
 
         .historical-fund-profit .profit-sells {
             font-size: 11px;
-            color: #999;
+            color: var(--text-muted);
             margin-top: 2px;
         }
 
@@ -1145,12 +1145,12 @@
 
         .fund-update-time {
             font-size: 11px;
-            color: #bbb;
+            color: var(--text-faint);
         }
 
         .fund-detail-link {
             font-size: 11px;
-            color: #bbb;
+            color: var(--text-faint);
             text-decoration: none;
             transition: color 0.15s;
         }
@@ -1259,7 +1259,7 @@
 
         .update-time {
             font-size: 11px;
-            color: #bbb;
+            color: var(--text-faint);
             text-align: center;
             display: none;
         }
@@ -1297,7 +1297,7 @@
         .position-toggle {
             display: inline-block;
             font-size: 10px;
-            color: #999;
+            color: var(--text-muted);
             transition: transform 0.2s;
         }
 
@@ -1322,7 +1322,7 @@
             align-items: center;
             margin-top: 8px;
             font-size: 13px;
-            color: #666;
+            color: var(--text-secondary);
         }
 
         .position-summary.hidden {
@@ -1384,7 +1384,7 @@
 
         .no-position {
             text-align: center;
-            color: #999;
+            color: var(--text-muted);
             font-size: 13px;
             padding: 10px;
         }
@@ -1406,7 +1406,7 @@
 
         .empty-state h2 {
             margin-bottom: 10px;
-            color: #333;
+            color: var(--text-primary);
         }
 
         /* 模态框样式 */
@@ -1458,7 +1458,7 @@
             margin-bottom: 25px;
             font-size: 14px;
             line-height: 1.8;
-            color: #333;
+            color: var(--text-primary);
             max-height: 60vh;
             overflow-y: auto;
         }
@@ -1506,8 +1506,8 @@
         }
 
         .confirm-section {
-            background: white;
-            border: 1px solid #e9ecef;
+            background: var(--stat-bg);
+            border: 1px solid var(--border-color);
             border-radius: 10px;
             padding: 16px;
             margin-bottom: 15px;
@@ -1541,13 +1541,13 @@
 
         .confirm-detail-label {
             font-size: 12px;
-            color: #6c757d;
+            color: var(--text-secondary);
         }
 
         .confirm-detail-value {
             font-size: 15px;
             font-weight: 600;
-            color: #212529;
+            color: var(--text-primary);
         }
 
         .confirm-detail-value.highlight {
@@ -1622,7 +1622,7 @@
 
         .modal-header h2 {
             font-size: 22px;
-            color: #333;
+            color: var(--text-primary);
             margin: 0;
         }
 
@@ -1630,7 +1630,7 @@
             background: none;
             border: none;
             font-size: 28px;
-            color: #999;
+            color: var(--text-muted);
             cursor: pointer;
             padding: 0;
             width: 30px;
@@ -1641,7 +1641,7 @@
         }
 
         .close-btn:hover {
-            color: #333;
+            color: var(--text-primary);
         }
 
         .form-group {
@@ -1651,7 +1651,7 @@
         .form-group label {
             display: block;
             font-size: 14px;
-            color: #555;
+            color: var(--text-secondary);
             margin-bottom: 8px;
             font-weight: 500;
         }
@@ -1659,22 +1659,29 @@
         .form-group input {
             width: 100%;
             padding: 12px;
-            border: 2px solid #e0e0e0;
+            border: 2px solid var(--border-color);
             border-radius: 8px;
             font-size: 15px;
+            background: var(--input-bg);
+            color: var(--text-primary);
             transition: all 0.3s;
         }
 
         .form-group input:focus {
             outline: none;
             border-color: #667eea;
-            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.2);
+        }
+
+        .form-group input[readonly] {
+            background: var(--stat-bg);
+            cursor: default;
         }
 
         .form-group small {
             display: block;
             margin-top: 5px;
-            color: #999;
+            color: var(--text-muted);
             font-size: 12px;
         }
 
@@ -1692,7 +1699,7 @@
         /* 交易历史样式 */
         .transaction-item {
             padding: 15px;
-            border-bottom: 1px solid #e0e0e0;
+            border-bottom: 1px solid var(--border-color);
             display: flex;
             justify-content: space-between;
             align-items: center;
@@ -1727,13 +1734,13 @@
 
         .transaction-details {
             font-size: 13px;
-            color: #666;
+            color: var(--text-secondary);
             margin-top: 5px;
         }
 
         .transaction-date {
             font-size: 12px;
-            color: #999;
+            color: var(--text-muted);
             margin-top: 3px;
         }
 
@@ -1747,9 +1754,9 @@
         .trans-action-btn {
             width: 32px;
             height: 32px;
-            border: 1px solid #e0e0e0;
+            border: 1px solid var(--border-color);
             border-radius: 6px;
-            background: #fff;
+            background: var(--card-bg);
             cursor: pointer;
             font-size: 14px;
             display: flex;
@@ -1771,10 +1778,10 @@
         /* 交易编辑表单 */
         .trans-edit-form {
             padding: 16px;
-            background: #f8f9fa;
+            background: var(--stat-bg);
             border-radius: 10px;
             margin-bottom: 12px;
-            border: 1px solid #e0e0e0;
+            border: 1px solid var(--border-color);
         }
 
         .trans-edit-form .form-row {
@@ -1791,16 +1798,18 @@
         .trans-edit-form label {
             display: block;
             font-size: 12px;
-            color: #666;
+            color: var(--text-secondary);
             margin-bottom: 4px;
         }
 
         .trans-edit-form input {
             width: 100%;
             padding: 8px 10px;
-            border: 1px solid #d9d9d9;
+            border: 1px solid var(--border-color);
             border-radius: 6px;
             font-size: 14px;
+            background: var(--input-bg);
+            color: var(--text-primary);
             box-sizing: border-box;
         }
 
@@ -1828,10 +1837,10 @@
         .quick-sell-btn {
             flex: 1;
             padding: 8px 12px;
-            border: 2px solid #e0e0e0;
+            border: 2px solid var(--border-color);
             border-radius: 6px;
-            background: white;
-            color: #666;
+            background: var(--card-bg);
+            color: var(--text-secondary);
             font-size: 14px;
             font-weight: 600;
             cursor: pointer;
@@ -2204,7 +2213,7 @@
             </div>
             <div class="form-group">
                 <label>申购份额（自动计算）</label>
-                <input type="number" id="initialShares" step="0.01" readonly style="background: #f5f5f5;">
+                <input type="number" id="initialShares" step="0.01" readonly>
                 <small id="sharesCalcHint">份额 = (申购金额 - 手续费) / 申购净值</small>
             </div>
             <div class="form-actions">
@@ -2238,7 +2247,7 @@
             </div>
             <div class="form-group">
                 <label>买入份额（自动计算）</label>
-                <input type="number" id="buyShares" step="0.01" readonly style="background: #f5f5f5;">
+                <input type="number" id="buyShares" step="0.01" readonly>
                 <small>份额 = (买入金额 - 手续费) / 买入净值</small>
             </div>
             <div class="form-actions">
@@ -2278,7 +2287,7 @@
             </div>
             <div class="form-group">
                 <label>卖出金额（自动计算）</label>
-                <input type="number" id="sellAmount" step="0.01" readonly style="background: #f5f5f5;">
+                <input type="number" id="sellAmount" step="0.01" readonly>
                 <small>到账金额 = 卖出份额 × 卖出净值 - 手续费</small>
             </div>
             <div class="form-actions">
@@ -3786,7 +3795,7 @@
             });
 
             if (fundProfits.length === 0) {
-                content.innerHTML = '<div style="text-align: center; padding: 40px; color: #999;">暂无历史卖出记录</div>';
+                content.innerHTML = '<div class="no-position" style="padding: 40px;">暂无历史卖出记录</div>';
             } else {
                 // 按收益金额降序排列
                 fundProfits.sort((a, b) => b.profit - a.profit);
@@ -3842,7 +3851,7 @@
             const content = document.getElementById('transactionHistoryContent');
             
             if (!position || !position.transactions || position.transactions.length === 0) {
-                content.innerHTML = '<div style="text-align: center; padding: 40px; color: #999;">暂无交易记录</div>';
+                content.innerHTML = '<div class="no-position" style="padding: 40px;">暂无交易记录</div>';
             } else {
                 const transHtml = position.transactions.map((trans, index) => {
                     const date = new Date(trans.date).toLocaleString('zh-CN');
