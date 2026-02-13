@@ -514,6 +514,72 @@
             background: #595959;
         }
 
+        /* 同步提醒标记 */
+        .btn-cloud {
+            position: relative;
+        }
+
+        .sync-badge {
+            display: none;
+            position: absolute;
+            top: -4px;
+            right: -4px;
+            width: 10px;
+            height: 10px;
+            background: #ff4d4f;
+            border-radius: 50%;
+            border: 2px solid #fff;
+            animation: syncPulse 2s ease-in-out infinite;
+        }
+
+        .sync-badge.active {
+            display: block;
+        }
+
+        @keyframes syncPulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.6; transform: scale(1.2); }
+        }
+
+        /* 同步提醒条 */
+        .sync-reminder {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 8px 16px;
+            background: linear-gradient(135deg, #fff7e6, #fffbe6);
+            border: 1px solid #ffe58f;
+            border-radius: 8px;
+            margin-top: 10px;
+            font-size: 13px;
+            color: #ad6800;
+        }
+
+        .sync-reminder a {
+            color: #667eea;
+            font-weight: 600;
+            text-decoration: none;
+            margin-left: 2px;
+        }
+
+        .sync-reminder a:hover {
+            text-decoration: underline;
+        }
+
+        .sync-reminder-close {
+            background: none;
+            border: none;
+            font-size: 18px;
+            color: #ad6800;
+            cursor: pointer;
+            padding: 0 4px;
+            opacity: 0.6;
+        }
+
+        .sync-reminder-close:hover {
+            opacity: 1;
+        }
+
         .cloud-settings-info {
             background: #f6f8fa;
             border: 1px solid #e1e4e8;
@@ -1654,10 +1720,14 @@
                     <button class="btn btn-secondary" onclick="exportData()" title="导出所有数据到文件">💾 导出</button>
                     <button class="btn btn-secondary" onclick="document.getElementById('importFileInput').click()" title="从文件导入数据">📥 导入</button>
                     <input type="file" id="importFileInput" accept=".json" style="display: none;" onchange="importData(event)">
-                    <button class="btn btn-cloud" onclick="uploadToCloud()" title="上传数据到云端">☁️ 上传</button>
+                    <button class="btn btn-cloud" id="btnUpload" onclick="uploadToCloud()" title="上传数据到云端">☁️ 上传<span class="sync-badge" id="syncBadge"></span></button>
                     <button class="btn btn-cloud" onclick="downloadFromCloud()" title="从云端下载数据">⬇️ 下载</button>
                     <button class="btn btn-cloud-settings" onclick="openCloudSettingsModal()" title="云同步设置">⚙️</button>
                 </div>
+            </div>
+            <div class="sync-reminder" id="syncReminder" style="display: none;">
+                <span>📌 数据已变更，记得<a href="javascript:void(0)" onclick="uploadToCloud()">同步到云端</a></span>
+                <button class="sync-reminder-close" onclick="dismissSyncReminder()">×</button>
             </div>
         </div>
 
@@ -2007,9 +2077,46 @@
             return saved ? JSON.parse(saved) : [];
         }
 
+        // ===== 数据同步提醒 =====
+        function markDataChanged() {
+            localStorage.setItem('hasUnsyncedChanges', 'true');
+            showSyncReminder();
+        }
+
+        function clearSyncReminder() {
+            localStorage.removeItem('hasUnsyncedChanges');
+            const badge = document.getElementById('syncBadge');
+            const reminder = document.getElementById('syncReminder');
+            if (badge) badge.classList.remove('active');
+            if (reminder) reminder.style.display = 'none';
+        }
+
+        function showSyncReminder() {
+            const settings = loadCloudSettings();
+            // 只有配置了 token 才提示同步
+            if (!settings.token) return;
+            const badge = document.getElementById('syncBadge');
+            const reminder = document.getElementById('syncReminder');
+            if (badge) badge.classList.add('active');
+            if (reminder) reminder.style.display = 'flex';
+        }
+
+        function dismissSyncReminder() {
+            const reminder = document.getElementById('syncReminder');
+            if (reminder) reminder.style.display = 'none';
+            // badge 保留，只关闭提示条
+        }
+
+        function initSyncReminder() {
+            if (localStorage.getItem('hasUnsyncedChanges') === 'true') {
+                showSyncReminder();
+            }
+        }
+
         // 保存基金代码到localStorage
         function saveFundCodes(codes) {
             localStorage.setItem('fundCodes', JSON.stringify(codes));
+            markDataChanged();
         }
 
         // 加载历史数据
@@ -2032,6 +2139,7 @@
         // 保存持仓数据
         function savePositions() {
             localStorage.setItem('positions', JSON.stringify(positions));
+            markDataChanged();
         }
 
         // 加载今日范围数据
@@ -2623,6 +2731,7 @@
                 // 保存 Gist ID
                 localStorage.setItem('gist_id', result.id);
                 
+                clearSyncReminder();
                 const syncTime = new Date().toLocaleString('zh-CN');
                 alert(`✅ 数据上传成功！\n\n⏰ 时间：${syncTime}\n🔗 Gist ID：${result.id}\n\n在其他设备上使用相同的 Token 和 Gist ID 即可下载数据。`);
                 
@@ -2715,6 +2824,7 @@
                     chartRangeSelection = importedData.chartRangeSelection;
                 }
                 
+                clearSyncReminder();
                 alert(`✅ 云端数据下载成功！\n\n已导入 ${importedData.fundCodes.length} 只基金的数据`);
                 
             } catch (error) {
@@ -5368,6 +5478,9 @@
             
             // 检查备份提醒
             checkBackupReminder();
+            
+            // 检查同步提醒
+            initSyncReminder();
             
             // 加载基金列表（优先使用缓存）
             const cachedList = loadFundListCache();
