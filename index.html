@@ -803,7 +803,7 @@
         }
 
         .overview-full.expanded {
-            max-height: 1000px;
+            max-height: 1500px;
             opacity: 1;
             transition: max-height 0.4s ease-in, opacity 0.3s ease-in;
         }
@@ -925,14 +925,150 @@
             grid-template-columns: repeat(4, 1fr);
         }
 
+        /* 持仓占比与收益趋势并排布局 */
+        .overview-charts-row {
+            display: grid;
+            grid-template-columns: 200px 1fr;
+            gap: 16px;
+            align-items: stretch;
+        }
+
+        /* 持仓占比环形图 */
+        .allocation-chart-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .allocation-chart-wrapper {
+            position: relative;
+            width: 160px;
+            height: 160px;
+        }
+
+        .allocation-legend {
+            margin-top: 8px;
+            font-size: 11px;
+            color: var(--text-secondary);
+            width: 100%;
+        }
+
+        .allocation-legend-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            padding: 2px 0;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .allocation-legend-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+
+        .allocation-legend-name {
+            flex: 1;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .allocation-legend-pct {
+            font-weight: 600;
+            color: var(--text-primary);
+            flex-shrink: 0;
+        }
+
         /* 收益趋势图容器 */
         .profit-trend-chart-container {
-            margin-top: 4px;
+            margin-top: 0;
         }
 
         .profit-trend-chart-wrapper {
             position: relative;
             height: 180px;
+        }
+
+        /* 趋势图时间选择器 */
+        .trend-range-selector {
+            display: flex;
+            justify-content: flex-end;
+            gap: 4px;
+            margin-bottom: 6px;
+        }
+
+        .trend-range-btn {
+            padding: 3px 10px;
+            border: none;
+            border-radius: 4px;
+            font-size: 11px;
+            cursor: pointer;
+            background: transparent;
+            color: var(--text-muted);
+            transition: all 0.15s;
+        }
+
+        .trend-range-btn:hover {
+            color: var(--text-primary);
+        }
+
+        .trend-range-btn.active {
+            background: var(--card-bg);
+            color: #1890ff;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+
+        /* 紧凑模式迷你趋势线 */
+        .compact-sparkline {
+            width: 60px;
+            height: 20px;
+            margin-left: 6px;
+            vertical-align: middle;
+        }
+
+        /* 紧凑模式更新时间 */
+        .compact-update-time {
+            font-size: 10px;
+            color: var(--text-faint);
+            margin-left: auto;
+            flex-shrink: 0;
+        }
+
+        /* 数字动画 */
+        .stat-value, .overview-compact-value {
+            transition: opacity 0.15s;
+        }
+
+        /* 今日盈亏高亮动画 */
+        @keyframes profitPulse {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(255, 77, 79, 0.2); }
+            50% { box-shadow: 0 0 0 6px rgba(255, 77, 79, 0); }
+        }
+
+        @keyframes lossPulse {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(0, 185, 107, 0.2); }
+            50% { box-shadow: 0 0 0 6px rgba(0, 185, 107, 0); }
+        }
+
+        .stat-item.today-highlight-profit {
+            border: 2px solid #ff4d4f;
+            animation: profitPulse 2s ease-in-out 3;
+        }
+
+        .stat-item.today-highlight-loss {
+            border: 2px solid #00b96b;
+            animation: lossPulse 2s ease-in-out 3;
+        }
+
+        /* 紧凑模式金额/收益率切换 */
+        .compact-toggle-hint {
+            font-size: 9px;
+            color: var(--text-faint);
+            cursor: pointer;
+            margin-left: 2px;
         }
 
         /* 可点击的统计卡片 */
@@ -1932,6 +2068,28 @@
                 font-size: 18px;
             }
 
+            .overview-charts-row {
+                grid-template-columns: 1fr;
+            }
+
+            .allocation-chart-container {
+                flex-direction: row;
+                gap: 16px;
+            }
+
+            .allocation-chart-wrapper {
+                width: 120px;
+                height: 120px;
+            }
+
+            .allocation-legend {
+                margin-top: 0;
+            }
+
+            .compact-sparkline {
+                display: none;
+            }
+
             /* 基金卡片 */
             .funds-grid {
                 grid-template-columns: 1fr;
@@ -2029,6 +2187,23 @@
                 gap: 8px;
             }
 
+            .overview-charts-row {
+                grid-template-columns: 1fr;
+            }
+
+            .allocation-chart-wrapper {
+                width: 100px;
+                height: 100px;
+            }
+
+            .compact-sparkline {
+                display: none;
+            }
+
+            .compact-update-time {
+                display: none;
+            }
+
             .stat-value {
                 font-size: 18px;
             }
@@ -2111,18 +2286,20 @@
                     <div class="overview-compact-item">
                         <span class="overview-compact-label">今日</span>
                         <span class="overview-compact-value" id="compactTodayProfit">¥0.00</span>
+                        <canvas class="compact-sparkline" id="compactSparkline"></canvas>
                     </div>
                     <div class="overview-compact-divider"></div>
-                    <div class="overview-compact-item">
-                        <span class="overview-compact-label">持仓收益</span>
+                    <div class="overview-compact-item" onclick="toggleCompactDisplay()" style="cursor: pointer;" title="点击切换金额/收益率">
+                        <span class="overview-compact-label">持仓收益 <span class="compact-toggle-hint">⇄</span></span>
                         <span class="overview-compact-value" id="compactHoldingProfit">¥0.00</span>
                         <span class="overview-compact-sub" id="compactHoldingRate"></span>
                     </div>
                     <div class="overview-compact-divider"></div>
-                    <div class="overview-compact-item">
-                        <span class="overview-compact-label">累计收益</span>
+                    <div class="overview-compact-item" onclick="toggleCompactDisplay()" style="cursor: pointer;" title="点击切换金额/收益率">
+                        <span class="overview-compact-label">累计收益 <span class="compact-toggle-hint">⇄</span></span>
                         <span class="overview-compact-value" id="compactCumulativeProfit">¥0.00</span>
                     </div>
+                    <span class="compact-update-time" id="compactUpdateTime"></span>
                 </div>
                 <!-- 展开模式：完整面板 -->
                 <div class="overview-full" id="overviewFull">
@@ -2148,12 +2325,12 @@
                     <div class="overview-divider"></div>
                     <div class="overview-section-label">📜 收益总览</div>
                     <div class="overview-stats overview-stats-4col">
-                        <div class="stat-item stat-highlight">
-                            <div class="stat-label">今日盈亏</div>
+                        <div class="stat-item stat-highlight stat-clickable" id="todayProfitCard" onclick="openTodayProfitDetail()" title="点击查看今日盈亏明细">
+                            <div class="stat-label">今日盈亏 <span style="font-size: 11px; color: var(--text-faint);">▶ 明细</span></div>
                             <div class="stat-value" id="todayProfit">¥0.00</div>
                         </div>
                         <div class="stat-item stat-clickable" onclick="openHistoricalProfitDetail()" title="点击查看历史收益明细">
-                            <div class="stat-label">历史收益（已实现） <span style="font-size: 11px; color: #aaa;">▶ 明细</span></div>
+                            <div class="stat-label">历史收益（已实现） <span style="font-size: 11px; color: var(--text-faint);">▶ 明细</span></div>
                             <div class="stat-value" id="historicalProfit">¥0.00</div>
                         </div>
                         <div class="stat-item stat-cumulative">
@@ -2161,15 +2338,30 @@
                             <div class="stat-value" id="cumulativeProfit">¥0.00</div>
                         </div>
                         <div class="stat-item">
-                            <div class="stat-label">累计收益率</div>
+                            <div class="stat-label">累计收益率 / 最大回撤</div>
                             <div class="stat-value" id="cumulativeProfitRate">0.00%</div>
+                            <div style="font-size: 11px; color: var(--text-muted); margin-top: 4px;" id="maxDrawdown">回撤: --</div>
                         </div>
                     </div>
                     <div class="overview-divider"></div>
-                    <div class="overview-section-label">📈 收益趋势</div>
-                    <div class="profit-trend-chart-container">
-                        <div class="profit-trend-chart-wrapper">
-                            <canvas id="profitTrendChart"></canvas>
+                    <div class="overview-section-label">📈 图表</div>
+                    <div class="overview-charts-row">
+                        <div class="allocation-chart-container">
+                            <div class="allocation-chart-wrapper">
+                                <canvas id="allocationChart"></canvas>
+                            </div>
+                            <div class="allocation-legend" id="allocationLegend"></div>
+                        </div>
+                        <div class="profit-trend-chart-container">
+                            <div class="trend-range-selector" id="trendRangeSelector">
+                                <button class="trend-range-btn" onclick="changeTrendRange(30)">近1月</button>
+                                <button class="trend-range-btn" onclick="changeTrendRange(90)">近3月</button>
+                                <button class="trend-range-btn" onclick="changeTrendRange(180)">近半年</button>
+                                <button class="trend-range-btn active" onclick="changeTrendRange(0)">全部</button>
+                            </div>
+                            <div class="profit-trend-chart-wrapper">
+                                <canvas id="profitTrendChart"></canvas>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -4455,8 +4647,7 @@
             document.getElementById('totalCost').textContent = `¥${totalCost.toFixed(2)}`;
             
             const totalProfitEl = document.getElementById('totalProfit');
-            const profitSymbol = holdingProfit >= 0 ? '+' : '';
-            totalProfitEl.textContent = `${profitSymbol}¥${holdingProfit.toFixed(2)}`;
+            animateValue(totalProfitEl, holdingProfit.toFixed(2), '', '', 400);
             totalProfitEl.className = 'stat-value ' + (holdingProfit >= 0 ? 'positive' : 'negative');
             
             const totalProfitRateEl = document.getElementById('totalProfitRate');
@@ -4465,22 +4656,22 @@
             totalProfitRateEl.className = 'stat-value ' + (holdingProfit >= 0 ? 'positive' : 'negative');
             
             const todayProfitEl = document.getElementById('todayProfit');
-            const todayProfitSymbol = todayProfit >= 0 ? '+' : '';
-            todayProfitEl.textContent = `${todayProfitSymbol}¥${todayProfit.toFixed(2)}`;
+            animateValue(todayProfitEl, todayProfit.toFixed(2), '', '', 400);
             todayProfitEl.className = 'stat-value ' + (todayProfit >= 0 ? 'positive' : 'negative');
+
+            // 今日盈亏高亮
+            applyTodayHighlight(todayProfit, totalMarketValue);
 
             // === 历史收益 & 累计收益 ===
             const cumulativeProfit = holdingProfit + historicalProfit;
             const cumulativeProfitRate = totalHistoricalCost > 0 ? (cumulativeProfit / totalHistoricalCost * 100) : 0;
 
             const historicalProfitEl = document.getElementById('historicalProfit');
-            const hSymbol = historicalProfit >= 0 ? '+' : '';
-            historicalProfitEl.textContent = `${hSymbol}¥${historicalProfit.toFixed(2)}`;
+            animateValue(historicalProfitEl, historicalProfit.toFixed(2), '', '', 400);
             historicalProfitEl.className = 'stat-value ' + (historicalProfit >= 0 ? 'positive' : 'negative');
 
             const cumulativeProfitEl = document.getElementById('cumulativeProfit');
-            const cSymbol = cumulativeProfit >= 0 ? '+' : '';
-            cumulativeProfitEl.textContent = `${cSymbol}¥${cumulativeProfit.toFixed(2)}`;
+            animateValue(cumulativeProfitEl, cumulativeProfit.toFixed(2), '', '', 400);
             cumulativeProfitEl.className = 'stat-value ' + (cumulativeProfit >= 0 ? 'positive' : 'negative');
 
             const cumulativeProfitRateEl = document.getElementById('cumulativeProfitRate');
@@ -4492,29 +4683,20 @@
             const compactMV = document.getElementById('compactMarketValue');
             if (compactMV) compactMV.textContent = `¥${totalMarketValue.toFixed(2)}`;
 
+            const todayProfitSymbol = todayProfit >= 0 ? '+' : '';
             const compactToday = document.getElementById('compactTodayProfit');
             if (compactToday) {
                 compactToday.textContent = `${todayProfitSymbol}¥${todayProfit.toFixed(2)}`;
                 compactToday.className = 'overview-compact-value ' + (todayProfit >= 0 ? 'positive' : 'negative');
             }
 
-            const compactHP = document.getElementById('compactHoldingProfit');
-            if (compactHP) {
-                compactHP.textContent = `${profitSymbol}¥${holdingProfit.toFixed(2)}`;
-                compactHP.className = 'overview-compact-value ' + (holdingProfit >= 0 ? 'positive' : 'negative');
-            }
-
-            const compactHR = document.getElementById('compactHoldingRate');
-            if (compactHR) {
-                compactHR.textContent = `(${rateSymbol}${holdingProfitRate.toFixed(2)}%)`;
-                compactHR.className = 'overview-compact-sub ' + (holdingProfit >= 0 ? 'positive' : 'negative');
-            }
-
-            const compactCP = document.getElementById('compactCumulativeProfit');
-            if (compactCP) {
-                compactCP.textContent = `${cSymbol}¥${cumulativeProfit.toFixed(2)}`;
-                compactCP.className = 'overview-compact-value ' + (cumulativeProfit >= 0 ? 'positive' : 'negative');
-            }
+            // 缓存数据用于金额/收益率切换
+            const profitSymbol = holdingProfit >= 0 ? '+' : '';
+            _compactData = {
+                holdingProfit, holdingProfitRate,
+                cumulativeProfit, cumulativeProfitRate
+            };
+            applyCompactDisplay();
 
             // 应用折叠/展开状态
             applyOverviewState();
@@ -4527,9 +4709,335 @@
                 minute: '2-digit' 
             });
             document.getElementById('overviewUpdateTime').textContent = now;
+            const compactTime = document.getElementById('compactUpdateTime');
+            if (compactTime) compactTime.textContent = now;
 
-            // 绘制收益趋势图
+            // 绘制图表
+            drawAllocationChart();
             drawProfitTrendChart();
+        }
+
+        // ===== 今日盈亏明细弹窗 =====
+        function openTodayProfitDetail() {
+            const codes = loadFundCodes();
+            const modal = document.getElementById('historicalProfitModal');
+            const title = modal.querySelector('h2');
+            const content = document.getElementById('historicalProfitContent');
+
+            title.textContent = '📊 今日盈亏明细';
+
+            const items = [];
+            let totalToday = 0;
+
+            codes.forEach(code => {
+                const data = fundsData[code];
+                const posInfo = calculatePosition(code);
+                if (!posInfo || posInfo.totalShares <= 0 || !data) return;
+
+                const percentage = parseFloat(data.gszzl);
+                const yesterdayValue = parseFloat(data.dwjz);
+                const dailyProfit = posInfo.totalShares * yesterdayValue * (percentage / 100);
+                totalToday += dailyProfit;
+
+                items.push({
+                    name: data.name || code,
+                    code: code,
+                    profit: dailyProfit,
+                    percentage: percentage
+                });
+            });
+
+            items.sort((a, b) => b.profit - a.profit);
+
+            const totalCls = totalToday >= 0 ? 'positive' : 'negative';
+            const totalSymbol = totalToday >= 0 ? '+' : '';
+
+            let html = `
+                <div class="historical-profit-summary">
+                    <span class="summary-label">今日总盈亏</span>
+                    <span class="summary-value ${totalCls}">${totalSymbol}¥${totalToday.toFixed(2)}</span>
+                </div>
+            `;
+
+            if (items.length === 0) {
+                html += '<div class="no-position" style="padding: 30px;">暂无持仓基金</div>';
+            } else {
+                items.forEach(item => {
+                    const cls = item.profit >= 0 ? 'positive' : 'negative';
+                    const symbol = item.profit >= 0 ? '+' : '';
+                    const pctSymbol = item.percentage >= 0 ? '+' : '';
+                    html += `
+                        <div class="historical-fund-item">
+                            <div class="historical-fund-info">
+                                <div class="historical-fund-name">${item.name}</div>
+                                <div class="historical-fund-code">${item.code}</div>
+                            </div>
+                            <div class="historical-fund-profit">
+                                <div class="profit-amount ${cls}">${symbol}¥${item.profit.toFixed(2)}</div>
+                                <div class="profit-sells">${pctSymbol}${item.percentage.toFixed(2)}%</div>
+                            </div>
+                        </div>
+                    `;
+                });
+            }
+
+            content.innerHTML = html;
+            modal.classList.add('active');
+        }
+
+        // ===== 持仓占比环形图 =====
+        let allocationChartInstance = null;
+        const allocationColors = ['#667eea', '#764ba2', '#f093fb', '#ff6b6b', '#ffa502', '#2ed573', '#1e90ff', '#ff6348', '#7bed9f', '#70a1ff'];
+
+        function drawAllocationChart() {
+            const ctx = document.getElementById('allocationChart');
+            if (!ctx) return;
+
+            const codes = loadFundCodes();
+            const items = [];
+            let total = 0;
+
+            codes.forEach(code => {
+                const data = fundsData[code];
+                const posInfo = calculatePosition(code);
+                if (!posInfo || posInfo.totalShares <= 0 || !data) return;
+                const mv = posInfo.totalShares * parseFloat(data.gsz);
+                items.push({ code, name: data.name || code, value: mv });
+                total += mv;
+            });
+
+            if (items.length === 0) {
+                if (allocationChartInstance) { allocationChartInstance.destroy(); allocationChartInstance = null; }
+                const legendEl = document.getElementById('allocationLegend');
+                if (legendEl) legendEl.innerHTML = '';
+                return;
+            }
+
+            items.sort((a, b) => b.value - a.value);
+            const labels = items.map(i => i.name.length > 6 ? i.name.slice(0, 6) + '…' : i.name);
+            const data = items.map(i => i.value);
+            const colors = items.map((_, i) => allocationColors[i % allocationColors.length]);
+
+            if (allocationChartInstance && allocationChartInstance.canvas === ctx) {
+                allocationChartInstance.data.labels = labels;
+                allocationChartInstance.data.datasets[0].data = data;
+                allocationChartInstance.data.datasets[0].backgroundColor = colors;
+                allocationChartInstance.update('none');
+            } else {
+                if (allocationChartInstance) allocationChartInstance.destroy();
+                allocationChartInstance = new Chart(ctx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            data: data,
+                            backgroundColor: colors,
+                            borderWidth: 2,
+                            borderColor: 'transparent',
+                            hoverBorderColor: '#fff'
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        cutout: '60%',
+                        plugins: {
+                            legend: { display: false },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(ctx) {
+                                        const pct = total > 0 ? (ctx.parsed / total * 100).toFixed(1) : 0;
+                                        return `${ctx.label}: ¥${ctx.parsed.toFixed(0)} (${pct}%)`;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+
+            // 更新图例
+            const legendEl = document.getElementById('allocationLegend');
+            if (legendEl) {
+                legendEl.innerHTML = items.slice(0, 6).map((item, i) => {
+                    const pct = total > 0 ? (item.value / total * 100).toFixed(1) : '0';
+                    const name = item.name.length > 5 ? item.name.slice(0, 5) + '…' : item.name;
+                    return `<div class="allocation-legend-item">
+                        <span class="allocation-legend-dot" style="background:${colors[i]}"></span>
+                        <span class="allocation-legend-name">${name}</span>
+                        <span class="allocation-legend-pct">${pct}%</span>
+                    </div>`;
+                }).join('');
+            }
+        }
+
+        // ===== 最大回撤计算 =====
+        function calculateMaxDrawdown(dataPoints) {
+            if (dataPoints.length < 2) return 0;
+            let peak = dataPoints[0];
+            let maxDd = 0;
+            dataPoints.forEach(val => {
+                if (val > peak) peak = val;
+                const dd = peak > 0 ? (peak - val) / peak : 0;
+                if (dd > maxDd) maxDd = dd;
+            });
+            return maxDd;
+        }
+
+        // ===== 紧凑模式迷你趋势线 =====
+        let sparklineInstance = null;
+
+        function drawCompactSparkline(dataPoints) {
+            const ctx = document.getElementById('compactSparkline');
+            if (!ctx || dataPoints.length < 2) return;
+
+            const recent = dataPoints.slice(-15);
+            const lastVal = recent[recent.length - 1] || 0;
+            const color = lastVal >= 0 ? '#ff4d4f' : '#00b96b';
+
+            if (sparklineInstance && sparklineInstance.canvas === ctx) {
+                sparklineInstance.data.labels = recent.map(() => '');
+                sparklineInstance.data.datasets[0].data = recent;
+                sparklineInstance.data.datasets[0].borderColor = color;
+                sparklineInstance.update('none');
+                return;
+            }
+
+            if (sparklineInstance) sparklineInstance.destroy();
+            sparklineInstance = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: recent.map(() => ''),
+                    datasets: [{
+                        data: recent,
+                        borderColor: color,
+                        borderWidth: 1.5,
+                        tension: 0.4,
+                        fill: false,
+                        pointRadius: 0,
+                        pointHoverRadius: 0
+                    }]
+                },
+                options: {
+                    responsive: false,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false }, tooltip: { enabled: false } },
+                    scales: {
+                        x: { display: false },
+                        y: { display: false }
+                    },
+                    animation: false
+                }
+            });
+        }
+
+        // ===== 数字动画过渡 =====
+        function animateValue(el, endValue, prefix, suffix, duration) {
+            if (!el) return;
+            const text = el.textContent;
+            // 尝试解析当前值
+            const currentMatch = text.replace(/[¥,+%]/g, '').trim();
+            const startVal = parseFloat(currentMatch) || 0;
+            const endVal = parseFloat(endValue) || 0;
+
+            if (Math.abs(startVal - endVal) < 0.005) {
+                el.textContent = `${prefix}${endValue}${suffix}`;
+                return;
+            }
+
+            const startTime = performance.now();
+            const dur = duration || 400;
+
+            function step(now) {
+                const progress = Math.min((now - startTime) / dur, 1);
+                // easeOutCubic
+                const ease = 1 - Math.pow(1 - progress, 3);
+                const current = startVal + (endVal - startVal) * ease;
+                const symbol = current >= 0 ? '+' : '';
+                if (suffix === '%') {
+                    el.textContent = `${prefix}${symbol}${current.toFixed(2)}${suffix}`;
+                } else {
+                    el.textContent = `${prefix}${symbol}¥${current.toFixed(2)}`;
+                }
+                if (progress < 1) requestAnimationFrame(step);
+            }
+            requestAnimationFrame(step);
+        }
+
+        // ===== 紧凑模式：金额/收益率切换 =====
+        let compactShowRate = false;
+        let _compactData = {}; // 缓存数据供切换
+
+        function toggleCompactDisplay() {
+            compactShowRate = !compactShowRate;
+            applyCompactDisplay();
+        }
+
+        function applyCompactDisplay() {
+            const d = _compactData;
+            if (!d.holdingProfit && d.holdingProfit !== 0) return;
+
+            const compactHP = document.getElementById('compactHoldingProfit');
+            const compactHR = document.getElementById('compactHoldingRate');
+            const compactCP = document.getElementById('compactCumulativeProfit');
+
+            if (compactShowRate) {
+                // 显示收益率
+                if (compactHP) {
+                    const s = d.holdingProfitRate >= 0 ? '+' : '';
+                    compactHP.textContent = `${s}${d.holdingProfitRate.toFixed(2)}%`;
+                    compactHP.className = 'overview-compact-value ' + (d.holdingProfit >= 0 ? 'positive' : 'negative');
+                }
+                if (compactHR) compactHR.textContent = '';
+                if (compactCP) {
+                    const s = d.cumulativeProfitRate >= 0 ? '+' : '';
+                    compactCP.textContent = `${s}${d.cumulativeProfitRate.toFixed(2)}%`;
+                    compactCP.className = 'overview-compact-value ' + (d.cumulativeProfit >= 0 ? 'positive' : 'negative');
+                }
+            } else {
+                // 显示金额
+                if (compactHP) {
+                    const s = d.holdingProfit >= 0 ? '+' : '';
+                    compactHP.textContent = `${s}¥${d.holdingProfit.toFixed(2)}`;
+                    compactHP.className = 'overview-compact-value ' + (d.holdingProfit >= 0 ? 'positive' : 'negative');
+                }
+                if (compactHR) {
+                    const s = d.holdingProfitRate >= 0 ? '+' : '';
+                    compactHR.textContent = `(${s}${d.holdingProfitRate.toFixed(2)}%)`;
+                    compactHR.className = 'overview-compact-sub ' + (d.holdingProfit >= 0 ? 'positive' : 'negative');
+                }
+                if (compactCP) {
+                    const s = d.cumulativeProfit >= 0 ? '+' : '';
+                    compactCP.textContent = `${s}¥${d.cumulativeProfit.toFixed(2)}`;
+                    compactCP.className = 'overview-compact-value ' + (d.cumulativeProfit >= 0 ? 'positive' : 'negative');
+                }
+            }
+        }
+
+        // ===== 收益趋势图时间段选择 =====
+        let trendRangeDays = 0; // 0 = 全部
+
+        function changeTrendRange(days) {
+            trendRangeDays = days;
+            document.querySelectorAll('.trend-range-btn').forEach(btn => {
+                const btnDays = parseInt(btn.getAttribute('onclick').match(/\d+/)?.[0] || '0');
+                btn.classList.toggle('active', btnDays === days);
+            });
+            drawProfitTrendChart();
+        }
+
+        // ===== 今日盈亏高亮 =====
+        function applyTodayHighlight(todayProfit, totalMarketValue) {
+            const card = document.getElementById('todayProfitCard');
+            if (!card) return;
+            card.classList.remove('today-highlight-profit', 'today-highlight-loss');
+            // 盈亏幅度超过市值的 1% 时高亮
+            if (totalMarketValue > 0) {
+                const ratio = Math.abs(todayProfit) / totalMarketValue;
+                if (ratio >= 0.01) {
+                    card.classList.add(todayProfit >= 0 ? 'today-highlight-profit' : 'today-highlight-loss');
+                }
+            }
         }
 
         // 收益趋势图实例
@@ -4632,25 +5140,58 @@
                 dataPoints.push(totalHoldingProfit + totalHistoricalProfit);
             });
 
+            // 更新最大回撤
+            const maxDd = calculateMaxDrawdown(dataPoints);
+            const maxDdEl = document.getElementById('maxDrawdown');
+            if (maxDdEl) maxDdEl.textContent = `回撤: -${(maxDd * 100).toFixed(2)}%`;
+
+            // 更新紧凑模式迷你趋势线
+            drawCompactSparkline(dataPoints);
+
+            // 时间范围过滤
+            let filteredDates = dates;
+            let filteredData = dataPoints;
+            let filteredHistorical = historicalProfitPoints;
+            let filteredHolding = holdingProfitPoints;
+
+            if (trendRangeDays > 0) {
+                const cutoff = new Date();
+                cutoff.setDate(cutoff.getDate() - trendRangeDays);
+                const cutoffTime = cutoff.getTime();
+
+                const indices = [];
+                dates.forEach((d, i) => {
+                    const dt = new Date(d.replace(/\//g, '-')).getTime();
+                    if (dt >= cutoffTime) indices.push(i);
+                });
+
+                if (indices.length >= 2) {
+                    filteredDates = indices.map(i => dates[i]);
+                    filteredData = indices.map(i => dataPoints[i]);
+                    filteredHistorical = indices.map(i => historicalProfitPoints[i]);
+                    filteredHolding = indices.map(i => holdingProfitPoints[i]);
+                }
+            }
+
             // 格式化日期标签（只显示月/日）
-            const labels = dates.map(d => {
+            const labels = filteredDates.map(d => {
                 const parts = d.split('/');
                 return parts.length >= 3 ? `${parts[1]}/${parts[2]}` : d;
             });
 
             // 累计收益线颜色：正红负绿
-            const lastValue = dataPoints[dataPoints.length - 1] || 0;
+            const lastValue = filteredData[filteredData.length - 1] || 0;
             const mainColor = lastValue >= 0 ? '#ff4d4f' : '#00b96b';
 
             if (profitTrendChartInstance && profitTrendChartInstance.canvas === ctx) {
                 // 原地更新
                 const chart = profitTrendChartInstance;
                 chart.data.labels = labels;
-                chart.data.datasets[0].data = dataPoints;
+                chart.data.datasets[0].data = filteredData;
                 chart.data.datasets[0].borderColor = mainColor;
                 chart.data.datasets[0].backgroundColor = `${mainColor}15`;
-                chart.data.datasets[1].data = historicalProfitPoints;
-                chart.data.datasets[2].data = holdingProfitPoints;
+                chart.data.datasets[1].data = filteredHistorical;
+                chart.data.datasets[2].data = filteredHolding;
                 chart.update('none');
                 return;
             }
@@ -4666,13 +5207,13 @@
                     datasets: [
                         {
                             label: '累计收益',
-                            data: dataPoints,
+                            data: filteredData,
                             borderColor: mainColor,
                             backgroundColor: `${mainColor}15`,
                             borderWidth: 2.5,
                             tension: 0.3,
                             fill: true,
-                            pointRadius: dataPoints.length <= 15 ? 4 : 0,
+                            pointRadius: filteredData.length <= 15 ? 4 : 0,
                             pointHoverRadius: 5,
                             pointBackgroundColor: mainColor,
                             pointBorderColor: '#fff',
@@ -4681,7 +5222,7 @@
                         },
                         {
                             label: '历史收益',
-                            data: historicalProfitPoints,
+                            data: filteredHistorical,
                             borderColor: '#faad14',
                             borderWidth: 1.5,
                             borderDash: [5, 3],
@@ -4693,7 +5234,7 @@
                         },
                         {
                             label: '持仓收益',
-                            data: holdingProfitPoints,
+                            data: filteredHolding,
                             borderColor: '#667eea',
                             borderWidth: 1.5,
                             borderDash: [3, 3],
