@@ -2693,6 +2693,61 @@
             transform: translateY(0);
         }
 
+        /* Toast 轻提示 */
+        #toastContainer {
+            position: fixed;
+            top: 24px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 10000;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            pointer-events: none;
+        }
+        .toast {
+            padding: 12px 20px;
+            border-radius: 10px;
+            font-size: 14px;
+            font-weight: 500;
+            line-height: 1.5;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+            max-width: 90vw;
+            animation: toastIn 0.25s ease;
+            pointer-events: auto;
+        }
+        .toast.success {
+            background: #f6ffed;
+            color: #389e0d;
+            border: 1px solid #b7eb8f;
+        }
+        .toast.error {
+            background: #fff2f0;
+            color: #cf1322;
+            border: 1px solid #ffccc7;
+        }
+        .toast.warning {
+            background: #fffbe6;
+            color: #d48806;
+            border: 1px solid #ffe58f;
+        }
+        .toast.info {
+            background: #e6f7ff;
+            color: #0958d9;
+            border: 1px solid #91d5ff;
+        }
+        .toast .toast-text {
+            white-space: pre-line;
+        }
+        [data-theme="dark"] .toast.success { background: rgba(82, 196, 26, 0.2); border-color: rgba(82, 196, 26, 0.4); color: #95de64; }
+        [data-theme="dark"] .toast.error { background: rgba(255, 77, 79, 0.2); border-color: rgba(255, 77, 79, 0.4); color: #ff7875; }
+        [data-theme="dark"] .toast.warning { background: rgba(250, 173, 20, 0.2); border-color: rgba(250, 173, 20, 0.4); color: #ffc53d; }
+        [data-theme="dark"] .toast.info { background: rgba(24, 144, 255, 0.2); border-color: rgba(24, 144, 255, 0.4); color: #69c0ff; }
+        @keyframes toastIn {
+            from { opacity: 0; transform: translateY(-12px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
         @media (max-width: 480px) {
             .scroll-top-btn {
                 bottom: 20px;
@@ -2872,6 +2927,8 @@
 
     <!-- 回到顶部按钮 -->
     <button class="scroll-top-btn" id="scrollTopBtn" onclick="window.scrollTo({top:0,behavior:'smooth'})" title="回到顶部">↑</button>
+
+    <div id="toastContainer" aria-live="polite"></div>
 
     <!-- 初始申购模态框 -->
     <div id="initialPurchaseModal" class="modal">
@@ -3143,6 +3200,33 @@
             '2026-06-19', '2026-06-20', '2026-06-21', '2026-09-25', '2026-09-26', '2026-09-27',
             '2026-10-01', '2026-10-02', '2026-10-03', '2026-10-04', '2026-10-05', '2026-10-06', '2026-10-07'
         ]);
+
+        // Toast 轻提示：type = success | error | warning | info
+        function showToast(message, type = 'info', duration = 3200) {
+            const container = document.getElementById('toastContainer');
+            if (!container) return;
+            const el = document.createElement('div');
+            el.className = 'toast ' + (type === 'success' || type === 'error' || type === 'warning' || type === 'info' ? type : 'info');
+            el.setAttribute('role', 'alert');
+            const text = document.createElement('span');
+            text.className = 'toast-text';
+            text.textContent = String(message).trim();
+            el.appendChild(text);
+            container.appendChild(el);
+            const t = setTimeout(() => {
+                el.style.opacity = '0';
+                el.style.transform = 'translateY(-8px)';
+                el.style.transition = 'opacity 0.2s, transform 0.2s';
+                setTimeout(() => el.remove(), 220);
+            }, duration);
+            el.addEventListener('click', () => {
+                clearTimeout(t);
+                el.style.opacity = '0';
+                el.style.transform = 'translateY(-8px)';
+                el.style.transition = 'opacity 0.2s, transform 0.2s';
+                setTimeout(() => el.remove(), 220);
+            });
+        }
 
         function isTradingDay(d) {
             const day = d.getDay();
@@ -3713,7 +3797,7 @@
             // 更新最后备份时间
             updateLastBackupDate();
 
-            alert('✅ 数据导出成功！\n文件已保存到下载文件夹\n\n建议定期备份以防数据丢失');
+            showToast('✅ 数据导出成功！\n文件已保存到下载文件夹\n建议定期备份以防数据丢失', 'success');
         }
 
         // 导出CSV
@@ -3753,7 +3837,7 @@
             link.click();
             document.body.removeChild(link);
             URL.revokeObjectURL(url);
-            alert('✅ CSV导出成功！\n可用Excel或WPS打开查看');
+            showToast('✅ CSV导出成功！可用Excel或WPS打开查看', 'success');
         }
 
         // 导入数据
@@ -3763,7 +3847,7 @@
 
             // 检查文件类型
             if (!file.name.endsWith('.json')) {
-                alert('❌ 请选择JSON格式的备份文件');
+                showToast('❌ 请选择JSON格式的备份文件', 'error');
                 event.target.value = '';
                 return;
             }
@@ -3812,7 +3896,7 @@
                     event.target.value = '';
                 } catch (error) {
                     console.error('导入数据失败：', error);
-                    alert('❌ 导入失败：' + error.message + '\n\n请确保选择的是有效的备份文件');
+                    showToast('❌ 导入失败：' + error.message + '\n请确保选择的是有效的备份文件', 'error');
                     event.target.value = '';
                 }
             };
@@ -3862,10 +3946,10 @@
                     fetchFundData(code);
                 });
 
-                alert(`✅ 数据导入成功！\n\n已导入 ${importedData.fundCodes.length} 只基金\n导出日期：${new Date(importedData.exportDate).toLocaleString('zh-CN')}`);
+                showToast(`✅ 数据导入成功！已导入 ${importedData.fundCodes.length} 只基金\n导出日期：${new Date(importedData.exportDate).toLocaleString('zh-CN')}`, 'success');
             } catch (error) {
                 console.error('完全导入失败：', error);
-                alert('❌ 导入过程中出错：' + error.message);
+                showToast('❌ 导入过程中出错：' + error.message, 'error');
             }
         }
 
@@ -3905,10 +3989,10 @@
                 });
 
                 const addedCount = mergedCodes.length - currentCodes.length;
-                alert(`✅ 数据合并成功！\n\n新增 ${addedCount} 只基金\n总计 ${mergedCodes.length} 只基金`);
+                showToast(`✅ 数据合并成功！新增 ${addedCount} 只基金，总计 ${mergedCodes.length} 只基金`, 'success');
             } catch (error) {
                 console.error('合并导入失败：', error);
-                alert('❌ 合并过程中出错：' + error.message);
+                showToast('❌ 合并过程中出错：' + error.message, 'error');
             }
         }
 
@@ -3940,7 +4024,7 @@
             }
             
             closeCloudSettingsModal();
-            alert('✅ 云同步设置已保存');
+            showToast('✅ 云同步设置已保存', 'success');
         }
 
         // 打开云同步设置模态框
@@ -4079,16 +4163,16 @@
                 
                 clearSyncReminder();
                 const syncTime = new Date().toLocaleString('zh-CN');
-                alert(`✅ 数据上传成功！\n\n⏰ 时间：${syncTime}\n🔗 Gist ID：${result.id}\n\n在其他设备上使用相同的 Token 和 Gist ID 即可下载数据。`);
+                showToast(`✅ 数据上传成功！时间：${syncTime}\nGist ID：${result.id}\n在其他设备上使用相同 Token 和 Gist ID 即可下载。`, 'success');
                 
             } catch (error) {
                 console.error('上传到云端失败：', error);
                 if (error.message.includes('Bad credentials') || error.message.includes('401')) {
-                    alert('❌ 上传失败：Token 无效或已过期\n\n请在设置中更新 Token');
+                    showToast('❌ 上传失败：Token 无效或已过期，请在设置中更新 Token', 'error');
                 } else if (error.message.includes('Not Found') || error.message.includes('404')) {
-                    alert('❌ 上传失败：Gist 不存在\n\n请清空 Gist ID 后重试，将自动创建新的');
+                    showToast('❌ 上传失败：Gist 不存在，请清空 Gist ID 后重试', 'error');
                 } else {
-                    alert('❌ 上传失败：' + error.message);
+                    showToast('❌ 上传失败：' + error.message, 'error');
                 }
             } finally {
                 if (backupToggleBtn) backupToggleBtn.disabled = false;
@@ -4105,7 +4189,7 @@
             }
             
             if (!settings.gistId) {
-                alert('⚠️ 未设置 Gist ID\n\n请先在设置中填入 Gist ID，或先在其他设备上传一次数据。');
+                showToast('⚠️ 未设置 Gist ID，请先在设置中填入 Gist ID 或先在其他设备上传一次', 'warning');
                 openCloudSettingsModal();
                 return;
             }
@@ -4171,16 +4255,16 @@
                 }
                 
                 clearSyncReminder();
-                alert(`✅ 云端数据下载成功！\n\n已导入 ${importedData.fundCodes.length} 只基金的数据`);
+                showToast(`✅ 云端数据下载成功！已导入 ${importedData.fundCodes.length} 只基金的数据`, 'success');
                 
             } catch (error) {
                 console.error('从云端下载失败：', error);
                 if (error.message.includes('Bad credentials') || error.message.includes('401')) {
-                    alert('❌ 下载失败：Token 无效或已过期\n\n请在设置中更新 Token');
+                    showToast('❌ 下载失败：Token 无效或已过期，请在设置中更新 Token', 'error');
                 } else if (error.message.includes('Not Found') || error.message.includes('404')) {
-                    alert('❌ 下载失败：Gist 不存在\n\n请检查 Gist ID 是否正确');
+                    showToast('❌ 下载失败：Gist 不存在，请检查 Gist ID 是否正确', 'error');
                 } else {
-                    alert('❌ 下载失败：' + error.message);
+                    showToast('❌ 下载失败：' + error.message, 'error');
                 }
             } finally {
                 if (backupToggleBtn) backupToggleBtn.disabled = false;
@@ -4195,18 +4279,18 @@
             const code = input.value.trim();
             
             if (!code) {
-                alert('请输入基金代码或名称搜索');
+                showToast('请输入基金代码或名称搜索', 'warning');
                 return;
             }
 
             if (!/^\d{6}$/.test(code)) {
-                alert('请选择正确的6位基金代码');
+                showToast('请选择正确的6位基金代码', 'warning');
                 return;
             }
 
             const codes = loadFundCodes();
             if (codes.includes(code)) {
-                alert('该基金已添加');
+                showToast('该基金已添加', 'info');
                 return;
             }
 
@@ -4344,7 +4428,7 @@
             
             // 显示删除成功提示
             if (!skipConfirm) {
-                alert('✅ 基金已删除\n\n建议定期导出数据备份，以防误操作');
+                showToast('✅ 基金已删除，建议定期导出数据备份', 'success');
             }
         }
 
@@ -4569,7 +4653,7 @@
             const navSource = document.getElementById('initialNetValue').dataset.navSource || 'manual';
 
             if (!netValue || !amount || netValue <= 0 || amount <= 0) {
-                alert('请输入有效的申购净值和申购金额');
+                showToast('请输入有效的申购净值和申购金额', 'warning');
                 return;
             }
 
@@ -4636,7 +4720,7 @@
             const navSource = document.getElementById('buyNetValue').dataset.navSource || 'manual';
 
             if (!netValue || !amount || netValue <= 0 || amount <= 0) {
-                alert('请输入有效的买入净值和买入金额');
+                showToast('请输入有效的买入净值和买入金额', 'warning');
                 return;
             }
 
@@ -4676,7 +4760,7 @@
             const posInfo = calculatePosition(code);
             
             if (!posInfo || posInfo.totalShares <= 0) {
-                alert('当前没有可卖出的份额');
+                showToast('当前没有可卖出的份额', 'warning');
                 return;
             }
 
@@ -4724,7 +4808,7 @@
             const fee = parseFloat(document.getElementById('sellFee').value) || 0;
 
             if (!netValue || !shares || netValue <= 0 || shares <= 0) {
-                alert('请输入有效的卖出净值和卖出份额');
+                showToast('请输入有效的卖出净值和卖出份额', 'warning');
                 return;
             }
 
@@ -4733,7 +4817,7 @@
             const sellSharesRounded = parseFloat(shares.toFixed(2));
             const holdSharesRounded = posInfo ? parseFloat(posInfo.totalShares.toFixed(2)) : 0;
             if (!posInfo || sellSharesRounded > holdSharesRounded) {
-                alert(`卖出份额不能超过持有份额 ${holdSharesRounded}`);
+                showToast(`卖出份额不能超过持有份额 ${holdSharesRounded}`, 'error');
                 return;
             }
 
@@ -5000,7 +5084,7 @@
             const { date, effectiveNavDate } = buildTransactionDateFields(tradeDate, beforeCutoff);
 
             if (!netValue || !amountOrShares || netValue <= 0 || amountOrShares <= 0) {
-                alert('请输入有效的数值');
+                showToast('请输入有效的数值', 'warning');
                 return;
             }
 
@@ -5115,7 +5199,7 @@
             script.src = `https://fundgz.1234567.com.cn/js/${code}.js?t=${Date.now()}`;
             script.onerror = () => {
                 console.error(`加载基金 ${code} 数据失败`);
-                alert(`加载基金 ${code} 数据失败，请检查基金代码是否正确`);
+                showToast(`加载基金 ${code} 数据失败，请检查基金代码是否正确`, 'error');
                 loadingFundCodes.delete(code);
                 removeFund(code, true); // 跳过确认对话框
             };
@@ -5365,13 +5449,13 @@
                 if (loadingFundCodes.size === 1) {
                     const code = Array.from(loadingFundCodes)[0];
                     console.error(`基金 ${code} 数据不完整或无效`);
-                    alert(`基金代码 ${code} 的数据有问题，可能该基金不支持实时估值或代码错误`);
+                    showToast(`基金代码 ${code} 的数据有问题，可能该基金不支持实时估值或代码错误`, 'error');
                     loadingFundCodes.delete(code);
                     removeFund(code, true); // 跳过确认对话框
                 } else if (loadingFundCodes.size > 1) {
                     // 多个同时加载时无法确定是哪个，显示通用提示
                     console.error('某个基金数据不完整或无效');
-                    alert('有基金数据加载失败，可能该基金不支持实时估值');
+                    showToast('有基金数据加载失败，可能该基金不支持实时估值', 'error');
                 }
                 return;
             }
@@ -7468,7 +7552,7 @@
         function refreshActualNav() {
             const codes = loadFundCodes();
             if (codes.length === 0) {
-                alert('暂无基金');
+                showToast('暂无基金', 'info');
                 return;
             }
             codes.forEach(code => localStorage.removeItem(`fundDetail_${code}`));
@@ -7484,7 +7568,7 @@
                 fetchFundDetails(code);
             });
             scheduleRender();
-            alert('已触发刷新，请稍候查看实际净值');
+            showToast('已触发刷新，请稍候查看实际净值', 'info');
         }
 
         // 刷新所有基金数据（定时刷新只获取实时估值；晚间为获取实际净值会拉取详情）
