@@ -1364,6 +1364,11 @@
             background: rgba(0, 185, 107, 0.1);
         }
 
+        .daily-profit.neutral {
+            color: var(--text-muted);
+            background: transparent;
+        }
+
         .fund-data-spacer {
             flex: 1;
         }
@@ -2169,6 +2174,20 @@
             background: var(--stat-bg);
             cursor: default;
         }
+        .form-group select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
+            font-size: 14px;
+            background: var(--input-bg);
+            color: var(--text-primary);
+            cursor: pointer;
+        }
+        .form-group select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
 
         .form-group small {
             display: block;
@@ -2176,6 +2195,38 @@
             color: var(--text-muted);
             font-size: 12px;
         }
+
+        .trade-cutoff-options {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+        .trade-cutoff-options label {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            cursor: pointer;
+            font-weight: 500;
+        }
+        .trade-cutoff-options input[type="radio"] {
+            width: auto;
+        }
+        .nav-source-tag {
+            font-size: 11px;
+            padding: 2px 6px;
+            border-radius: 4px;
+            margin-left: 6px;
+        }
+        .nav-source-tag.actual {
+            background: #e6f7ff;
+            color: #1890ff;
+        }
+        .nav-source-tag.manual {
+            background: #fff7e6;
+            color: #fa8c16;
+        }
+        [data-theme="dark"] .nav-source-tag.actual { background: rgba(24,144,255,0.2); color: #69c0ff; }
+        [data-theme="dark"] .nav-source-tag.manual { background: rgba(250,140,22,0.2); color: #ffc069; }
 
         .form-actions {
             display: flex;
@@ -2674,6 +2725,8 @@
                         ⚙️ 更多
                     </button>
                     <div class="backup-dropdown" id="backupDropdown">
+                        <button class="backup-dropdown-item" onclick="refreshActualNav(); closeBackupMenu();" title="晚间净值公布后点击可获取当天实际净值">📌 刷新实际净值</button>
+                        <div class="backup-dropdown-divider"></div>
                         <button class="backup-dropdown-item" onclick="exportData(); closeBackupMenu();">💾 导出JSON</button>
                         <button class="backup-dropdown-item" onclick="exportCSV(); closeBackupMenu();">📊 导出CSV</button>
                         <button class="backup-dropdown-item" onclick="document.getElementById('importFileInput').click(); closeBackupMenu();">📥 导入数据</button>
@@ -2822,9 +2875,23 @@
                 <button class="close-btn" onclick="closeInitialPurchaseModal()">&times;</button>
             </div>
             <div class="form-group">
+                <label>交易日期</label>
+                <select id="initialTradeDate" onchange="onInitialTradeDateTimeChange()">
+                    <!-- 由 JS 填充可交易日 -->
+                </select>
+                <small>选择申购当天的交易日</small>
+            </div>
+            <div class="form-group">
+                <label>申购时段</label>
+                <div class="trade-cutoff-options">
+                    <label><input type="radio" name="initialCutoff" value="before" checked onchange="onInitialTradeDateTimeChange()"> 15:00 前（按当日净值）</label>
+                    <label><input type="radio" name="initialCutoff" value="after" onchange="onInitialTradeDateTimeChange()"> 15:00 后（按下日净值）</label>
+                </div>
+            </div>
+            <div class="form-group">
                 <label for="initialNetValue">申购净值</label>
                 <input type="number" id="initialNetValue" step="0.0001" placeholder="如：1.5000">
-                <small>申购时的单位净值</small>
+                <small id="initialNavHint">申购时的单位净值，选好日期后若为实际净值会自动填入</small>
             </div>
             <div class="form-group">
                 <label for="initialAmount">申购金额（元）</label>
@@ -2856,9 +2923,22 @@
                 <button class="close-btn" onclick="closeBuyModal()">&times;</button>
             </div>
             <div class="form-group">
+                <label>交易日期</label>
+                <select id="buyTradeDate" onchange="onBuyTradeDateTimeChange()">
+                    <!-- 由 JS 填充可交易日 -->
+                </select>
+            </div>
+            <div class="form-group">
+                <label>买入时段</label>
+                <div class="trade-cutoff-options">
+                    <label><input type="radio" name="buyCutoff" value="before" checked onchange="onBuyTradeDateTimeChange()"> 15:00 前（按当日净值）</label>
+                    <label><input type="radio" name="buyCutoff" value="after" onchange="onBuyTradeDateTimeChange()"> 15:00 后（按下日净值）</label>
+                </div>
+            </div>
+            <div class="form-group">
                 <label for="buyNetValue">买入净值</label>
                 <input type="number" id="buyNetValue" step="0.0001" placeholder="如：1.6000">
-                <small>买入时的单位净值</small>
+                <small id="buyNavHint">选好日期后若为实际净值会自动填入</small>
             </div>
             <div class="form-group">
                 <label for="buyAmount">买入金额（元）</label>
@@ -2890,9 +2970,22 @@
                 <button class="close-btn" onclick="closeSellModal()">&times;</button>
             </div>
             <div class="form-group">
+                <label>交易日期</label>
+                <select id="sellTradeDate" onchange="onSellTradeDateTimeChange()">
+                    <!-- 由 JS 填充可交易日 -->
+                </select>
+            </div>
+            <div class="form-group">
+                <label>卖出时段</label>
+                <div class="trade-cutoff-options">
+                    <label><input type="radio" name="sellCutoff" value="before" checked onchange="onSellTradeDateTimeChange()"> 15:00 前（按当日净值）</label>
+                    <label><input type="radio" name="sellCutoff" value="after" onchange="onSellTradeDateTimeChange()"> 15:00 后（按下日净值）</label>
+                </div>
+            </div>
+            <div class="form-group">
                 <label for="sellNetValue">卖出净值</label>
                 <input type="number" id="sellNetValue" step="0.0001" placeholder="如：1.8000">
-                <small>卖出时的单位净值</small>
+                <small id="sellNavHint">选好日期后若为实际净值会自动填入</small>
             </div>
             <div class="form-group">
                 <label for="sellShares">卖出份额</label>
@@ -3028,6 +3121,83 @@
         let fundDetails = {}; // 基金详细信息：{ code: { rates, managers, etc } }
         let netWorthRefreshed = new Set(); // 已触发净值数据刷新的基金（防止重复刷新）
         let chartRangeSelection = {}; // 每个基金的图表时间范围选择：{ code: days }
+        const NAV_PUBLISH_HOUR = 20; // 基金公司通常在此时间后公布当天净值（24小时制）
+        const TRADE_CUTOFF_HOUR = 15; // 15:00 前申购/赎回按当日净值，15:00 后按下一交易日
+
+        // 中国A股休市日（沪深交易所公布，含周末外的节假日）
+        const CN_MARKET_HOLIDAYS = new Set([
+            '2024-01-01', '2024-02-09', '2024-02-10', '2024-02-11', '2024-02-12', '2024-02-13', '2024-02-14', '2024-02-15', '2024-02-16', '2024-02-17',
+            '2024-04-04', '2024-04-05', '2024-04-06', '2024-05-01', '2024-05-02', '2024-05-03', '2024-05-04', '2024-05-05',
+            '2024-06-10', '2024-09-15', '2024-09-16', '2024-09-17', '2024-10-01', '2024-10-02', '2024-10-03', '2024-10-04', '2024-10-05', '2024-10-06', '2024-10-07',
+            '2025-01-01', '2025-01-28', '2025-01-29', '2025-01-30', '2025-01-31', '2025-02-01', '2025-02-02', '2025-02-03', '2025-02-04',
+            '2025-04-04', '2025-04-05', '2025-04-06', '2025-05-01', '2025-05-02', '2025-05-03', '2025-05-04', '2025-05-05',
+            '2025-05-31', '2025-06-01', '2025-06-02', '2025-10-01', '2025-10-02', '2025-10-03', '2025-10-04', '2025-10-05', '2025-10-06', '2025-10-07', '2025-10-08',
+            '2026-01-01', '2026-01-02', '2026-01-03', '2026-02-15', '2026-02-16', '2026-02-17', '2026-02-18', '2026-02-19', '2026-02-20', '2026-02-21', '2026-02-22', '2026-02-23',
+            '2026-04-04', '2026-04-05', '2026-04-06', '2026-05-01', '2026-05-02', '2026-05-03', '2026-05-04', '2026-05-05',
+            '2026-06-19', '2026-06-20', '2026-06-21', '2026-09-25', '2026-09-26', '2026-09-27',
+            '2026-10-01', '2026-10-02', '2026-10-03', '2026-10-04', '2026-10-05', '2026-10-06', '2026-10-07'
+        ]);
+
+        function isTradingDay(d) {
+            const day = d.getDay();
+            if (day === 0 || day === 6) return false; // 周末
+            const s = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+            return !CN_MARKET_HOLIDAYS.has(s);
+        }
+
+        function toDateStr(d) {
+            return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+        }
+
+        function getNextTradingDay(dateStr) {
+            let d = new Date(dateStr + 'T12:00:00');
+            for (let i = 1; i <= 14; i++) {
+                d.setDate(d.getDate() + 1);
+                if (isTradingDay(d)) return toDateStr(d);
+            }
+            return toDateStr(d);
+        }
+
+        // 根据交易日期 + 是否15点前，得到实际采用的净值日期
+        function getEffectiveNavDate(tradeDateStr, beforeCutoff) {
+            if (beforeCutoff) return tradeDateStr;
+            return getNextTradingDay(tradeDateStr);
+        }
+
+        // 从净值走势中获取某日的实际净值
+        function getNavForEffectiveDate(code, effectiveDateStr) {
+            const details = fundDetails[code];
+            if (!details || !details.netWorthData || details.netWorthData.length === 0) return null;
+            const target = new Date(effectiveDateStr + 'T12:00:00').getTime();
+            const item = details.netWorthData.find(x => {
+                const t = new Date(x.x);
+                return toDateStr(t) === effectiveDateStr;
+            });
+            return item ? item.y : null;
+        }
+
+        // 生成可选的交易日列表（最近约一年 + 未来一个月）
+        function generateTradingDateOptions() {
+            const opts = [];
+            const end = new Date();
+            const start = new Date();
+            start.setFullYear(start.getFullYear() - 1);
+            let d = new Date(end);
+            d.setDate(d.getDate() + 31);
+            const futureEnd = d;
+            d = new Date(start);
+            while (d <= futureEnd) {
+                if (isTradingDay(d)) {
+                    const s = toDateStr(d);
+                    const label = d.getTime() > Date.now() ? s + ' (未来)' : s;
+                    opts.push({ value: s, label: label });
+                }
+                d.setDate(d.getDate() + 1);
+            }
+            opts.sort((a, b) => b.value.localeCompare(a.value));
+            return opts;
+        }
+
         // 渲染防抖器：避免短时间内多次整体重绘引起闪烁
         let _renderTimer = null;
         function scheduleRender(delay = 250) {
@@ -3549,20 +3719,20 @@
                 const data = fundsData[code];
                 const posInfo = calculatePosition(code);
                 const name = data ? data.name : code;
-                const gsz = data ? data.gsz : '';
-                const gszzl = data ? data.gszzl : '';
+                const display = data ? getDisplayValues(data) : { value: '', percentage: 0 };
                 const dwjz = data ? data.dwjz : '';
                 const shares = posInfo ? posInfo.totalShares.toFixed(2) : '0';
                 const cost = posInfo ? posInfo.totalCost.toFixed(2) : '0';
                 let marketValue = '', profit = '', profitRate = '';
                 if (posInfo && posInfo.totalShares > 0 && data) {
-                    const mv = posInfo.totalShares * parseFloat(data.gsz);
+                    const currentNav = display.isActual ? parseFloat(display.value) : parseFloat(data.gsz);
+                    const mv = posInfo.totalShares * currentNav;
                     const p = mv - posInfo.totalCost;
                     marketValue = mv.toFixed(2);
                     profit = p.toFixed(2);
-                    profitRate = posInfo.avgCost > 0 ? ((parseFloat(data.gsz) - posInfo.avgCost) / posInfo.avgCost * 100).toFixed(2) : '0';
+                    profitRate = posInfo.avgCost > 0 ? ((currentNav - posInfo.avgCost) / posInfo.avgCost * 100).toFixed(2) : '0';
                 }
-                rows.push([code, name, gsz, gszzl, dwjz, shares, cost, marketValue, profit, profitRate]);
+                rows.push([code, name, display.value, display.percentage.toFixed(2), dwjz, shares, cost, marketValue, profit, profitRate]);
             });
 
             // BOM + CSV content for Excel compatibility
@@ -4172,6 +4342,23 @@
             }
         }
 
+        // 计算参与今日盈亏的份额（排除今日买入的份额，因按当日净值成交无涨跌收益）
+        function getSharesEligibleForTodayProfit(code) {
+            const posInfo = calculatePosition(code);
+            if (!posInfo || posInfo.totalShares <= 0) return 0;
+            const position = positions[code];
+            if (!position || !position.transactions) return posInfo.totalShares;
+            const todayStr = toDateStr(new Date());
+            let boughtToday = 0, soldToday = 0;
+            position.transactions.forEach(trans => {
+                const td = trans.tradeDate || toDateStr(new Date(trans.date));
+                if (td !== todayStr) return;
+                if (trans.type === 'buy') boughtToday += trans.shares;
+                else if (trans.type === 'sell') soldToday += trans.shares;
+            });
+            return Math.max(0, posInfo.totalShares - boughtToday + soldToday);
+        }
+
         // 计算持仓信息
         function calculatePosition(code) {
             const position = positions[code];
@@ -4211,14 +4398,132 @@
             };
         }
 
+        // 填充交易日期下拉（可交易日）
+        function populateTradeDateSelect(selectId, defaultDateStr) {
+            const sel = document.getElementById(selectId);
+            if (!sel) return;
+            const opts = generateTradingDateOptions();
+            sel.innerHTML = opts.map(o => `<option value="${o.value}" ${o.value === defaultDateStr ? 'selected' : ''}>${o.label}</option>`).join('');
+        }
+
+        // 获取当前最近的交易日
+        function getLatestTradingDateStr() {
+            let d = new Date();
+            for (let i = 0; i < 14; i++) {
+                if (isTradingDay(d)) return toDateStr(d);
+                d.setDate(d.getDate() - 1);
+            }
+            return toDateStr(d);
+        }
+
+        function onInitialTradeDateTimeChange() {
+            const code = currentModalFundCode;
+            if (!code) return;
+            const tradeDate = document.getElementById('initialTradeDate').value;
+            const beforeCutoff = document.querySelector('input[name="initialCutoff"]:checked').value === 'before';
+            const effDate = getEffectiveNavDate(tradeDate, beforeCutoff);
+            const nav = getNavForEffectiveDate(code, effDate);
+            const input = document.getElementById('initialNetValue');
+            const hint = document.getElementById('initialNavHint');
+            if (nav != null) {
+                input.value = nav.toFixed(4);
+                hint.textContent = '实际净值（来自历史数据）';
+                input.dataset.navSource = 'actual';
+            } else {
+                input.value = '';
+                hint.textContent = '申购时的单位净值，请手动填写';
+                input.dataset.navSource = 'manual';
+            }
+            calcInitialShares();
+        }
+
+        function onBuyTradeDateTimeChange() {
+            const code = currentModalFundCode;
+            if (!code) return;
+            const tradeDate = document.getElementById('buyTradeDate').value;
+            const beforeCutoff = document.querySelector('input[name="buyCutoff"]:checked').value === 'before';
+            const effDate = getEffectiveNavDate(tradeDate, beforeCutoff);
+            const nav = getNavForEffectiveDate(code, effDate);
+            const input = document.getElementById('buyNetValue');
+            const hint = document.getElementById('buyNavHint');
+            if (nav != null) {
+                input.value = nav.toFixed(4);
+                hint.textContent = '实际净值（来自历史数据）';
+                input.dataset.navSource = 'actual';
+            } else {
+                input.value = '';
+                hint.textContent = '买入时的单位净值，请手动填写';
+                input.dataset.navSource = 'manual';
+            }
+            calcBuyShares();
+        }
+
+        function refreshTradeModalNavIfOpen(code) {
+            if (currentModalFundCode !== code) return;
+            if (document.getElementById('initialPurchaseModal').classList.contains('active')) onInitialTradeDateTimeChange();
+            else if (document.getElementById('buyModal').classList.contains('active')) onBuyTradeDateTimeChange();
+            else if (document.getElementById('sellModal').classList.contains('active')) onSellTradeDateTimeChange();
+        }
+
+        function onSellTradeDateTimeChange() {
+            const code = currentModalFundCode;
+            if (!code) return;
+            const tradeDate = document.getElementById('sellTradeDate').value;
+            const beforeCutoff = document.querySelector('input[name="sellCutoff"]:checked').value === 'before';
+            const effDate = getEffectiveNavDate(tradeDate, beforeCutoff);
+            const nav = getNavForEffectiveDate(code, effDate);
+            const input = document.getElementById('sellNetValue');
+            const hint = document.getElementById('sellNavHint');
+            if (nav != null) {
+                input.value = nav.toFixed(4);
+                hint.textContent = '实际净值（来自历史数据）';
+                input.dataset.navSource = 'actual';
+            } else {
+                input.value = '';
+                hint.textContent = '卖出时的单位净值，请手动填写';
+                input.dataset.navSource = 'manual';
+            }
+            calcSellAmount();
+        }
+
+        function calcInitialShares() {
+            const netValue = parseFloat(document.getElementById('initialNetValue').value);
+            const amount = parseFloat(document.getElementById('initialAmount').value);
+            const fee = parseFloat(document.getElementById('initialFee').value) || 0;
+            const el = document.getElementById('initialShares');
+            if (netValue && amount && netValue > 0 && amount > 0) el.value = ((amount - fee) / netValue).toFixed(2);
+            else el.value = '';
+        }
+        function calcBuyShares() {
+            const netValue = parseFloat(document.getElementById('buyNetValue').value);
+            const amount = parseFloat(document.getElementById('buyAmount').value);
+            const fee = parseFloat(document.getElementById('buyFee').value) || 0;
+            const el = document.getElementById('buyShares');
+            if (netValue && amount && netValue > 0 && amount > 0) el.value = ((amount - fee) / netValue).toFixed(2);
+            else el.value = '';
+        }
+        function calcSellAmount() {
+            const netValue = parseFloat(document.getElementById('sellNetValue').value);
+            const shares = parseFloat(document.getElementById('sellShares').value);
+            const fee = parseFloat(document.getElementById('sellFee').value) || 0;
+            const el = document.getElementById('sellAmount');
+            if (netValue && shares && netValue > 0 && shares > 0) el.value = (shares * netValue - fee).toFixed(2);
+            else el.value = '';
+        }
+
         // 打开初始申购模态框
         function openInitialPurchaseModal(code) {
             currentModalFundCode = code;
+            const latest = getLatestTradingDateStr();
+            populateTradeDateSelect('initialTradeDate', latest);
+            document.querySelector('input[name="initialCutoff"][value="before"]').checked = true;
             document.getElementById('initialNetValue').value = '';
             document.getElementById('initialAmount').value = '';
             document.getElementById('initialFee').value = '0';
             document.getElementById('initialShares').value = '';
             document.getElementById('initialPurchaseModal').classList.add('active');
+            fetchFundDetails(code, true);
+            onInitialTradeDateTimeChange();
         }
 
         // 关闭初始申购模态框（跳过申购 = 自选基金）
@@ -4237,6 +4542,15 @@
             }
         }
 
+        // 构建交易记录的 date 与扩展字段
+        function buildTransactionDateFields(tradeDateStr, beforeCutoff) {
+            const effDate = getEffectiveNavDate(tradeDateStr, beforeCutoff);
+            const hour = beforeCutoff ? 9 : 15;
+            const min = beforeCutoff ? 30 : 1;
+            const iso = `${tradeDateStr}T${String(hour).padStart(2, '0')}:${String(min).padStart(2, '0')}:00`;
+            return { date: new Date(iso).toISOString(), tradeDate: tradeDateStr, beforeCutoff, effectiveNavDate: effDate };
+        }
+
         // 保存初始申购
         function saveInitialPurchase() {
             if (!currentModalFundCode) return;
@@ -4244,6 +4558,9 @@
             const netValue = parseFloat(document.getElementById('initialNetValue').value);
             const amount = parseFloat(document.getElementById('initialAmount').value);
             const fee = parseFloat(document.getElementById('initialFee').value) || 0;
+            const tradeDate = document.getElementById('initialTradeDate').value;
+            const beforeCutoff = document.querySelector('input[name="initialCutoff"]:checked').value === 'before';
+            const navSource = document.getElementById('initialNetValue').dataset.navSource || 'manual';
 
             if (!netValue || !amount || netValue <= 0 || amount <= 0) {
                 alert('请输入有效的申购净值和申购金额');
@@ -4251,15 +4568,19 @@
             }
 
             const shares = (amount - fee) / netValue;
+            const { date, effectiveNavDate } = buildTransactionDateFields(tradeDate, beforeCutoff);
 
-            // 确保格式正确，兼容旧数据
             if (!positions[currentModalFundCode] || !positions[currentModalFundCode].transactions) {
                 positions[currentModalFundCode] = { transactions: [] };
             }
 
             positions[currentModalFundCode].transactions.push({
                 type: 'buy',
-                date: new Date().toISOString(),
+                date,
+                tradeDate,
+                beforeCutoff,
+                effectiveNavDate,
+                navSource,
                 netValue: netValue,
                 amount: amount,
                 fee: fee,
@@ -4267,6 +4588,7 @@
             });
 
             savePositions();
+            markDataChanged();
             closeInitialPurchaseModal();
             if (currentMainView !== 'holding') {
                 switchMainView('holding');
@@ -4278,11 +4600,16 @@
         // 打开买入模态框
         function openBuyModal(code) {
             currentModalFundCode = code;
+            const latest = getLatestTradingDateStr();
+            populateTradeDateSelect('buyTradeDate', latest);
+            document.querySelector('input[name="buyCutoff"][value="before"]').checked = true;
             document.getElementById('buyNetValue').value = '';
             document.getElementById('buyAmount').value = '';
             document.getElementById('buyFee').value = '0';
             document.getElementById('buyShares').value = '';
             document.getElementById('buyModal').classList.add('active');
+            fetchFundDetails(code, true);
+            onBuyTradeDateTimeChange();
         }
 
         // 关闭买入模态框
@@ -4298,6 +4625,9 @@
             const netValue = parseFloat(document.getElementById('buyNetValue').value);
             const amount = parseFloat(document.getElementById('buyAmount').value);
             const fee = parseFloat(document.getElementById('buyFee').value) || 0;
+            const tradeDate = document.getElementById('buyTradeDate').value;
+            const beforeCutoff = document.querySelector('input[name="buyCutoff"]:checked').value === 'before';
+            const navSource = document.getElementById('buyNetValue').dataset.navSource || 'manual';
 
             if (!netValue || !amount || netValue <= 0 || amount <= 0) {
                 alert('请输入有效的买入净值和买入金额');
@@ -4305,15 +4635,19 @@
             }
 
             const shares = (amount - fee) / netValue;
+            const { date, effectiveNavDate } = buildTransactionDateFields(tradeDate, beforeCutoff);
 
-            // 确保格式正确，兼容旧数据
             if (!positions[currentModalFundCode] || !positions[currentModalFundCode].transactions) {
                 positions[currentModalFundCode] = { transactions: [] };
             }
 
             positions[currentModalFundCode].transactions.push({
                 type: 'buy',
-                date: new Date().toISOString(),
+                date,
+                tradeDate,
+                beforeCutoff,
+                effectiveNavDate,
+                navSource,
                 netValue: netValue,
                 amount: amount,
                 fee: fee,
@@ -4321,6 +4655,7 @@
             });
 
             savePositions();
+            markDataChanged();
             closeBuyModal();
             if (currentMainView !== 'holding') {
                 switchMainView('holding');
@@ -4342,12 +4677,17 @@
             // 保存可卖出份额
             currentAvailableShares = posInfo.totalShares;
 
+            const latest = getLatestTradingDateStr();
+            populateTradeDateSelect('sellTradeDate', latest);
+            document.querySelector('input[name="sellCutoff"][value="before"]').checked = true;
             document.getElementById('sellNetValue').value = '';
             document.getElementById('sellShares').value = '';
             document.getElementById('sellFee').value = '0';
             document.getElementById('sellAmount').value = '';
             document.getElementById('sellSharesHint').textContent = `可卖出份额：${posInfo.totalShares.toFixed(2)}`;
             document.getElementById('sellModal').classList.add('active');
+            fetchFundDetails(code, true);
+            onSellTradeDateTimeChange();
         }
 
         // 快速设置卖出份额
@@ -4392,10 +4732,18 @@
             }
 
             const amount = shares * netValue - fee;
+            const tradeDate = document.getElementById('sellTradeDate').value;
+            const beforeCutoff = document.querySelector('input[name="sellCutoff"]:checked').value === 'before';
+            const navSource = document.getElementById('sellNetValue').dataset.navSource || 'manual';
+            const { date, effectiveNavDate } = buildTransactionDateFields(tradeDate, beforeCutoff);
 
             positions[currentModalFundCode].transactions.push({
                 type: 'sell',
-                date: new Date().toISOString(),
+                date,
+                tradeDate,
+                beforeCutoff,
+                effectiveNavDate,
+                navSource,
                 netValue: netValue,
                 amount: amount,
                 fee: fee,
@@ -4403,6 +4751,7 @@
             });
 
             savePositions();
+            markDataChanged();
             closeSellModal();
             renderFunds();
         }
@@ -4518,7 +4867,10 @@
                 content.innerHTML = '<div class="no-position" style="padding: 40px;">暂无交易记录</div>';
             } else {
                 const transHtml = position.transactions.map((trans, index) => {
-                    const date = new Date(trans.date).toLocaleString('zh-CN');
+                    const d = new Date(trans.date);
+                    const tradeDate = trans.tradeDate || (d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'));
+                    const cutoffText = trans.beforeCutoff === false ? '15:00后' : (trans.beforeCutoff === true ? '15:00前' : '');
+                    const navTag = trans.navSource === 'actual' ? '<span class="nav-source-tag actual">实际</span>' : (trans.navSource === 'manual' ? '<span class="nav-source-tag manual">手动</span>' : '');
                     const typeText = trans.type === 'buy' ? '买入' : '卖出';
                     const typeClass = trans.type;
                     
@@ -4528,13 +4880,14 @@
                                 <div>
                                     <span class="transaction-type ${typeClass}">${typeText}</span>
                                     <span style="font-weight: 600;">${trans.shares.toFixed(2)} 份</span>
+                                    ${navTag}
                                 </div>
                                 <div class="transaction-details">
                                     净值: ${trans.netValue.toFixed(4)} | 
                                     ${trans.type === 'buy' ? '投入' : '收回'}: ¥${trans.amount.toFixed(2)} | 
                                     手续费: ¥${trans.fee.toFixed(2)}
                                 </div>
-                                <div class="transaction-date">${date}</div>
+                                <div class="transaction-date">${tradeDate} ${cutoffText}</div>
                             </div>
                             <div class="transaction-actions">
                                 <button class="trans-action-btn trans-edit-btn" onclick="editTransaction('${code}', ${index})" title="编辑">✏️</button>
@@ -4578,6 +4931,9 @@
             const trans = position.transactions[index];
             const content = document.getElementById('transactionHistoryContent');
             const isBuy = trans.type === 'buy';
+            const td = trans.tradeDate || (() => { const d = new Date(trans.date); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); })();
+            const before = trans.beforeCutoff !== false;
+            const opts = generateTradingDateOptions().map(o => `<option value="${o.value}" ${o.value === td ? 'selected' : ''}>${o.label}</option>`).join('');
 
             const editHtml = `
                 <div class="trans-edit-form">
@@ -4601,7 +4957,14 @@
                         </div>
                         <div>
                             <label>交易日期</label>
-                            <input type="datetime-local" id="editDate" value="${new Date(trans.date).toISOString().slice(0, 16)}">
+                            <select id="editTradeDate">${opts}</select>
+                        </div>
+                    </div>
+                    <div class="form-row-single">
+                        <label>交易时段</label>
+                        <div class="trade-cutoff-options">
+                            <label><input type="radio" name="editCutoff" value="before" ${before ? 'checked' : ''}> 15:00 前</label>
+                            <label><input type="radio" name="editCutoff" value="after" ${!before ? 'checked' : ''}> 15:00 后</label>
                         </div>
                     </div>
                     <div class="trans-edit-actions">
@@ -4623,7 +4986,9 @@
             const netValue = parseFloat(document.getElementById('editNetValue').value);
             const amountOrShares = parseFloat(document.getElementById('editAmountOrShares').value);
             const fee = parseFloat(document.getElementById('editFee').value) || 0;
-            const dateStr = document.getElementById('editDate').value;
+            const tradeDate = document.getElementById('editTradeDate').value;
+            const beforeCutoff = document.querySelector('input[name="editCutoff"]:checked').value === 'before';
+            const { date, effectiveNavDate } = buildTransactionDateFields(tradeDate, beforeCutoff);
 
             if (!netValue || !amountOrShares || netValue <= 0 || amountOrShares <= 0) {
                 alert('请输入有效的数值');
@@ -4631,22 +4996,22 @@
             }
 
             if (trans.type === 'buy') {
-                // 买入：amountOrShares 是买入金额
                 trans.netValue = netValue;
                 trans.amount = amountOrShares;
                 trans.fee = fee;
                 trans.shares = (amountOrShares - fee) / netValue;
             } else {
-                // 卖出：amountOrShares 是卖出份额
                 trans.netValue = netValue;
                 trans.shares = amountOrShares;
                 trans.fee = fee;
                 trans.amount = amountOrShares * netValue - fee;
             }
 
-            if (dateStr) {
-                trans.date = new Date(dateStr).toISOString();
-            }
+            trans.date = date;
+            trans.tradeDate = tradeDate;
+            trans.beforeCutoff = beforeCutoff;
+            trans.effectiveNavDate = effectiveNavDate;
+            trans.navSource = trans.navSource || 'manual';
 
             savePositions();
             renderFunds();
@@ -4673,6 +5038,57 @@
                 }
             }
             saveDailyRanges();
+        }
+
+        // 判断是否已过当日净值公布时间（通常 20:00 后基金公司会公布实际净值）
+        function isAfterNavPublishTime() {
+            const hour = new Date().getHours();
+            return hour >= NAV_PUBLISH_HOUR;
+        }
+
+        // 从基金详情的净值走势中提取当天最新实际净值，并合并到 fundsData
+        // 净值公布后 fundgz 接口不更新，需依赖 pingzhongdata 的 Data_netWorthTrend 最后一条
+        function tryUpdateActualNav(code) {
+            const details = fundDetails[code];
+            const data = fundsData[code];
+            if (!details || !details.netWorthData || details.netWorthData.length < 2 || !data) return;
+            const arr = details.netWorthData;
+            const last = arr[arr.length - 1];
+            const prev = arr[arr.length - 2];
+            const lastDate = new Date(last.x);
+            const today = new Date();
+            const lastDateStr = `${lastDate.getFullYear()}/${lastDate.getMonth() + 1}/${lastDate.getDate()}`;
+            const todayStr = `${today.getFullYear()}/${today.getMonth() + 1}/${today.getDate()}`;
+            // 只有当天净值日期与今天一致，且已过公布时间，才使用实际净值
+            if (lastDateStr !== todayStr || !isAfterNavPublishTime()) return;
+            const actualValue = last.y;
+            const prevValue = prev.y;
+            const actualPercentage = prevValue > 0 ? ((actualValue - prevValue) / prevValue * 100) : 0;
+            data.actualNav = actualValue;
+            data.actualNavDate = lastDateStr;
+            data.actualNavPercentage = actualPercentage;
+            data.actualNavJzrq = lastDateStr;
+            if (!updateFundCardInPlace(code)) scheduleRender();
+            else updateOverviewPanel();
+        }
+
+        // 获取用于展示的当前净值/估算值及涨跌幅（优先使用晚间公布的实际净值）
+        function getDisplayValues(data) {
+            if (!data) return { value: '', percentage: 0, label: '估算', isActual: false };
+            if (data.actualNav != null && data.actualNav !== '') {
+                return {
+                    value: parseFloat(data.actualNav).toFixed(4),
+                    percentage: parseFloat(data.actualNavPercentage || 0),
+                    label: '实际',
+                    isActual: true
+                };
+            }
+            return {
+                value: data.gsz || '',
+                percentage: parseFloat(data.gszzl || 0),
+                label: '估算',
+                isActual: false
+            };
         }
 
         // 获取基金数据（JSONP）
@@ -4737,36 +5153,35 @@
                     const cacheData = JSON.parse(cached);
                     const now = Date.now();
                     const oneDay = 24 * 60 * 60 * 1000;
-                    
-                    
-                    // 如果缓存未过期（1天内），使用缓存
-                    if (now - cacheData.timestamp < oneDay) {
+                    const cacheTime = new Date(cacheData.timestamp);
+                    const cacheHour = cacheTime.getHours();
+                    // 晚间（20:00 后）净值已公布，若缓存是当天 20:00 前存的，可能不含当天实际净值，需重新拉取
+                    const isCacheStaleForEvening = isAfterNavPublishTime() &&
+                        cacheTime.toDateString() === new Date().toDateString() && cacheHour < NAV_PUBLISH_HOUR;
+                    const cacheValid = (now - cacheData.timestamp < oneDay) && !isCacheStaleForEvening;
+
+                    if (cacheValid) {
                         // 检查缓存中是否有净值数据
                         const hasNetWorthData = cacheData.data.netWorthData && cacheData.data.netWorthData.length > 0;
-                        
-                        if (!hasNetWorthData) {
-                            // 缓存中没有净值数据，继续从API获取
-                        } else {
+
+                        if (hasNetWorthData) {
                             fundDetails[code] = cacheData.data;
+                            tryUpdateActualNav(code);
+                            refreshTradeModalNavIfOpen(code);
                             if (!skipRender) {
                                 const updated = updateFundDetailsTab(code);
-                                // 如果更新失败（可能是DOM还没创建），需要renderFunds
                                 if (!updated) {
                                     renderFunds();
                                 }
                             }
-                            
-                            // 标记加载完成，处理队列中的下一个
                             isLoadingFundDetails = false;
                             processFundDetailsQueue();
                             return;
                         }
-                    } else {
                     }
                 } catch (e) {
                     console.error(`[fetchFundDetailsInternal] 基金 ${code} 解析缓存失败`, e);
                 }
-            } else {
             }
             
             // 清理旧的script标签
@@ -4867,6 +5282,8 @@
                     // 最终验证：确保捕获的数据名称包含预期的基金代码或名称
                     
                     fundDetails[code] = capturedData;
+                    tryUpdateActualNav(code);
+                    refreshTradeModalNavIfOpen(code);
                     
                     // 验证存储后的数据
                     if (fundDetails[code] && fundDetails[code].netWorthData && fundDetails[code].netWorthData.length > 0) {
@@ -4952,6 +5369,7 @@
             
             fundsData[data.fundcode] = data;
             loadingFundCodes.delete(data.fundcode);
+            tryUpdateActualNav(data.fundcode);
             
             // 保存历史数据
             if (!historyData[data.fundcode]) {
@@ -5066,14 +5484,17 @@
                 // 持仓收益计算
                 if (posInfo && posInfo.totalShares > 0 && data) {
                     hasPosition = true;
-                    const currentValue = posInfo.totalShares * parseFloat(data.gsz);
+                    const display = getDisplayValues(data);
+                    const currentNav = display.isActual ? parseFloat(display.value) : parseFloat(data.gsz);
+                    const currentValue = posInfo.totalShares * currentNav;
                     totalMarketValue += currentValue;
                     totalCost += posInfo.totalCost;
                     
-                    // 今日盈亏 = 持有份额 × 昨日净值 × 涨跌幅百分比
-                    const percentage = parseFloat(data.gszzl);
+                    // 今日盈亏 = 参与计算的份额 × 昨日净值 × 涨跌幅（排除今日买入份额）
+                    const percentage = display.percentage;
                     const yesterdayValue = parseFloat(data.dwjz);
-                    const dailyProfit = posInfo.totalShares * yesterdayValue * (percentage / 100);
+                    const eligibleShares = getSharesEligibleForTodayProfit(code);
+                    const dailyProfit = eligibleShares * yesterdayValue * (percentage / 100);
                     todayProfit += dailyProfit;
                 }
 
@@ -5204,9 +5625,11 @@
                 const posInfo = calculatePosition(code);
                 if (!posInfo || posInfo.totalShares <= 0 || !data) return;
 
-                const percentage = parseFloat(data.gszzl);
+                const display = getDisplayValues(data);
+                const percentage = display.percentage;
                 const yesterdayValue = parseFloat(data.dwjz);
-                const dailyProfit = posInfo.totalShares * yesterdayValue * (percentage / 100);
+                const eligibleShares = getSharesEligibleForTodayProfit(code);
+                const dailyProfit = eligibleShares * yesterdayValue * (percentage / 100);
                 totalToday += dailyProfit;
 
                 items.push({
@@ -5271,7 +5694,9 @@
                 const data = fundsData[code];
                 const posInfo = calculatePosition(code);
                 if (!posInfo || posInfo.totalShares <= 0 || !data) return;
-                const mv = posInfo.totalShares * parseFloat(data.gsz);
+                const display = getDisplayValues(data);
+                const currentNav = display.isActual ? parseFloat(display.value) : parseFloat(data.gsz);
+                const mv = posInfo.totalShares * currentNav;
                 items.push({ code, name: data.name || code, value: mv });
                 total += mv;
             });
@@ -5599,7 +6024,9 @@
                     if (runningShares > 0) {
                         const data = fundsData[code];
                         if (data) {
-                            const currentValue = runningShares * parseFloat(data.gsz);
+                            const display = getDisplayValues(data);
+                            const currentNav = display.isActual ? parseFloat(display.value) : parseFloat(data.gsz);
+                            const currentValue = runningShares * currentNav;
                             totalHoldingProfit += currentValue - runningCost;
                         }
                     }
@@ -5800,7 +6227,8 @@
             const card = realtimeTab.closest('.fund-card');
             if (!card) return false;
 
-            const percentage = parseFloat(data.gszzl);
+            const display = getDisplayValues(data);
+            const percentage = display.percentage;
             const isPositive = percentage >= 0;
             const percentageClass = isPositive ? 'positive' : 'negative';
             const percentageSymbol = isPositive ? '+' : '';
@@ -5812,24 +6240,27 @@
                 percentageEl.textContent = percentageSymbol + percentage.toFixed(2) + '%';
             }
 
-            // 2. 更新当日盈亏（持有基金）
+            // 2. 更新当日盈亏（持有基金，排除今日买入份额）
             const posInfo = calculatePosition(code);
             const dailyProfitEl = card.querySelector('.daily-profit');
             if (dailyProfitEl && posInfo && posInfo.totalShares > 0) {
                 const yesterdayValue = parseFloat(data.dwjz);
-                const dailyProfit = posInfo.totalShares * yesterdayValue * (percentage / 100);
-                const dailyProfitSymbol = dailyProfit >= 0 ? '+' : '';
-                const dailyProfitClass = dailyProfit >= 0 ? 'positive' : 'negative';
+                const eligibleShares = getSharesEligibleForTodayProfit(code);
+                const dailyProfit = eligibleShares * yesterdayValue * (percentage / 100);
+                const dailyProfitSymbol = dailyProfit > 0 ? '+' : (dailyProfit < 0 ? '' : '');
+                const dailyProfitClass = dailyProfit > 0 ? 'positive' : (dailyProfit < 0 ? 'negative' : 'neutral');
                 dailyProfitEl.className = 'daily-profit ' + dailyProfitClass;
                 dailyProfitEl.textContent = dailyProfitSymbol + '¥' + dailyProfit.toFixed(2);
             }
 
-            // 3. 更新净值和估算值（新布局：.data-val-num）
+            // 3. 更新净值和估算/实际值（新布局：.data-val-num）
             const dataValNums = card.querySelectorAll('.data-val-num');
+            const dataValLabels = card.querySelectorAll('.data-val-label');
             if (dataValNums.length >= 2) {
                 dataValNums[0].textContent = data.dwjz;
-                dataValNums[1].textContent = data.gsz;
+                dataValNums[1].textContent = display.value;
                 dataValNums[1].className = 'data-val-num ' + percentageClass;
+                if (dataValLabels.length >= 2) dataValLabels[1].textContent = display.label;
             }
 
             // 4. 更新头部时间
@@ -5840,12 +6271,12 @@
 
             // 5. 更新持仓动态数值（市值、收益金额、收益率）
             if (posInfo && posInfo.totalShares > 0) {
-                const currentValue = posInfo.totalShares * parseFloat(data.gsz);
+                const currentNav = display.isActual ? parseFloat(display.value) : parseFloat(data.gsz);
+                const currentValue = posInfo.totalShares * currentNav;
                 const profit = currentValue - posInfo.totalCost;
-                const profitRate = ((parseFloat(data.gsz) - posInfo.avgCost) / posInfo.avgCost * 100).toFixed(2);
+                const profitRate = ((currentNav - posInfo.avgCost) / posInfo.avgCost * 100).toFixed(2);
                 const profitClass = profit >= 0 ? 'profit' : 'loss';
                 const profitSymbol = profit >= 0 ? '+' : '';
-
                 const positionValues = realtimeTab.querySelectorAll('.position-grid .position-value');
                 if (positionValues.length >= 6) {
                     positionValues[2].textContent = '¥' + currentValue.toFixed(2);
@@ -5936,8 +6367,10 @@
                     // 如果数据还没加载完，保持原顺序
                     if (!dataA || !dataB) return 0;
                     
-                    const percentageA = parseFloat(dataA.gszzl);
-                    const percentageB = parseFloat(dataB.gszzl);
+                    const displayA = getDisplayValues(dataA);
+                    const displayB = getDisplayValues(dataB);
+                    const percentageA = displayA.percentage;
+                    const percentageB = displayB.percentage;
                     
                     if (sortOrder === 'desc') {
                         return percentageB - percentageA; // 降序：从高到低
@@ -5957,7 +6390,8 @@
                     `;
                 }
 
-                const percentage = parseFloat(data.gszzl);
+                const display = getDisplayValues(data);
+                const percentage = display.percentage;
                 const isPositive = percentage >= 0;
                 const percentageClass = isPositive ? 'positive' : 'negative';
                 const percentageSymbol = isPositive ? '+' : '';
@@ -5966,14 +6400,14 @@
                 // 持仓信息
                 const posInfo = calculatePosition(code);
                 
-                // 计算当日盈亏金额（仅针对有持仓的基金）
+                // 计算当日盈亏金额（排除今日买入份额）
                 let dailyProfitHtml = '';
                 if (posInfo && posInfo.totalShares > 0) {
-                    // 当日盈亏 = 持有份额 × 昨日净值 × 涨跌幅百分比
-                    const yesterdayValue = parseFloat(data.dwjz); // 昨日净值
-                    const dailyProfit = posInfo.totalShares * yesterdayValue * (percentage / 100);
-                    const dailyProfitSymbol = dailyProfit >= 0 ? '+' : '';
-                    const dailyProfitClass = dailyProfit >= 0 ? 'positive' : 'negative';
+                    const yesterdayValue = parseFloat(data.dwjz);
+                    const eligibleShares = getSharesEligibleForTodayProfit(code);
+                    const dailyProfit = eligibleShares * yesterdayValue * (percentage / 100);
+                    const dailyProfitSymbol = dailyProfit > 0 ? '+' : (dailyProfit < 0 ? '' : '');
+                    const dailyProfitClass = dailyProfit > 0 ? 'positive' : (dailyProfit < 0 ? 'negative' : 'neutral');
                     dailyProfitHtml = `
                         <div class="daily-profit ${dailyProfitClass}">
                             ${dailyProfitSymbol}¥${dailyProfit.toFixed(2)}
@@ -5983,9 +6417,10 @@
 
                 let positionHtml = '';
                 if (posInfo && posInfo.totalShares > 0) {
-                    const currentValue = posInfo.totalShares * parseFloat(data.gsz);
+                    const currentNav = display.isActual ? parseFloat(display.value) : parseFloat(data.gsz);
+                    const currentValue = posInfo.totalShares * currentNav;
                     const profit = currentValue - posInfo.totalCost;
-                    const profitRate = ((parseFloat(data.gsz) - posInfo.avgCost) / posInfo.avgCost * 100).toFixed(2);
+                    const profitRate = ((currentNav - posInfo.avgCost) / posInfo.avgCost * 100).toFixed(2);
                     const profitClass = profit >= 0 ? 'profit' : 'loss';
                     const profitSymbol = profit >= 0 ? '+' : '';
                     
@@ -6090,8 +6525,8 @@
                                     <span class="data-val-num">${data.dwjz}</span>
                                 </div>
                                 <div class="data-val">
-                                    <span class="data-val-label">估算</span>
-                                    <span class="data-val-num ${percentageClass}">${data.gsz}</span>
+                                    <span class="data-val-label">${display.label}</span>
+                                    <span class="data-val-num ${percentageClass}">${display.value}</span>
                                 </div>
                             </div>
                         </div>
@@ -6224,11 +6659,10 @@
 
             // === 1. 概要头卡 ===
             if (data) {
-                const gsz = data.gsz || '--';
-                const gszzl = parseFloat(data.gszzl) || 0;
+                const display = getDisplayValues(data);
                 const dwjz = data.dwjz || '--';
-                const changeCls = gszzl >= 0 ? 'positive' : 'negative';
-                const changeSymbol = gszzl >= 0 ? '+' : '';
+                const changeCls = display.percentage >= 0 ? 'positive' : 'negative';
+                const changeSymbol = display.percentage >= 0 ? '+' : '';
                 html += `
                     <div class="detail-hero">
                         <div class="detail-hero-main">
@@ -6236,8 +6670,8 @@
                             <div class="detail-hero-code">${code}</div>
                         </div>
                         <div class="detail-hero-price">
-                            <div class="detail-hero-gsz">${gsz}</div>
-                            <div class="detail-hero-change ${changeCls}">${changeSymbol}${gszzl.toFixed(2)}%</div>
+                            <div class="detail-hero-gsz">${display.value}</div>
+                            <div class="detail-hero-change ${changeCls}">${changeSymbol}${display.percentage.toFixed(2)}% <span style="font-size:12px;opacity:0.8">(${display.label})</span></div>
                             <div class="detail-hero-dwjz">昨日净值 ${dwjz}</div>
                         </div>
                     </div>
@@ -6247,9 +6681,11 @@
             // === 2. 持仓概要（如果有持仓） ===
             const posInfo = calculatePosition(code);
             if (posInfo && posInfo.totalShares > 0 && data) {
-                const mv = posInfo.totalShares * parseFloat(data.gsz);
+                const display = getDisplayValues(data);
+                const currentNav = display.isActual ? parseFloat(display.value) : parseFloat(data.gsz);
+                const mv = posInfo.totalShares * currentNav;
                 const profit = mv - posInfo.totalCost;
-                const profitRate = posInfo.avgCost > 0 ? ((parseFloat(data.gsz) - posInfo.avgCost) / posInfo.avgCost * 100) : 0;
+                const profitRate = posInfo.avgCost > 0 ? ((currentNav - posInfo.avgCost) / posInfo.avgCost * 100) : 0;
                 const cls = profit >= 0 ? 'positive' : 'negative';
                 const sym = profit >= 0 ? '+' : '';
                 html += `
@@ -7019,11 +7455,36 @@
             }, interval);
         }
 
-        // 刷新所有基金数据（定时刷新只获取实时估值，不重新加载详情）
+        // 手动刷新实际净值（晚间净值公布后使用，会清除缓存并重新拉取）
+        function refreshActualNav() {
+            const codes = loadFundCodes();
+            if (codes.length === 0) {
+                alert('暂无基金');
+                return;
+            }
+            codes.forEach(code => localStorage.removeItem(`fundDetail_${code}`));
+            delete window.r;
+            codes.forEach(code => {
+                delete fundDetails[code];
+                if (fundsData[code]) {
+                    delete fundsData[code].actualNav;
+                    delete fundsData[code].actualNavDate;
+                    delete fundsData[code].actualNavPercentage;
+                    delete fundsData[code].actualNavJzrq;
+                }
+                fetchFundDetails(code);
+            });
+            scheduleRender();
+            alert('已触发刷新，请稍候查看实际净值');
+        }
+
+        // 刷新所有基金数据（定时刷新只获取实时估值；晚间为获取实际净值会拉取详情）
         function refreshAllFunds() {
             const codes = loadFundCodes();
             codes.forEach(code => {
-                fetchFundData(code, true);
+                // 晚间 20:00 后且尚无实际净值时，拉取详情以获取当天公布的实际净值
+                const needDetails = isAfterNavPublishTime() && !fundsData[code]?.actualNav;
+                fetchFundData(code, !needDetails);
             });
         }
 
@@ -7034,11 +7495,16 @@
                 const pos = positions[code];
                 // 检查是否是旧格式 { shares, costPrice }
                 if (pos && pos.shares && pos.costPrice && !pos.transactions) {
-                    // 转换为新格式
+                    const d = new Date();
+                    const tradeDate = toDateStr(d);
                     positions[code] = {
                         transactions: [{
                             type: 'buy',
-                            date: new Date().toISOString(),
+                            date: d.toISOString(),
+                            tradeDate,
+                            beforeCutoff: true,
+                            effectiveNavDate: tradeDate,
+                            navSource: 'manual',
                             netValue: pos.costPrice,
                             amount: pos.shares * pos.costPrice,
                             fee: 0,
@@ -7046,6 +7512,17 @@
                         }]
                     };
                     needsSave = true;
+                } else if (pos && pos.transactions) {
+                    pos.transactions.forEach(trans => {
+                        if (trans.tradeDate == null) {
+                            const d = new Date(trans.date);
+                            trans.tradeDate = toDateStr(d);
+                            trans.beforeCutoff = true;
+                            trans.effectiveNavDate = getEffectiveNavDate(trans.tradeDate, true);
+                            trans.navSource = trans.navSource || 'manual';
+                            needsSave = true;
+                        }
+                    });
                 }
             });
             
@@ -7238,50 +7715,17 @@
 
             // 初始申购实时计算份额
             ['initialNetValue', 'initialAmount', 'initialFee'].forEach(id => {
-                document.getElementById(id).addEventListener('input', () => {
-                    const netValue = parseFloat(document.getElementById('initialNetValue').value);
-                    const amount = parseFloat(document.getElementById('initialAmount').value);
-                    const fee = parseFloat(document.getElementById('initialFee').value) || 0;
-                    
-                    if (netValue && amount && netValue > 0 && amount > 0) {
-                        const shares = (amount - fee) / netValue;
-                        document.getElementById('initialShares').value = shares.toFixed(2);
-                    } else {
-                        document.getElementById('initialShares').value = '';
-                    }
-                });
+                document.getElementById(id).addEventListener('input', calcInitialShares);
             });
 
             // 买入实时计算份额
             ['buyNetValue', 'buyAmount', 'buyFee'].forEach(id => {
-                document.getElementById(id).addEventListener('input', () => {
-                    const netValue = parseFloat(document.getElementById('buyNetValue').value);
-                    const amount = parseFloat(document.getElementById('buyAmount').value);
-                    const fee = parseFloat(document.getElementById('buyFee').value) || 0;
-                    
-                    if (netValue && amount && netValue > 0 && amount > 0) {
-                        const shares = (amount - fee) / netValue;
-                        document.getElementById('buyShares').value = shares.toFixed(2);
-                    } else {
-                        document.getElementById('buyShares').value = '';
-                    }
-                });
+                document.getElementById(id).addEventListener('input', calcBuyShares);
             });
 
             // 卖出实时计算金额
             ['sellNetValue', 'sellShares', 'sellFee'].forEach(id => {
-                document.getElementById(id).addEventListener('input', () => {
-                    const netValue = parseFloat(document.getElementById('sellNetValue').value);
-                    const shares = parseFloat(document.getElementById('sellShares').value);
-                    const fee = parseFloat(document.getElementById('sellFee').value) || 0;
-                    
-                    if (netValue && shares && netValue > 0 && shares > 0) {
-                        const amount = shares * netValue - fee;
-                        document.getElementById('sellAmount').value = amount.toFixed(2);
-                    } else {
-                        document.getElementById('sellAmount').value = '';
-                    }
-                });
+                document.getElementById(id).addEventListener('input', calcSellAmount);
             });
 
             // 点击模态框背景关闭
