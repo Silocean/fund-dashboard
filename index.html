@@ -1561,6 +1561,12 @@
 
         .modal.active {
             display: flex;
+            animation: modalFadeIn 0.2s ease;
+        }
+
+        @keyframes modalFadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
         }
 
         .modal-content {
@@ -1570,6 +1576,342 @@
             padding: 30px;
             max-width: 500px;
             width: 90%;
+            animation: modalSlideIn 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        @keyframes modalSlideIn {
+            from { transform: scale(0.92) translateY(12px); opacity: 0; }
+            to { transform: scale(1) translateY(0); opacity: 1; }
+        }
+
+        /* 基金详情弹窗头卡 */
+        .detail-hero {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            padding: 16px;
+            border-radius: 12px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            margin-bottom: 16px;
+        }
+
+        .detail-hero-main {
+            flex: 1;
+        }
+
+        .detail-hero-name {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        .detail-hero-code {
+            font-size: 12px;
+            opacity: 0.8;
+        }
+
+        .detail-hero-price {
+            text-align: right;
+        }
+
+        .detail-hero-gsz {
+            font-size: 28px;
+            font-weight: 700;
+            line-height: 1.2;
+        }
+
+        .detail-hero-change {
+            font-size: 14px;
+            font-weight: 600;
+            margin-top: 2px;
+        }
+
+        .detail-hero-dwjz {
+            font-size: 11px;
+            opacity: 0.75;
+            margin-top: 2px;
+        }
+
+        /* 收益率柱状可视化 */
+        .rate-bar-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .rate-bar-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .rate-bar-label {
+            width: 55px;
+            font-size: 12px;
+            color: var(--text-secondary);
+            flex-shrink: 0;
+            text-align: right;
+        }
+
+        .rate-bar-track {
+            flex: 1;
+            height: 18px;
+            background: var(--stat-bg);
+            border-radius: 4px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .rate-bar-fill {
+            position: absolute;
+            top: 0;
+            height: 100%;
+            border-radius: 4px;
+            transition: width 0.6s ease;
+            min-width: 2px;
+        }
+
+        .rate-bar-fill.positive {
+            left: 50%;
+            background: linear-gradient(90deg, #ff7875, #ff4d4f);
+        }
+
+        .rate-bar-fill.negative {
+            right: 50%;
+            background: linear-gradient(90deg, #00b96b, #52c41a);
+        }
+
+        .rate-bar-center {
+            position: absolute;
+            left: 50%;
+            top: 0;
+            bottom: 0;
+            width: 1px;
+            background: var(--border-color);
+        }
+
+        .rate-bar-value {
+            width: 65px;
+            font-size: 13px;
+            font-weight: 600;
+            flex-shrink: 0;
+        }
+
+        .rate-bar-value.positive { color: #ff4d4f; }
+        .rate-bar-value.negative { color: #00b96b; }
+
+        /* 费率信息 */
+        .detail-fee-row {
+            display: flex;
+            gap: 12px;
+            margin-top: 10px;
+            padding-top: 10px;
+            border-top: 1px solid var(--border-color);
+        }
+
+        .detail-fee-item {
+            flex: 1;
+            text-align: center;
+        }
+
+        .detail-fee-label {
+            font-size: 11px;
+            color: var(--text-muted);
+        }
+
+        .detail-fee-value {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-top: 2px;
+        }
+
+        .detail-fee-value .fee-discount {
+            color: #ff4d4f;
+            font-size: 12px;
+        }
+
+        /* 持仓概要 */
+        .detail-position-summary {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            padding: 12px;
+            background: var(--stat-bg);
+            border-radius: 10px;
+            margin-bottom: 16px;
+        }
+
+        .detail-pos-item {
+            text-align: center;
+        }
+
+        .detail-pos-label {
+            font-size: 11px;
+            color: var(--text-muted);
+        }
+
+        .detail-pos-value {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-top: 2px;
+        }
+
+        /* 快捷操作 */
+        .detail-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 16px;
+            padding-top: 16px;
+            border-top: 1px solid var(--border-color);
+        }
+
+        .detail-action-btn {
+            flex: 1;
+            padding: 10px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .detail-action-btn.buy {
+            background: linear-gradient(135deg, #ff4d4f, #ff7875);
+            color: white;
+        }
+
+        .detail-action-btn.sell {
+            background: linear-gradient(135deg, #00b96b, #52c41a);
+            color: white;
+        }
+
+        .detail-action-btn.history {
+            background: var(--stat-bg);
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
+        }
+
+        .detail-action-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+
+        /* 净值历史列表 */
+        .nw-history-section {
+            margin-top: 16px;
+        }
+
+        .nw-history-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .nw-history-header h4 {
+            font-size: 14px;
+            color: var(--text-secondary);
+            margin: 0;
+        }
+
+        .nw-history-toggle {
+            font-size: 12px;
+            color: #667eea;
+            cursor: pointer;
+            border: none;
+            background: none;
+            padding: 0;
+        }
+
+        .nw-history-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+        }
+
+        .nw-history-table th {
+            text-align: left;
+            padding: 8px 10px;
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--text-muted);
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .nw-history-table th:last-child,
+        .nw-history-table td:last-child {
+            text-align: right;
+        }
+
+        .nw-history-table th:nth-child(2),
+        .nw-history-table td:nth-child(2) {
+            text-align: center;
+        }
+
+        .nw-history-table td {
+            padding: 7px 10px;
+            border-bottom: 1px solid var(--border-color);
+            color: var(--text-primary);
+        }
+
+        .nw-history-table tr:last-child td {
+            border-bottom: none;
+        }
+
+        .nw-history-table .nw-date {
+            color: var(--text-secondary);
+        }
+
+        .nw-history-table .nw-change.positive {
+            color: #ff4d4f;
+            font-weight: 600;
+        }
+
+        .nw-history-table .nw-change.negative {
+            color: #00b96b;
+            font-weight: 600;
+        }
+
+        .nw-history-table .nw-change.zero {
+            color: var(--text-muted);
+        }
+
+        /* 骨架屏 */
+        @keyframes shimmer {
+            0% { background-position: -200px 0; }
+            100% { background-position: 200px 0; }
+        }
+
+        .skeleton {
+            background: linear-gradient(90deg, var(--stat-bg) 25%, var(--border-color) 50%, var(--stat-bg) 75%);
+            background-size: 400px 100%;
+            animation: shimmer 1.5s infinite;
+            border-radius: 6px;
+        }
+
+        .skeleton-hero {
+            height: 80px;
+            border-radius: 12px;
+            margin-bottom: 16px;
+        }
+
+        .skeleton-bar {
+            height: 18px;
+            margin-bottom: 10px;
+        }
+
+        .skeleton-bar.short { width: 60%; }
+        .skeleton-bar.medium { width: 80%; }
+        .skeleton-bar.long { width: 100%; }
+
+        .skeleton-chart {
+            height: 200px;
+            border-radius: 10px;
+            margin-top: 16px;
         }
 
         .modal-content input,
@@ -5735,60 +6077,147 @@
 
             title.textContent = `📊 ${data ? data.name : code} 基金详情`;
 
+            // === 骨架屏加载态 ===
             if (!details) {
-                content.innerHTML = '<div class="no-position">基金详情加载中...</div>';
+                content.innerHTML = `
+                    <div class="skeleton skeleton-hero"></div>
+                    <div class="skeleton skeleton-bar long"></div>
+                    <div class="skeleton skeleton-bar medium"></div>
+                    <div class="skeleton skeleton-bar short"></div>
+                    <div class="skeleton skeleton-bar medium"></div>
+                    <div class="skeleton skeleton-chart"></div>
+                `;
                 modal.classList.add('active');
-                // 尝试获取详情
                 fetchFundDetails(code, true);
                 return;
             }
 
-            // 构建收益率信息
-            const ratesHtml = [];
+            let html = '';
+
+            // === 1. 概要头卡 ===
+            if (data) {
+                const gsz = data.gsz || '--';
+                const gszzl = parseFloat(data.gszzl) || 0;
+                const dwjz = data.dwjz || '--';
+                const changeCls = gszzl >= 0 ? 'positive' : 'negative';
+                const changeSymbol = gszzl >= 0 ? '+' : '';
+                html += `
+                    <div class="detail-hero">
+                        <div class="detail-hero-main">
+                            <div class="detail-hero-name">${data.name || code}</div>
+                            <div class="detail-hero-code">${code}</div>
+                        </div>
+                        <div class="detail-hero-price">
+                            <div class="detail-hero-gsz">${gsz}</div>
+                            <div class="detail-hero-change ${changeCls}">${changeSymbol}${gszzl.toFixed(2)}%</div>
+                            <div class="detail-hero-dwjz">昨日净值 ${dwjz}</div>
+                        </div>
+                    </div>
+                `;
+            }
+
+            // === 2. 持仓概要（如果有持仓） ===
+            const posInfo = calculatePosition(code);
+            if (posInfo && posInfo.totalShares > 0 && data) {
+                const mv = posInfo.totalShares * parseFloat(data.gsz);
+                const profit = mv - posInfo.totalCost;
+                const profitRate = posInfo.avgCost > 0 ? ((parseFloat(data.gsz) - posInfo.avgCost) / posInfo.avgCost * 100) : 0;
+                const cls = profit >= 0 ? 'positive' : 'negative';
+                const sym = profit >= 0 ? '+' : '';
+                html += `
+                    <div class="detail-position-summary">
+                        <div class="detail-pos-item">
+                            <div class="detail-pos-label">持有份额</div>
+                            <div class="detail-pos-value">${posInfo.totalShares.toFixed(2)}</div>
+                        </div>
+                        <div class="detail-pos-item">
+                            <div class="detail-pos-label">持仓市值</div>
+                            <div class="detail-pos-value">¥${mv.toFixed(2)}</div>
+                        </div>
+                        <div class="detail-pos-item">
+                            <div class="detail-pos-label">浮动盈亏</div>
+                            <div class="detail-pos-value ${cls}">${sym}¥${profit.toFixed(2)} (${sym}${profitRate.toFixed(2)}%)</div>
+                        </div>
+                    </div>
+                `;
+            }
+
+            // === 3. 收益率柱状可视化 ===
             const rateFields = [
                 { key: 'syl_1y', label: '近1月' },
                 { key: 'syl_3y', label: '近3月' },
                 { key: 'syl_6y', label: '近6月' },
                 { key: 'syl_1n', label: '近1年' }
             ];
-            rateFields.forEach(({ key, label }) => {
-                if (details[key]) {
-                    const rate = parseFloat(details[key]);
-                    const cls = rate >= 0 ? 'positive' : 'negative';
-                    ratesHtml.push(`
-                        <div class="fund-detail-item">
-                            <div class="fund-detail-label">${label}收益</div>
-                            <div class="fund-detail-value ${cls}">${rate >= 0 ? '+' : ''}${details[key]}%</div>
+            const rates = rateFields.filter(f => details[f.key]).map(f => ({
+                label: f.label,
+                value: parseFloat(details[f.key])
+            }));
+
+            if (rates.length > 0) {
+                const maxAbs = Math.max(...rates.map(r => Math.abs(r.value)), 1);
+                html += `<div class="fund-details">
+                    <div class="fund-details-header"><h4>📊 历史收益率</h4></div>
+                    <div class="rate-bar-list">`;
+
+                rates.forEach(r => {
+                    const cls = r.value >= 0 ? 'positive' : 'negative';
+                    const sym = r.value >= 0 ? '+' : '';
+                    const widthPct = Math.min(Math.abs(r.value) / maxAbs * 50, 50);
+                    html += `
+                        <div class="rate-bar-item">
+                            <span class="rate-bar-label">${r.label}</span>
+                            <div class="rate-bar-track">
+                                <div class="rate-bar-center"></div>
+                                <div class="rate-bar-fill ${cls}" style="width: ${widthPct}%;"></div>
+                            </div>
+                            <span class="rate-bar-value ${cls}">${sym}${r.value.toFixed(2)}%</span>
                         </div>
-                    `);
+                    `;
+                });
+                html += `</div>`;
+
+                // 基金经理信息
+                if (details.managers && details.managers.length > 0) {
+                    const managerNames = details.managers.map(m => m.name).join('、');
+                    const workTime = details.managers[0].workTime || '';
+                    html += `
+                        <div class="fund-manager-info">
+                            👨‍💼 基金经理：<span class="fund-manager-name">${managerNames}</span>
+                            ${workTime ? ` (任职${workTime})` : ''}
+                        </div>
+                    `;
                 }
-            });
 
-            // 基金经理信息
-            let managerHtml = '';
-            if (details.managers && details.managers.length > 0) {
-                const managerNames = details.managers.map(m => m.name).join('、');
-                const workTime = details.managers[0].workTime || '';
-                managerHtml = `
-                    <div class="fund-manager-info">
-                        👨‍💼 基金经理：<span class="fund-manager-name">${managerNames}</span>
-                        ${workTime ? ` (任职${workTime})` : ''}
-                    </div>
-                `;
+                // 费率信息
+                if (details.sourceRate || details.currentRate || details.minAmount) {
+                    html += `<div class="detail-fee-row">`;
+                    if (details.sourceRate) {
+                        const hasDiscount = details.currentRate && details.currentRate !== details.sourceRate;
+                        html += `
+                            <div class="detail-fee-item">
+                                <div class="detail-fee-label">申购费率</div>
+                                <div class="detail-fee-value">
+                                    ${hasDiscount ? `<span style="text-decoration: line-through; color: var(--text-muted); font-size: 12px;">${details.sourceRate}%</span> <span class="fee-discount">${details.currentRate}%</span>` : `${details.sourceRate}%`}
+                                </div>
+                            </div>
+                        `;
+                    }
+                    if (details.minAmount) {
+                        html += `
+                            <div class="detail-fee-item">
+                                <div class="detail-fee-label">起购金额</div>
+                                <div class="detail-fee-value">¥${details.minAmount}</div>
+                            </div>
+                        `;
+                    }
+                    html += `</div>`;
+                }
+
+                html += `</div>`;
             }
 
-            let html = '';
-
-            if (ratesHtml.length > 0 || managerHtml) {
-                html += `
-                    <div class="fund-details">
-                        <div class="fund-details-header"><h4>📊 历史收益率</h4></div>
-                        <div class="fund-details-grid">${ratesHtml.join('')}</div>
-                        ${managerHtml}
-                    </div>
-                `;
-            }
-
+            // === 4. 净值走势图 ===
             if (details.netWorthData && details.netWorthData.length > 0) {
                 const selectedRange = chartRangeSelection[code] || 180;
                 html += `
@@ -5805,11 +6234,64 @@
                     </div>
                 `;
             } else {
-                html += '<div class="no-position">净值数据加载中...</div>';
+                html += `
+                    <div class="skeleton skeleton-chart"></div>
+                `;
                 if (!details.netWorthData) {
                     fetchFundDetails(code, true);
                 }
             }
+
+            // === 5. 近期净值列表 ===
+            if (details.netWorthData && details.netWorthData.length > 0) {
+                const nwData = details.netWorthData.slice(-30).reverse(); // 最近30天，倒序
+                const defaultShow = 10;
+                const hasMore = nwData.length > defaultShow;
+
+                let tableRows = '';
+                nwData.forEach((item, i) => {
+                    const date = new Date(item.x);
+                    const dateStr = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+                    const nwValue = item.y.toFixed(4);
+
+                    // 日涨幅：与前一天对比（注意数组已倒序，前一天在 i+1）
+                    let changeHtml = '<span class="nw-change zero">--</span>';
+                    const prevIdx = details.netWorthData.indexOf(item) - 1;
+                    if (prevIdx >= 0) {
+                        const prevValue = details.netWorthData[prevIdx].y;
+                        const change = prevValue > 0 ? ((item.y - prevValue) / prevValue * 100) : 0;
+                        const cls = change > 0 ? 'positive' : (change < 0 ? 'negative' : 'zero');
+                        const sym = change > 0 ? '+' : '';
+                        changeHtml = `<span class="nw-change ${cls}">${sym}${change.toFixed(2)}%</span>`;
+                    }
+
+                    const hiddenClass = i >= defaultShow ? ' style="display:none"' : '';
+                    tableRows += `<tr class="nw-row"${hiddenClass}><td class="nw-date">${dateStr}</td><td>${nwValue}</td><td>${changeHtml}</td></tr>`;
+                });
+
+                html += `
+                    <div class="nw-history-section">
+                        <div class="nw-history-header">
+                            <h4>📋 近期净值</h4>
+                            ${hasMore ? `<button class="nw-history-toggle" onclick="toggleNwHistory(this)">展开更多 ▼</button>` : ''}
+                        </div>
+                        <table class="nw-history-table">
+                            <thead><tr><th>日期</th><th>单位净值</th><th>日涨幅</th></tr></thead>
+                            <tbody>${tableRows}</tbody>
+                        </table>
+                    </div>
+                `;
+            }
+
+            // === 6. 快捷操作 ===
+            const hasPos = posInfo && posInfo.totalShares > 0;
+            html += `
+                <div class="detail-actions">
+                    <button class="detail-action-btn buy" onclick="closeFundDetailModal(); openBuyModal('${code}')">买入</button>
+                    ${hasPos ? `<button class="detail-action-btn sell" onclick="closeFundDetailModal(); openSellModal('${code}')">卖出</button>` : ''}
+                    <button class="detail-action-btn history" onclick="closeFundDetailModal(); openTransactionHistoryModal('${code}')">交易记录</button>
+                </div>
+            `;
 
             content.innerHTML = html;
             modal.classList.add('active');
@@ -5822,6 +6304,19 @@
 
         function closeFundDetailModal() {
             document.getElementById('fundDetailModal').classList.remove('active');
+        }
+
+        function toggleNwHistory(btn) {
+            const section = btn.closest('.nw-history-section');
+            const hiddenRows = section.querySelectorAll('.nw-row[style*="display:none"]');
+            if (hiddenRows.length > 0) {
+                hiddenRows.forEach(r => r.style.display = '');
+                btn.textContent = '收起 ▲';
+            } else {
+                const rows = section.querySelectorAll('.nw-row');
+                rows.forEach((r, i) => { if (i >= 10) r.style.display = 'none'; });
+                btn.textContent = '展开更多 ▼';
+            }
         }
 
         // Chart.js 懒加载：仅绘制视口内可见的图表
