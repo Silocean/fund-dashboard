@@ -43,11 +43,15 @@
 
         .controls {
             display: flex;
-            gap: 15px;
+            gap: 12px;
             flex-wrap: wrap;
             align-items: center;
             position: relative;
             overflow: visible;
+        }
+
+        .controls-divider {
+            display: none;
         }
 
         .add-fund {
@@ -96,8 +100,76 @@
         }
 
         .backup-controls {
+            position: relative;
+        }
+
+        .backup-toggle {
+            padding: 10px 16px;
+            font-size: 14px;
+            border: none;
+            border-radius: 8px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.3s;
+            position: relative;
+        }
+
+        .backup-toggle:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+
+        .backup-toggle:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .backup-dropdown {
+            display: none;
+            position: absolute;
+            top: calc(100% + 6px);
+            right: 0;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15);
+            min-width: 180px;
+            z-index: 500;
+            padding: 6px 0;
+            border: 1px solid #e8e8e8;
+        }
+
+        .backup-dropdown.active {
+            display: block;
+            animation: fadeIn 0.15s ease;
+        }
+
+        .backup-dropdown-item {
             display: flex;
-            gap: 10px;
+            align-items: center;
+            gap: 8px;
+            width: 100%;
+            padding: 10px 16px;
+            border: none;
+            background: none;
+            font-size: 14px;
+            color: #333;
+            cursor: pointer;
+            text-align: left;
+            transition: background 0.15s;
+        }
+
+        .backup-dropdown-item:hover {
+            background: #f5f7ff;
+        }
+
+        .backup-dropdown-divider {
+            height: 1px;
+            background: #f0f0f0;
+            margin: 4px 0;
         }
 
         .add-fund input:focus {
@@ -435,15 +507,16 @@
         }
 
         .btn-danger {
-            background: #ff6b6b;
-            color: white;
+            background: transparent;
+            color: #ff6b6b;
             padding: 6px 12px;
-            font-size: 14px;
+            font-size: 13px;
+            border: 1px solid #ff6b6b;
         }
 
         .btn-danger:hover {
-            background: #ff5252;
-            transform: scale(1.05);
+            background: #ff6b6b;
+            color: white;
         }
 
         .btn-secondary {
@@ -457,68 +530,7 @@
             background: #7f8c8d;
         }
 
-        .backup-controls .btn-secondary {
-            padding: 10px 16px;
-            font-size: 14px;
-            background: #52c41a;
-        }
-
-        .backup-controls .btn-secondary:hover {
-            background: #389e0d;
-            transform: translateY(-1px);
-        }
-
-        .backup-controls .btn-secondary:first-child {
-            background: #1890ff;
-        }
-
-        .backup-controls .btn-secondary:first-child:hover {
-            background: #096dd9;
-        }
-
-        .btn-cloud {
-            padding: 10px 16px;
-            font-size: 14px;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            color: white;
-            background: #722ed1;
-            font-weight: 500;
-            transition: all 0.3s;
-        }
-
-        .btn-cloud:hover {
-            background: #531dab;
-            transform: translateY(-1px);
-        }
-
-        .btn-cloud:disabled {
-            background: #aaa;
-            cursor: not-allowed;
-            transform: none;
-        }
-
-        .btn-cloud-settings {
-            padding: 10px 12px;
-            font-size: 14px;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            color: white;
-            background: #8c8c8c;
-            transition: all 0.3s;
-        }
-
-        .btn-cloud-settings:hover {
-            background: #595959;
-        }
-
         /* 同步提醒标记 */
-        .btn-cloud {
-            position: relative;
-        }
-
         .sync-badge {
             display: none;
             position: absolute;
@@ -945,15 +957,15 @@
             box-shadow: 0 12px 48px rgba(0, 0, 0, 0.15);
         }
 
-        /* 持有 / 自选 卡片边框颜色 */
+        /* 持有 / 自选 卡片左侧色条 */
         .fund-card.holding {
-            border-color: #ff4d4f; /* 红色边框 表示持有 */
-            box-shadow: 0 12px 48px rgba(255, 77, 79, 0.08);
+            border-color: transparent;
+            border-left: 4px solid #ff4d4f;
         }
 
         .fund-card.watching {
-            border-color: #ffd93d; /* 黄色边框 表示自选 */
-            box-shadow: 0 12px 48px rgba(255, 217, 61, 0.06);
+            border-color: transparent;
+            border-left: 4px solid #ffd93d;
         }
 
         .fund-header {
@@ -1104,6 +1116,12 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
+            margin-bottom: 0;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .position-header.expanded {
             margin-bottom: 10px;
         }
 
@@ -1111,6 +1129,61 @@
             font-size: 14px;
             color: #555;
             margin: 0;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .position-toggle {
+            display: inline-block;
+            font-size: 10px;
+            color: #999;
+            transition: transform 0.2s;
+        }
+
+        .position-header.expanded .position-toggle {
+            transform: rotate(90deg);
+        }
+
+        .position-body {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.25s ease-out;
+        }
+
+        .position-body.expanded {
+            max-height: 300px;
+            transition: max-height 0.3s ease-in;
+        }
+
+        .position-summary {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+            margin-top: 8px;
+            font-size: 13px;
+            color: #666;
+        }
+
+        .position-summary.hidden {
+            display: none;
+        }
+
+        .position-summary-tag {
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-weight: 600;
+            font-size: 13px;
+        }
+
+        .position-summary-tag.profit {
+            color: #ff4d4f;
+            background: rgba(255, 77, 79, 0.1);
+        }
+
+        .position-summary-tag.loss {
+            color: #00b96b;
+            background: rgba(0, 185, 107, 0.1);
         }
 
         .position-actions {
@@ -1613,19 +1686,105 @@
             }
         }
 
-        @media (max-width: 900px) {
-            .overview-stats {
-                grid-template-columns: repeat(2, 1fr);
-            }
-        }
-
         @media (max-width: 768px) {
+            /* 头部控制区 */
+            .header {
+                padding: 16px;
+            }
+
+            h1 {
+                font-size: 22px;
+                margin-bottom: 14px;
+            }
+
+            .controls {
+                gap: 10px;
+            }
+
+            .add-fund {
+                min-width: unset;
+                width: 100%;
+            }
+
+            .sort-controls {
+                width: 100%;
+            }
+
+            .sort-controls select {
+                flex: 1;
+            }
+
+            /* 主视图标签 */
+            .main-view-tabs {
+                margin: 12px 0;
+            }
+
+            .main-view-tab {
+                font-size: 14px;
+                padding: 8px 12px;
+            }
+
+            /* 总览面板 */
+            .overview-stats {
+                grid-template-columns: 1fr 1fr;
+                gap: 10px;
+            }
+
+            .stat-item {
+                padding: 12px;
+            }
+
+            .stat-value {
+                font-size: 20px;
+            }
+
+            .overview-header h2 {
+                font-size: 18px;
+            }
+
+            .overview-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 8px;
+            }
+
+            /* 基金卡片 */
             .funds-grid {
                 grid-template-columns: 1fr;
+                gap: 14px;
             }
-            
+
+            .fund-card {
+                padding: 16px;
+            }
+
+            .fund-name {
+                font-size: 16px;
+            }
+
+            .percentage-container {
+                flex-wrap: wrap;
+            }
+
+            .percentage {
+                font-size: 18px;
+                padding: 8px 14px;
+            }
+
+            .daily-profit {
+                font-size: 18px;
+                padding: 8px 14px;
+            }
+
+            .quick-sell-btn {
+                font-size: 13px;
+                padding: 6px 10px;
+            }
+
+            /* 模态框 */
             .modal-content {
                 padding: 20px;
+                margin: 10px;
             }
 
             .modal-confirm {
@@ -1651,47 +1810,49 @@
             .confirm-final-title {
                 font-size: 18px;
             }
+        }
 
-            .percentage-container {
-                flex-wrap: wrap;
+        @media (max-width: 480px) {
+            .header {
+                padding: 12px;
             }
 
-            .percentage {
-                font-size: 18px;
-                padding: 8px 14px;
+            h1 {
+                font-size: 20px;
+                margin-bottom: 10px;
             }
 
-            .daily-profit {
-                font-size: 18px;
-                padding: 8px 14px;
+            .add-fund input {
+                font-size: 14px;
+                padding: 10px 12px;
             }
 
-            .quick-sell-btn {
-                font-size: 13px;
-                padding: 6px 10px;
+            .btn-primary {
+                padding: 10px 16px;
+                font-size: 14px;
             }
 
             .overview-stats {
                 grid-template-columns: 1fr;
-                gap: 15px;
-            }
-
-            .stat-item {
-                padding: 15px;
+                gap: 8px;
             }
 
             .stat-value {
-                font-size: 22px;
+                font-size: 18px;
             }
 
-            .overview-header h2 {
-                font-size: 20px;
+            .percentage {
+                font-size: 16px;
+                padding: 6px 10px;
             }
 
-            .overview-header {
-                flex-direction: column;
-                align-items: flex-start;
-                gap: 10px;
+            .daily-profit {
+                font-size: 16px;
+                padding: 6px 10px;
+            }
+
+            .fund-card {
+                padding: 14px;
             }
         }
     </style>
@@ -1717,12 +1878,18 @@
                     </select>
                 </div>
                 <div class="backup-controls">
-                    <button class="btn btn-secondary" onclick="exportData()" title="导出所有数据到文件">💾 导出</button>
-                    <button class="btn btn-secondary" onclick="document.getElementById('importFileInput').click()" title="从文件导入数据">📥 导入</button>
-                    <input type="file" id="importFileInput" accept=".json" style="display: none;" onchange="importData(event)">
-                    <button class="btn btn-cloud" id="btnUpload" onclick="uploadToCloud()" title="上传数据到云端">☁️ 上传<span class="sync-badge" id="syncBadge"></span></button>
-                    <button class="btn btn-cloud" onclick="downloadFromCloud()" title="从云端下载数据">⬇️ 下载</button>
-                    <button class="btn btn-cloud-settings" onclick="openCloudSettingsModal()" title="云同步设置">⚙️</button>
+                    <button class="backup-toggle" onclick="toggleBackupMenu()" id="backupToggle">
+                        ⚙️ 更多 <span class="sync-badge" id="syncBadge"></span>
+                    </button>
+                    <div class="backup-dropdown" id="backupDropdown">
+                        <button class="backup-dropdown-item" onclick="exportData(); closeBackupMenu();">💾 导出数据</button>
+                        <button class="backup-dropdown-item" onclick="document.getElementById('importFileInput').click(); closeBackupMenu();">📥 导入数据</button>
+                        <input type="file" id="importFileInput" accept=".json" style="display: none;" onchange="importData(event)">
+                        <div class="backup-dropdown-divider"></div>
+                        <button class="backup-dropdown-item" id="btnUpload" onclick="uploadToCloud(); closeBackupMenu();">☁️ 上传到云端</button>
+                        <button class="backup-dropdown-item" onclick="downloadFromCloud(); closeBackupMenu();">⬇️ 从云端下载</button>
+                        <button class="backup-dropdown-item" onclick="openCloudSettingsModal(); closeBackupMenu();">🔧 云同步设置</button>
+                    </div>
                 </div>
             </div>
             <div class="sync-reminder" id="syncReminder" style="display: none;">
@@ -2099,6 +2266,30 @@
             const reminder = document.getElementById('syncReminder');
             if (badge) badge.classList.add('active');
             if (reminder) reminder.style.display = 'flex';
+        }
+
+        // 持仓详情折叠
+        function togglePositionDetail(headerEl, event) {
+            const isExpanded = headerEl.classList.toggle('expanded');
+            const body = headerEl.parentElement.querySelector('.position-body');
+            const summary = headerEl.parentElement.querySelector('.position-summary');
+            if (isExpanded) {
+                body.classList.add('expanded');
+                if (summary) summary.classList.add('hidden');
+            } else {
+                body.classList.remove('expanded');
+                if (summary) summary.classList.remove('hidden');
+            }
+        }
+
+        // 更多菜单
+        function toggleBackupMenu() {
+            const dropdown = document.getElementById('backupDropdown');
+            dropdown.classList.toggle('active');
+        }
+
+        function closeBackupMenu() {
+            document.getElementById('backupDropdown').classList.remove('active');
         }
 
         function dismissSyncReminder() {
@@ -2672,8 +2863,8 @@
             }
             
             // 禁用按钮防止重复点击
-            const btns = document.querySelectorAll('.btn-cloud');
-            btns.forEach(b => b.disabled = true);
+            const backupToggleBtn = document.getElementById('backupToggle');
+            if (backupToggleBtn) backupToggleBtn.disabled = true;
             
             try {
                 const data = collectSyncData();
@@ -2745,7 +2936,7 @@
                     alert('❌ 上传失败：' + error.message);
                 }
             } finally {
-                btns.forEach(b => b.disabled = false);
+                if (backupToggleBtn) backupToggleBtn.disabled = false;
             }
         }
 
@@ -2768,8 +2959,8 @@
                 return;
             }
             
-            const btns = document.querySelectorAll('.btn-cloud');
-            btns.forEach(b => b.disabled = true);
+            const backupToggleBtn = document.getElementById('backupToggle');
+            if (backupToggleBtn) backupToggleBtn.disabled = true;
             
             try {
                 const response = await fetch(`https://api.github.com/gists/${settings.gistId}`, {
@@ -2837,7 +3028,7 @@
                     alert('❌ 下载失败：' + error.message);
                 }
             } finally {
-                btns.forEach(b => b.disabled = false);
+                if (backupToggleBtn) backupToggleBtn.disabled = false;
             }
         }
 
@@ -4296,22 +4487,31 @@
 
             // 5. 更新持仓动态数值（市值、收益金额、收益率）
             if (posInfo && posInfo.totalShares > 0) {
+                const currentValue = posInfo.totalShares * parseFloat(data.gsz);
+                const profit = currentValue - posInfo.totalCost;
+                const profitRate = ((parseFloat(data.gsz) - posInfo.avgCost) / posInfo.avgCost * 100).toFixed(2);
+                const profitClass = profit >= 0 ? 'profit' : 'loss';
+                const profitSymbol = profit >= 0 ? '+' : '';
+
                 const positionValues = realtimeTab.querySelectorAll('.position-grid .position-value');
                 if (positionValues.length >= 6) {
-                    const currentValue = posInfo.totalShares * parseFloat(data.gsz);
-                    const profit = currentValue - posInfo.totalCost;
-                    const profitRate = ((parseFloat(data.gsz) - posInfo.avgCost) / posInfo.avgCost * 100).toFixed(2);
-                    const profitClass = profit >= 0 ? 'profit' : 'loss';
-                    const profitSymbol = profit >= 0 ? '+' : '';
-
-                    // 当前市值（第3个）
                     positionValues[2].textContent = '¥' + currentValue.toFixed(2);
-                    // 收益金额（第5个）
                     positionValues[4].textContent = profitSymbol + '¥' + profit.toFixed(2);
                     positionValues[4].className = 'position-value ' + profitClass;
-                    // 收益率（第6个）
                     positionValues[5].textContent = (profitRate >= 0 ? '+' : '') + profitRate + '%';
                     positionValues[5].className = 'position-value ' + profitClass;
+                }
+
+                // 更新折叠摘要行
+                const summaryEl = realtimeTab.querySelector('.position-summary');
+                if (summaryEl) {
+                    const spans = summaryEl.querySelectorAll('span');
+                    if (spans.length >= 1) spans[0].textContent = '市值 ¥' + currentValue.toFixed(2);
+                    const tagEl = summaryEl.querySelector('.position-summary-tag');
+                    if (tagEl) {
+                        tagEl.className = 'position-summary-tag ' + profitClass;
+                        tagEl.textContent = profitSymbol + '¥' + profit.toFixed(2) + '（' + (profitRate >= 0 ? '+' : '') + profitRate + '%）';
+                    }
                 }
             }
 
@@ -4438,41 +4638,47 @@
                     
                     positionHtml = `
                         <div class="position-info">
-                            <div class="position-header">
-                                <h4>💼 持仓信息 
-                                    <span style="cursor: pointer; color: #667eea; font-size: 13px; margin-left: 8px;" onclick="openTransactionHistoryModal('${code}')" title="查看交易历史">
+                            <div class="position-header" onclick="togglePositionDetail(this, event)">
+                                <h4><span class="position-toggle">▶</span> 💼 持仓信息 
+                                    <span style="cursor: pointer; color: #667eea; font-size: 13px; margin-left: 8px;" onclick="event.stopPropagation(); openTransactionHistoryModal('${code}')" title="查看交易历史">
                                         📋 ${posInfo.transactions.length}笔
                                     </span>
                                 </h4>
-                                <div class="position-actions">
+                                <div class="position-actions" onclick="event.stopPropagation();">
                                     <button class="btn btn-secondary" onclick="openBuyModal('${code}')">买入</button>
                                     <button class="btn btn-warning" onclick="openSellModal('${code}')">卖出</button>
                                 </div>
                             </div>
-                            <div class="position-grid">
-                                <div class="position-item">
-                                    <div class="position-label">持有份额</div>
-                                    <div class="position-value">${posInfo.totalShares.toFixed(2)}</div>
-                                </div>
-                                <div class="position-item">
-                                    <div class="position-label">平均成本</div>
-                                    <div class="position-value">${posInfo.avgCost.toFixed(4)}</div>
-                                </div>
-                                <div class="position-item">
-                                    <div class="position-label">当前市值</div>
-                                    <div class="position-value">¥${currentValue.toFixed(2)}</div>
-                                </div>
-                                <div class="position-item">
-                                    <div class="position-label">持仓成本</div>
-                                    <div class="position-value">¥${posInfo.totalCost.toFixed(2)}</div>
-                                </div>
-                                <div class="position-item">
-                                    <div class="position-label">收益金额</div>
-                                    <div class="position-value ${profitClass}">${profitSymbol}¥${profit.toFixed(2)}</div>
-                                </div>
-                                <div class="position-item">
-                                    <div class="position-label">收益率</div>
-                                    <div class="position-value ${profitClass}">${profitRate >= 0 ? '+' : ''}${profitRate}%</div>
+                            <div class="position-summary">
+                                <span>市值 ¥${currentValue.toFixed(2)}</span>
+                                <span class="position-summary-tag ${profitClass}">${profitSymbol}¥${profit.toFixed(2)}（${profitRate >= 0 ? '+' : ''}${profitRate}%）</span>
+                            </div>
+                            <div class="position-body">
+                                <div class="position-grid">
+                                    <div class="position-item">
+                                        <div class="position-label">持有份额</div>
+                                        <div class="position-value">${posInfo.totalShares.toFixed(2)}</div>
+                                    </div>
+                                    <div class="position-item">
+                                        <div class="position-label">平均成本</div>
+                                        <div class="position-value">${posInfo.avgCost.toFixed(4)}</div>
+                                    </div>
+                                    <div class="position-item">
+                                        <div class="position-label">当前市值</div>
+                                        <div class="position-value">¥${currentValue.toFixed(2)}</div>
+                                    </div>
+                                    <div class="position-item">
+                                        <div class="position-label">持仓成本</div>
+                                        <div class="position-value">¥${posInfo.totalCost.toFixed(2)}</div>
+                                    </div>
+                                    <div class="position-item">
+                                        <div class="position-label">收益金额</div>
+                                        <div class="position-value ${profitClass}">${profitSymbol}¥${profit.toFixed(2)}</div>
+                                    </div>
+                                    <div class="position-item">
+                                        <div class="position-label">收益率</div>
+                                        <div class="position-value ${profitClass}">${profitRate >= 0 ? '+' : ''}${profitRate}%</div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -5552,6 +5758,14 @@
 
         // 支持回车键添加基金
         document.addEventListener('DOMContentLoaded', () => {
+            // 点击页面其他位置关闭更多菜单
+            document.addEventListener('click', (e) => {
+                const backupControls = document.querySelector('.backup-controls');
+                if (backupControls && !backupControls.contains(e.target)) {
+                    closeBackupMenu();
+                }
+            });
+
             const fundInput = document.getElementById('fundCodeInput');
             
             // 回车键添加基金
