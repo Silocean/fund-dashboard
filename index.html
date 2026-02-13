@@ -260,51 +260,6 @@
             font-size: 13px;
         }
 
-        /* 选项卡样式 */
-        .fund-tabs {
-            display: flex;
-            border-bottom: 2px solid #e0e0e0;
-            margin-bottom: 15px;
-            gap: 5px;
-            margin-top: 10px;
-        }
-
-        .fund-tab {
-            flex: 1;
-            padding: 10px 20px;
-            cursor: pointer;
-            border: none;
-            background: transparent;
-            color: #666;
-            font-size: 14px;
-            font-weight: 500;
-            transition: all 0.3s ease;
-            border-bottom: 3px solid transparent;
-            margin-bottom: -2px;
-            position: relative;
-        }
-
-        .fund-tab:hover {
-            color: #667eea;
-            background: rgba(102, 126, 234, 0.05);
-        }
-
-        .fund-tab.active {
-            color: #667eea;
-            border-bottom-color: #667eea;
-            font-weight: 600;
-            background: rgba(102, 126, 234, 0.08);
-        }
-
-        .fund-tab-content {
-            display: none;
-            animation: fadeIn 0.3s ease-in-out;
-        }
-
-        .fund-tab-content.active {
-            display: block;
-        }
-
         @keyframes fadeIn {
             from {
                 opacity: 0;
@@ -1041,17 +996,17 @@
         .fund-card {
             background: rgba(255, 255, 255, 0.95);
             backdrop-filter: blur(10px);
-            border-radius: 15px;
-            padding: 20px;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
-            transition: transform 0.3s, box-shadow 0.3s;
+            border-radius: 12px;
+            padding: 14px 16px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+            transition: transform 0.2s, box-shadow 0.2s;
             position: relative;
             border: 2px solid transparent;
         }
 
         .fund-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 12px 48px rgba(0, 0, 0, 0.15);
+            transform: translateY(-3px);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
         }
 
         /* 持有 / 自选 卡片左侧色条 */
@@ -1069,30 +1024,31 @@
             display: flex;
             justify-content: space-between;
             align-items: flex-start;
-            margin-bottom: 15px;
+            margin-bottom: 10px;
         }
 
         .fund-title {
             flex: 1;
+            min-width: 0;
         }
 
         .fund-name {
-            font-size: 18px;
+            font-size: 16px;
             font-weight: 600;
             color: #333;
-            margin-bottom: 5px;
+            margin-bottom: 2px;
             display: flex;
             align-items: center;
-            gap: 8px;
+            gap: 6px;
             flex-wrap: wrap;
         }
 
         .fund-badge {
             display: inline-flex;
             align-items: center;
-            padding: 2px 8px;
+            padding: 1px 6px;
             border-radius: 4px;
-            font-size: 11px;
+            font-size: 10px;
             font-weight: 600;
             white-space: nowrap;
         }
@@ -1108,105 +1064,143 @@
         }
 
         .fund-code {
-            font-size: 14px;
-            color: #999;
-        }
-
-        .fund-info {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 15px;
-            margin-bottom: 15px;
-        }
-
-        .info-item {
-            display: flex;
-            flex-direction: column;
-        }
-
-        .info-label {
             font-size: 12px;
             color: #999;
-            margin-bottom: 4px;
         }
 
-        .info-value {
-            font-size: 20px;
-            font-weight: 600;
-            color: #333;
-        }
-
-        .info-value.positive {
-            color: #ff4d4f; /* 涨：鲜艳红色 */
-        }
-
-        .info-value.negative {
-            color: #00b96b; /* 跌：鲜艳绿色 */
-        }
-
-        .percentage-container {
+        .fund-meta {
             display: flex;
-            gap: 10px;
             align-items: center;
-            justify-content: center;
-            margin-bottom: 15px;
+            gap: 8px;
+        }
+
+        .fund-update-time {
+            font-size: 11px;
+            color: #bbb;
+        }
+
+        .fund-detail-link {
+            font-size: 11px;
+            color: #bbb;
+            text-decoration: none;
+            transition: color 0.15s;
+        }
+
+        .fund-detail-link:hover {
+            color: #667eea;
+        }
+
+        /* 删除按钮 hover 才显示 */
+        .fund-header .btn-danger {
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+
+        .fund-card:hover .fund-header .btn-danger {
+            opacity: 1;
+        }
+
+        /* 核心数据区：涨跌幅 + 净值 + 估算值 合并为一行 */
+        .fund-data-bar {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 10px;
+            padding: 8px 12px;
+            border-radius: 8px;
+            background: #f8f9fa;
         }
 
         .percentage {
-            font-size: 22px;
+            font-size: 20px;
             font-weight: 700;
-            padding: 10px 18px;
-            border-radius: 8px;
             flex-shrink: 0;
+            white-space: nowrap;
         }
 
         .percentage.positive {
-            color: #ff4d4f; /* 涨：鲜艳红色 */
-            background: rgba(255, 77, 79, 0.15);
+            color: #ff4d4f;
         }
 
         .percentage.negative {
-            color: #00b96b; /* 跌：鲜艳绿色 */
-            background: rgba(0, 185, 107, 0.15);
+            color: #00b96b;
         }
 
         .daily-profit {
-            font-size: 22px;
-            font-weight: 700;
-            padding: 10px 18px;
-            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
             white-space: nowrap;
             flex-shrink: 0;
+            padding: 3px 8px;
+            border-radius: 4px;
         }
 
         .daily-profit.positive {
-            color: #ff4d4f; /* 涨：鲜艳红色 */
-            background: rgba(255, 77, 79, 0.15);
+            color: #ff4d4f;
+            background: rgba(255, 77, 79, 0.1);
         }
 
         .daily-profit.negative {
-            color: #00b96b; /* 跌：鲜艳绿色 */
-            background: rgba(0, 185, 107, 0.15);
+            color: #00b96b;
+            background: rgba(0, 185, 107, 0.1);
+        }
+
+        .fund-data-spacer {
+            flex: 1;
+        }
+
+        .fund-data-values {
+            display: flex;
+            gap: 14px;
+            flex-shrink: 0;
+        }
+
+        .data-val {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+        }
+
+        .data-val-label {
+            font-size: 10px;
+            color: #aaa;
+            line-height: 1;
+        }
+
+        .data-val-num {
+            font-size: 15px;
+            font-weight: 600;
+            color: #333;
+            line-height: 1.4;
+        }
+
+        .data-val-num.positive {
+            color: #ff4d4f;
+        }
+
+        .data-val-num.negative {
+            color: #00b96b;
         }
 
         .chart-container {
             position: relative;
-            height: 150px;
-            margin-bottom: 10px;
+            height: 130px;
+            margin-bottom: 6px;
         }
 
         .update-time {
-            font-size: 12px;
-            color: #999;
+            font-size: 11px;
+            color: #bbb;
             text-align: center;
+            display: none;
         }
 
         /* 持仓信息样式 */
         .position-info {
             background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
-            border-radius: 10px;
-            padding: 15px;
-            margin-bottom: 15px;
+            border-radius: 8px;
+            padding: 10px 12px;
+            margin-bottom: 8px;
         }
 
         .position-header {
@@ -1854,29 +1848,25 @@
             /* 基金卡片 */
             .funds-grid {
                 grid-template-columns: 1fr;
-                gap: 14px;
+                gap: 12px;
             }
 
             .fund-card {
-                padding: 16px;
+                padding: 12px 14px;
             }
 
-            .fund-name {
-                font-size: 16px;
-            }
-
-            .percentage-container {
+            .fund-data-bar {
                 flex-wrap: wrap;
+                gap: 8px;
+                padding: 6px 10px;
             }
 
             .percentage {
                 font-size: 18px;
-                padding: 8px 14px;
             }
 
             .daily-profit {
-                font-size: 18px;
-                padding: 8px 14px;
+                font-size: 13px;
             }
 
             .quick-sell-btn {
@@ -1958,16 +1948,18 @@
 
             .percentage {
                 font-size: 16px;
-                padding: 6px 10px;
-            }
-
-            .daily-profit {
-                font-size: 16px;
-                padding: 6px 10px;
             }
 
             .fund-card {
-                padding: 14px;
+                padding: 10px 12px;
+            }
+
+            .fund-data-values {
+                gap: 10px;
+            }
+
+            .data-val-num {
+                font-size: 13px;
             }
         }
     </style>
@@ -2272,6 +2264,19 @@
             </div>
             <div id="historicalProfitContent" style="max-height: 500px; overflow-y: auto;">
                 <!-- 历史收益明细内容 -->
+            </div>
+        </div>
+    </div>
+
+    <!-- 基金详情模态框 -->
+    <div id="fundDetailModal" class="modal">
+        <div class="modal-content" style="max-width: 650px;">
+            <div class="modal-header">
+                <h2 id="fundDetailModalTitle">📊 基金详情</h2>
+                <button class="close-btn" onclick="closeFundDetailModal()">&times;</button>
+            </div>
+            <div id="fundDetailModalContent" style="max-height: 70vh; overflow-y: auto;">
+                <!-- 基金详情内容动态填充 -->
             </div>
         </div>
     </div>
@@ -4083,12 +4088,9 @@
                         scheduleRender();
                     }
                     
-                    // 检查该基金的详情选项卡是否处于激活状态
+                    // 如果基金详情弹窗正在显示，刷新内容
                     setTimeout(() => {
-                        const detailsTab = document.getElementById(`tab-details-${code}`);
-                        if (detailsTab && detailsTab.classList.contains('active')) {
-                            drawNetWorthChart(code);
-                        }
+                        updateFundDetailsTab(code);
                         
                         // 标记当前加载完成，处理队列中的下一个
                         isLoadingFundDetails = false;
@@ -4635,13 +4637,17 @@
             const realtimeTab = document.getElementById(`tab-realtime-${code}`);
             if (!realtimeTab) return false;
 
+            // 卡片级别元素（fund-data-bar 在 tab 外面）
+            const card = realtimeTab.closest('.fund-card');
+            if (!card) return false;
+
             const percentage = parseFloat(data.gszzl);
             const isPositive = percentage >= 0;
             const percentageClass = isPositive ? 'positive' : 'negative';
             const percentageSymbol = isPositive ? '+' : '';
 
             // 1. 更新涨跌幅百分比
-            const percentageEl = realtimeTab.querySelector('.percentage');
+            const percentageEl = card.querySelector('.percentage');
             if (percentageEl) {
                 percentageEl.className = 'percentage ' + percentageClass;
                 percentageEl.textContent = percentageSymbol + percentage.toFixed(2) + '%';
@@ -4649,7 +4655,7 @@
 
             // 2. 更新当日盈亏（持有基金）
             const posInfo = calculatePosition(code);
-            const dailyProfitEl = realtimeTab.querySelector('.daily-profit');
+            const dailyProfitEl = card.querySelector('.daily-profit');
             if (dailyProfitEl && posInfo && posInfo.totalShares > 0) {
                 const yesterdayValue = parseFloat(data.dwjz);
                 const dailyProfit = posInfo.totalShares * yesterdayValue * (percentage / 100);
@@ -4659,23 +4665,18 @@
                 dailyProfitEl.textContent = dailyProfitSymbol + '¥' + dailyProfit.toFixed(2);
             }
 
-            // 3. 更新估算值和单位净值
-            const infoItems = realtimeTab.querySelectorAll('.fund-info .info-item');
-            if (infoItems.length >= 2) {
-                const dwjzValue = infoItems[0].querySelector('.info-value');
-                if (dwjzValue) dwjzValue.textContent = data.dwjz;
-
-                const gszValue = infoItems[1].querySelector('.info-value');
-                if (gszValue) {
-                    gszValue.textContent = data.gsz;
-                    gszValue.className = 'info-value ' + percentageClass;
-                }
+            // 3. 更新净值和估算值（新布局：.data-val-num）
+            const dataValNums = card.querySelectorAll('.data-val-num');
+            if (dataValNums.length >= 2) {
+                dataValNums[0].textContent = data.dwjz;
+                dataValNums[1].textContent = data.gsz;
+                dataValNums[1].className = 'data-val-num ' + percentageClass;
             }
 
-            // 4. 更新时间
-            const timeEl = realtimeTab.querySelector('.update-time');
-            if (timeEl) {
-                timeEl.textContent = '更新时间：' + data.gztime + ' | 净值日期：' + data.jzrq;
+            // 4. 更新头部时间
+            const headerTimeEl = card.querySelector('.fund-update-time');
+            if (headerTimeEl) {
+                headerTimeEl.textContent = data.gztime || '';
             }
 
             // 5. 更新持仓动态数值（市值、收益金额、收益率）
@@ -4901,116 +4902,6 @@
                     ? '<span class="fund-badge holding">持有</span>' 
                     : '<span class="fund-badge watching">自选</span>';
 
-                // 基金详细信息
-                const details = fundDetails[code];
-
-                // 构建基金详情选项卡内容
-                let detailTabContent = '<div class="fund-details"><div class="no-position">基金详情加载中...</div></div>';
-                if (details) {
-                    // 构建收益率信息
-                    const ratesHtml = [];
-                    if (details.syl_1y) {
-                        const rate1y = parseFloat(details.syl_1y);
-                        const rateClass = rate1y >= 0 ? 'positive' : 'negative';
-                        ratesHtml.push(`
-                            <div class="fund-detail-item">
-                                <div class="fund-detail-label">近1月收益</div>
-                                <div class="fund-detail-value ${rateClass}">${rate1y >= 0 ? '+' : ''}${details.syl_1y}%</div>
-                            </div>
-                        `);
-                    }
-                    if (details.syl_3y) {
-                        const rate3y = parseFloat(details.syl_3y);
-                        const rateClass = rate3y >= 0 ? 'positive' : 'negative';
-                        ratesHtml.push(`
-                            <div class="fund-detail-item">
-                                <div class="fund-detail-label">近3月收益</div>
-                                <div class="fund-detail-value ${rateClass}">${rate3y >= 0 ? '+' : ''}${details.syl_3y}%</div>
-                            </div>
-                        `);
-                    }
-                    if (details.syl_6y) {
-                        const rate6y = parseFloat(details.syl_6y);
-                        const rateClass = rate6y >= 0 ? 'positive' : 'negative';
-                        ratesHtml.push(`
-                            <div class="fund-detail-item">
-                                <div class="fund-detail-label">近6月收益</div>
-                                <div class="fund-detail-value ${rateClass}">${rate6y >= 0 ? '+' : ''}${details.syl_6y}%</div>
-                            </div>
-                        `);
-                    }
-                    if (details.syl_1n) {
-                        const rate1n = parseFloat(details.syl_1n);
-                        const rateClass = rate1n >= 0 ? 'positive' : 'negative';
-                        ratesHtml.push(`
-                            <div class="fund-detail-item">
-                                <div class="fund-detail-label">近1年收益</div>
-                                <div class="fund-detail-value ${rateClass}">${rate1n >= 0 ? '+' : ''}${details.syl_1n}%</div>
-                            </div>
-                        `);
-                    }
-                    
-                    // 基金经理信息
-                    let managerHtml = '';
-                    if (details.managers && details.managers.length > 0) {
-                        const managerNames = details.managers.map(m => m.name).join('、');
-                        const workTime = details.managers[0].workTime || '';
-                        managerHtml = `
-                            <div class="fund-manager-info">
-                                👨‍💼 基金经理：<span class="fund-manager-name">${managerNames}</span>
-                                ${workTime ? ` (任职${workTime})` : ''}
-                            </div>
-                        `;
-                    }
-                    
-                    // 构建详情内容（包括收益率信息、经理信息和图表容器）
-                    const hasRateInfo = ratesHtml.length > 0 || managerHtml;
-                    const hasNetWorthData = details.netWorthData && details.netWorthData.length > 0;
-                    
-                    if (hasRateInfo || hasNetWorthData) {
-                        let detailsInfoHtml = '';
-                        if (hasRateInfo) {
-                            detailsInfoHtml = `
-                                <div class="fund-details">
-                                    <div class="fund-details-header">
-                                        <h4>📊 历史收益率</h4>
-                                    </div>
-                                    <div class="fund-details-grid">
-                                        ${ratesHtml.join('')}
-                                    </div>
-                                    ${managerHtml}
-                                </div>
-                            `;
-                        }
-                        
-                        let chartHtml = '';
-                        if (hasNetWorthData) {
-                            const selectedRange = chartRangeSelection[code] || 180;
-                            chartHtml = `
-                                <div class="net-worth-chart-container">
-                                    <div class="chart-range-selector" id="chart-range-selector-${code}">
-                                        <button class="chart-range-btn ${selectedRange === 30 ? 'active' : ''}" onclick="changeChartRange('${code}', 30)">近1月</button>
-                                        <button class="chart-range-btn ${selectedRange === 90 ? 'active' : ''}" onclick="changeChartRange('${code}', 90)">近3月</button>
-                                        <button class="chart-range-btn ${selectedRange === 180 ? 'active' : ''}" onclick="changeChartRange('${code}', 180)">近半年</button>
-                                        <button class="chart-range-btn ${selectedRange === 365 ? 'active' : ''}" onclick="changeChartRange('${code}', 365)">近1年</button>
-                                    </div>
-                                    <div class="net-worth-chart-wrapper">
-                                        <canvas id="net-worth-chart-${code}"></canvas>
-                                    </div>
-                                </div>
-                            `;
-                        } else {
-                            chartHtml = `
-                                <div class="fund-details">
-                                    <div class="no-position">净值数据加载中...</div>
-                                </div>
-                            `;
-                        }
-                        
-                        detailTabContent = detailsInfoHtml + chartHtml;
-                    }
-                }
-
                 return `
                     <div class="fund-card ${hasPosition ? 'holding' : 'watching'}">
                         <div class="fund-header">
@@ -5019,52 +4910,39 @@
                                     <span>${data.name}</span>
                                     ${fundBadge}
                                 </div>
-                                <div class="fund-code">${data.fundcode}</div>
+                                <div class="fund-meta">
+                                    <span class="fund-code">${data.fundcode}</span>
+                                    <span class="fund-update-time">${data.gztime || ''}</span>
+                                    <a class="fund-detail-link" href="javascript:void(0)" onclick="openFundDetailModal('${code}')">详情 ›</a>
+                                </div>
                             </div>
                             <button class="btn btn-danger" onclick="removeFund('${code}')">删除</button>
                         </div>
 
-                        <div class="fund-tabs">
-                            <button type="button" class="fund-tab active" data-fund-code="${code}" data-tab-name="realtime">
-                                📈 实时数据
-                            </button>
-                            <button type="button" class="fund-tab" data-fund-code="${code}" data-tab-name="details">
-                                📊 基金详情
-                            </button>
+                        <div class="fund-data-bar">
+                            <div class="percentage ${percentageClass}">
+                                ${percentageSymbol}${formattedPercentage}%
+                            </div>
+                            ${dailyProfitHtml}
+                            <div class="fund-data-spacer"></div>
+                            <div class="fund-data-values">
+                                <div class="data-val">
+                                    <span class="data-val-label">净值</span>
+                                    <span class="data-val-num">${data.dwjz}</span>
+                                </div>
+                                <div class="data-val">
+                                    <span class="data-val-label">估算</span>
+                                    <span class="data-val-num ${percentageClass}">${data.gsz}</span>
+                                </div>
+                            </div>
                         </div>
 
-                        <div id="tab-realtime-${code}" class="fund-tab-content active">
-                            <div class="percentage-container">
-                                <div class="percentage ${percentageClass}">
-                                    ${percentageSymbol}${formattedPercentage}%
-                                </div>
-                                ${dailyProfitHtml}
-                            </div>
-
+                        <div id="tab-realtime-${code}">
                             ${positionHtml}
-
-                            <div class="fund-info">
-                                <div class="info-item">
-                                    <div class="info-label">单位净值</div>
-                                    <div class="info-value">${data.dwjz}</div>
-                                </div>
-                                <div class="info-item">
-                                    <div class="info-label">估算值</div>
-                                    <div class="info-value ${percentageClass}">${data.gsz}</div>
-                                </div>
-                            </div>
 
                             <div class="chart-container">
                                 <canvas id="chart-${code}"></canvas>
                             </div>
-
-                            <div class="update-time">
-                                更新时间：${data.gztime} | 净值日期：${data.jzrq}
-                            </div>
-                        </div>
-
-                        <div id="tab-details-${code}" class="fund-tab-content">
-                            ${detailTabContent}
                         </div>
                     </div>
                 `;
@@ -5074,7 +4952,6 @@
             displayCodes.forEach(code => {
                 if (fundsData[code]) {
                     drawChart(code);
-                    // 注意：净值走势图会在切换到详情选项卡时才绘制
                 }
             });
 
@@ -5082,62 +4959,61 @@
             updateOverviewPanel();
         }
 
-        // 只更新指定基金的详情选项卡内容（不重新渲染整个页面）
+        // 更新基金详情（如果弹窗正在显示该基金则刷新内容）
         function updateFundDetailsTab(code) {
+            const modal = document.getElementById('fundDetailModal');
+            if (!modal || !modal.classList.contains('active')) return false;
+
+            // 检查弹窗标题是否包含该基金（判断是否当前显示的就是这只基金）
+            const titleEl = document.getElementById('fundDetailModalTitle');
+            const data = fundsData[code];
+            if (data && titleEl && titleEl.textContent.includes(data.name)) {
+                // 重新打开以刷新内容
+                openFundDetailModal(code);
+            }
+            
+            return true;
+        }
+
+        // 打开基金详情弹窗
+        function openFundDetailModal(code) {
+            const data = fundsData[code];
             const details = fundDetails[code];
+            const modal = document.getElementById('fundDetailModal');
+            const title = document.getElementById('fundDetailModalTitle');
+            const content = document.getElementById('fundDetailModalContent');
+
+            title.textContent = `📊 ${data ? data.name : code} 基金详情`;
+
             if (!details) {
-                return false;
+                content.innerHTML = '<div class="no-position">基金详情加载中...</div>';
+                modal.classList.add('active');
+                // 尝试获取详情
+                fetchFundDetails(code, true);
+                return;
             }
-            
-            
-            const detailsTabElement = document.getElementById(`tab-details-${code}`);
-            if (!detailsTabElement) {
-                return false;
-            }
-            
+
             // 构建收益率信息
             const ratesHtml = [];
-            if (details.syl_1y) {
-                const rate1y = parseFloat(details.syl_1y);
-                const rateClass = rate1y >= 0 ? 'positive' : 'negative';
-                ratesHtml.push(`
-                    <div class="fund-detail-item">
-                        <div class="fund-detail-label">近1月收益</div>
-                        <div class="fund-detail-value ${rateClass}">${rate1y >= 0 ? '+' : ''}${details.syl_1y}%</div>
-                    </div>
-                `);
-            }
-            if (details.syl_3y) {
-                const rate3y = parseFloat(details.syl_3y);
-                const rateClass = rate3y >= 0 ? 'positive' : 'negative';
-                ratesHtml.push(`
-                    <div class="fund-detail-item">
-                        <div class="fund-detail-label">近3月收益</div>
-                        <div class="fund-detail-value ${rateClass}">${rate3y >= 0 ? '+' : ''}${details.syl_3y}%</div>
-                    </div>
-                `);
-            }
-            if (details.syl_6y) {
-                const rate6y = parseFloat(details.syl_6y);
-                const rateClass = rate6y >= 0 ? 'positive' : 'negative';
-                ratesHtml.push(`
-                    <div class="fund-detail-item">
-                        <div class="fund-detail-label">近6月收益</div>
-                        <div class="fund-detail-value ${rateClass}">${rate6y >= 0 ? '+' : ''}${details.syl_6y}%</div>
-                    </div>
-                `);
-            }
-            if (details.syl_1n) {
-                const rate1n = parseFloat(details.syl_1n);
-                const rateClass = rate1n >= 0 ? 'positive' : 'negative';
-                ratesHtml.push(`
-                    <div class="fund-detail-item">
-                        <div class="fund-detail-label">近1年收益</div>
-                        <div class="fund-detail-value ${rateClass}">${rate1n >= 0 ? '+' : ''}${details.syl_1n}%</div>
-                    </div>
-                `);
-            }
-            
+            const rateFields = [
+                { key: 'syl_1y', label: '近1月' },
+                { key: 'syl_3y', label: '近3月' },
+                { key: 'syl_6y', label: '近6月' },
+                { key: 'syl_1n', label: '近1年' }
+            ];
+            rateFields.forEach(({ key, label }) => {
+                if (details[key]) {
+                    const rate = parseFloat(details[key]);
+                    const cls = rate >= 0 ? 'positive' : 'negative';
+                    ratesHtml.push(`
+                        <div class="fund-detail-item">
+                            <div class="fund-detail-label">${label}收益</div>
+                            <div class="fund-detail-value ${cls}">${rate >= 0 ? '+' : ''}${details[key]}%</div>
+                        </div>
+                    `);
+                }
+            });
+
             // 基金经理信息
             let managerHtml = '';
             if (details.managers && details.managers.length > 0) {
@@ -5150,118 +5026,52 @@
                     </div>
                 `;
             }
-            
-            // 构建详情内容
-            const hasRateInfo = ratesHtml.length > 0 || managerHtml;
-            const hasNetWorthData = details.netWorthData && details.netWorthData.length > 0;
-            
-            let detailTabContent = '<div class="fund-details"><div class="no-position">基金详情加载中...</div></div>';
-            
-            if (hasRateInfo || hasNetWorthData) {
-                let detailsInfoHtml = '';
-                if (hasRateInfo) {
-                    detailsInfoHtml = `
-                        <div class="fund-details">
-                            <div class="fund-details-header">
-                                <h4>📊 历史收益率</h4>
-                            </div>
-                            <div class="fund-details-grid">
-                                ${ratesHtml.join('')}
-                            </div>
-                            ${managerHtml}
-                        </div>
-                    `;
-                }
-                
-                let chartHtml = '';
-                if (hasNetWorthData) {
-                    const selectedRange = chartRangeSelection[code] || 180;
-                    chartHtml = `
-                        <div class="net-worth-chart-container">
-                            <div class="chart-range-selector" id="chart-range-selector-${code}">
-                                <button class="chart-range-btn ${selectedRange === 30 ? 'active' : ''}" onclick="changeChartRange('${code}', 30)">近1月</button>
-                                <button class="chart-range-btn ${selectedRange === 90 ? 'active' : ''}" onclick="changeChartRange('${code}', 90)">近3月</button>
-                                <button class="chart-range-btn ${selectedRange === 180 ? 'active' : ''}" onclick="changeChartRange('${code}', 180)">近半年</button>
-                                <button class="chart-range-btn ${selectedRange === 365 ? 'active' : ''}" onclick="changeChartRange('${code}', 365)">近1年</button>
-                            </div>
-                            <div class="net-worth-chart-wrapper">
-                                <canvas id="net-worth-chart-${code}"></canvas>
-                            </div>
-                        </div>
-                    `;
-                } else {
-                    chartHtml = `
-                        <div class="fund-details">
-                            <div class="no-position">净值数据加载中...</div>
-                        </div>
-                    `;
-                }
-                
-                detailTabContent = detailsInfoHtml + chartHtml;
+
+            let html = '';
+
+            if (ratesHtml.length > 0 || managerHtml) {
+                html += `
+                    <div class="fund-details">
+                        <div class="fund-details-header"><h4>📊 历史收益率</h4></div>
+                        <div class="fund-details-grid">${ratesHtml.join('')}</div>
+                        ${managerHtml}
+                    </div>
+                `;
             }
-            
-            // 更新DOM
-            detailsTabElement.innerHTML = detailTabContent;
-            
-            return true;
+
+            if (details.netWorthData && details.netWorthData.length > 0) {
+                const selectedRange = chartRangeSelection[code] || 180;
+                html += `
+                    <div class="net-worth-chart-container">
+                        <div class="chart-range-selector" id="chart-range-selector-${code}">
+                            <button class="chart-range-btn ${selectedRange === 30 ? 'active' : ''}" onclick="changeChartRange('${code}', 30)">近1月</button>
+                            <button class="chart-range-btn ${selectedRange === 90 ? 'active' : ''}" onclick="changeChartRange('${code}', 90)">近3月</button>
+                            <button class="chart-range-btn ${selectedRange === 180 ? 'active' : ''}" onclick="changeChartRange('${code}', 180)">近半年</button>
+                            <button class="chart-range-btn ${selectedRange === 365 ? 'active' : ''}" onclick="changeChartRange('${code}', 365)">近1年</button>
+                        </div>
+                        <div class="net-worth-chart-wrapper">
+                            <canvas id="net-worth-chart-${code}"></canvas>
+                        </div>
+                    </div>
+                `;
+            } else {
+                html += '<div class="no-position">净值数据加载中...</div>';
+                if (!details.netWorthData) {
+                    fetchFundDetails(code, true);
+                }
+            }
+
+            content.innerHTML = html;
+            modal.classList.add('active');
+
+            // 延迟绘制净值走势图
+            if (details.netWorthData && details.netWorthData.length > 0) {
+                setTimeout(() => drawNetWorthChart(code), 150);
+            }
         }
 
-        // 切换选项卡
-        function switchTab(code, tabName, event) {
-            // 阻止默认行为
-            if (event) {
-                event.preventDefault();
-                event.stopPropagation();
-            }
-            
-            
-            // 获取该基金的所有选项卡和内容
-            const card = document.querySelector(`[id^="tab-realtime-${code}"]`).closest('.fund-card');
-            if (!card) {
-                console.error(`找不到基金 ${code} 的卡片`);
-                return;
-            }
-            
-            const tabs = card.querySelectorAll('.fund-tab');
-            const contents = card.querySelectorAll('.fund-tab-content');
-            
-            // 移除所有active类
-            tabs.forEach(tab => tab.classList.remove('active'));
-            contents.forEach(content => content.classList.remove('active'));
-            
-            // 添加active类到当前选项卡
-            const targetTab = Array.from(tabs).find(tab => 
-                tab.textContent.includes(tabName === 'realtime' ? '实时数据' : '基金详情')
-            );
-            if (targetTab) {
-                targetTab.classList.add('active');
-            }
-            
-            // 显示对应内容
-            const targetContent = document.getElementById(`tab-${tabName}-${code}`);
-            if (targetContent) {
-                targetContent.classList.add('active');
-                
-                // 如果切换到详情选项卡，绘制净值走势图
-                if (tabName === 'details') {
-                    const details = fundDetails[code];
-                    if (details) {
-                    }
-                    
-                    if (details && details.netWorthData && details.netWorthData.length > 0) {
-                        // 延迟绘制，确保DOM已经可见
-                        setTimeout(() => {
-                            drawNetWorthChart(code);
-                        }, 100);
-                    } else {
-                        console.warn(`基金 ${code} 没有净值数据或数据为空`);
-                        // 如果没有数据，尝试重新获取详细信息
-                        if (!details || !details.netWorthData) {
-                            fetchFundDetails(code, true); // skipRender=true，不重新渲染整个页面
-                        }
-                    }
-                }
-            }
+        function closeFundDetailModal() {
+            document.getElementById('fundDetailModal').classList.remove('active');
         }
 
         // 绘制图表（支持原地更新，避免闪烁）
@@ -6086,19 +5896,10 @@
                 }
             });
 
-            // 使用事件委托处理选项卡点击
-            document.getElementById('fundsContainer').addEventListener('click', (e) => {
-                const tabButton = e.target.closest('.fund-tab');
-                if (tabButton) {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    
-                    const fundCode = tabButton.getAttribute('data-fund-code');
-                    const tabName = tabButton.getAttribute('data-tab-name');
-                    
-                    if (fundCode && tabName) {
-                        switchTab(fundCode, tabName, e);
-                    }
+            // 点击弹窗背景关闭基金详情弹窗
+            document.getElementById('fundDetailModal').addEventListener('click', (e) => {
+                if (e.target.id === 'fundDetailModal') {
+                    closeFundDetailModal();
                 }
             });
         });
