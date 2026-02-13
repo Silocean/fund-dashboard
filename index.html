@@ -764,7 +764,7 @@
 
         .overview-compact-item {
             display: flex;
-            align-items: baseline;
+            align-items: center;
             gap: 6px;
             white-space: nowrap;
         }
@@ -1042,7 +1042,8 @@
             width: 60px;
             height: 20px;
             margin-left: 6px;
-            vertical-align: middle;
+            flex-shrink: 0;
+            align-self: center;
         }
 
         /* 紧凑模式迷你图占位 */
@@ -1184,6 +1185,11 @@
 
         .historical-fund-profit .profit-amount.negative {
             color: #00b96b;
+        }
+
+        .historical-fund-profit .profit-amount.neutral,
+        .historical-profit-summary .summary-value.neutral {
+            color: var(--text-muted);
         }
 
         .historical-fund-profit .profit-sells {
@@ -4759,7 +4765,10 @@
         // 打开历史收益明细弹窗
         function openHistoricalProfitDetail() {
             const codes = loadFundCodes();
+            const modal = document.getElementById('historicalProfitModal');
+            const title = modal.querySelector('h2');
             const content = document.getElementById('historicalProfitContent');
+            title.textContent = '📜 历史收益明细';
             
             // 计算每个基金的历史收益
             const fundProfits = [];
@@ -4813,8 +4822,8 @@
                 // 按收益金额降序排列
                 fundProfits.sort((a, b) => b.profit - a.profit);
 
-                const totalClass = totalHistorical >= 0 ? 'positive' : 'negative';
-                const totalSymbol = totalHistorical >= 0 ? '+' : '';
+                const totalClass = totalHistorical > 0 ? 'positive' : (totalHistorical < 0 ? 'negative' : 'neutral');
+                const totalSymbol = totalHistorical > 0 ? '+' : (totalHistorical < 0 ? '' : '');
 
                 let html = `
                     <div class="historical-profit-summary">
@@ -4824,8 +4833,8 @@
                 `;
 
                 html += fundProfits.map(fp => {
-                    const profitClass = fp.profit >= 0 ? 'positive' : 'negative';
-                    const profitSymbol = fp.profit >= 0 ? '+' : '';
+                    const profitClass = fp.profit > 0 ? 'positive' : (fp.profit < 0 ? 'negative' : 'neutral');
+                    const profitSymbol = fp.profit > 0 ? '+' : (fp.profit < 0 ? '' : '');
                     const profitRate = fp.totalCostBasis > 0 ? (fp.profit / fp.totalCostBasis * 100).toFixed(2) : '0.00';
                     const rateSymbol = fp.profit >= 0 ? '+' : '';
 
@@ -5642,8 +5651,8 @@
 
             items.sort((a, b) => b.profit - a.profit);
 
-            const totalCls = totalToday >= 0 ? 'positive' : 'negative';
-            const totalSymbol = totalToday >= 0 ? '+' : '';
+            const totalCls = totalToday > 0 ? 'positive' : (totalToday < 0 ? 'negative' : 'neutral');
+            const totalSymbol = totalToday > 0 ? '+' : (totalToday < 0 ? '' : '');
 
             let html = `
                 <div class="historical-profit-summary">
@@ -5656,8 +5665,8 @@
                 html += '<div class="no-position" style="padding: 30px;">暂无持仓基金</div>';
             } else {
                 items.forEach(item => {
-                    const cls = item.profit >= 0 ? 'positive' : 'negative';
-                    const symbol = item.profit >= 0 ? '+' : '';
+                    const cls = item.profit > 0 ? 'positive' : (item.profit < 0 ? 'negative' : 'neutral');
+                    const symbol = item.profit > 0 ? '+' : (item.profit < 0 ? '' : '');
                     const pctSymbol = item.percentage >= 0 ? '+' : '';
                     html += `
                         <div class="historical-fund-item">
