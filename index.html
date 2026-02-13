@@ -64,26 +64,37 @@
             background: var(--card-bg);
             backdrop-filter: blur(10px);
             border-radius: 15px;
-            padding: 18px 22px;
-            margin-bottom: 20px;
+            padding: 14px 20px;
+            margin-bottom: 16px;
             box-shadow: var(--card-shadow);
             position: relative;
             z-index: 100;
         }
 
+        .header-top {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            margin-bottom: 10px;
+        }
+
         h1 {
             color: var(--text-primary);
-            margin-bottom: 14px;
-            font-size: 24px;
+            margin: 0;
+            font-size: 20px;
+            white-space: nowrap;
+            flex-shrink: 0;
         }
 
         .controls {
             display: flex;
-            gap: 12px;
+            gap: 10px;
             flex-wrap: wrap;
             align-items: center;
             position: relative;
             overflow: visible;
+            flex: 1;
+            min-width: 0;
         }
 
         .controls-divider {
@@ -441,11 +452,16 @@
         .main-view-tabs {
             display: flex;
             gap: 0;
-            margin-bottom: 20px;
+            margin-bottom: 16px;
             background: var(--stat-bg);
             border-radius: 12px;
             padding: 4px;
             width: 100%;
+            position: sticky;
+            top: 8px;
+            z-index: 90;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+            backdrop-filter: blur(10px);
         }
 
         .main-view-tab {
@@ -1180,8 +1196,8 @@
 
         .funds-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
-            gap: 20px;
+            grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+            gap: 16px;
         }
 
         /* 拖拽排序 */
@@ -2345,12 +2361,17 @@
         @media (max-width: 768px) {
             /* 头部控制区 */
             .header {
-                padding: 16px;
+                padding: 14px;
+            }
+
+            .header-top {
+                flex-direction: column;
+                align-items: stretch;
+                gap: 10px;
             }
 
             h1 {
-                font-size: 22px;
-                margin-bottom: 14px;
+                font-size: 20px;
             }
 
             .controls {
@@ -2494,12 +2515,11 @@
 
         @media (max-width: 480px) {
             .header {
-                padding: 12px;
+                padding: 10px;
             }
 
             h1 {
-                font-size: 20px;
-                margin-bottom: 10px;
+                font-size: 18px;
             }
 
             .add-fund input {
@@ -2566,14 +2586,79 @@
                 font-size: 13px;
             }
         }
+        /* 页面底部Footer */
+        .page-footer {
+            text-align: center;
+            padding: 24px 0 16px;
+            margin-top: 32px;
+            color: var(--text-muted);
+            font-size: 12px;
+            border-top: 1px solid var(--border-color);
+        }
+
+        .page-footer span {
+            margin: 0 8px;
+        }
+
+        .page-footer .footer-divider {
+            opacity: 0.3;
+        }
+
+        /* 回到顶部按钮 */
+        .scroll-top-btn {
+            position: fixed;
+            bottom: 32px;
+            right: 32px;
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            border: none;
+            background: var(--primary);
+            color: #fff;
+            font-size: 20px;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(74, 144, 226, 0.35);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s, visibility 0.3s, transform 0.3s;
+            z-index: 999;
+        }
+
+        .scroll-top-btn.visible {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .scroll-top-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(74, 144, 226, 0.45);
+        }
+
+        .scroll-top-btn:active {
+            transform: translateY(0);
+        }
+
+        @media (max-width: 480px) {
+            .scroll-top-btn {
+                bottom: 20px;
+                right: 20px;
+                width: 38px;
+                height: 38px;
+                font-size: 17px;
+            }
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="header">
-            <h1>📈 基金实时估值看板</h1>
-            <div class="controls">
-                <div class="add-fund">
+            <div class="header-top">
+                <h1>📈 基金实时估值看板</h1>
+                <div class="controls">
+                    <div class="add-fund">
                     <div class="autocomplete-wrapper">
                         <input type="text" id="fundCodeInput" placeholder="输入基金代码或名称搜索" autocomplete="off">
                         <div id="autocompleteList" class="autocomplete-list"></div>
@@ -2604,6 +2689,7 @@
                         <button class="backup-dropdown-item" onclick="openCloudSettingsModal(); closeBackupMenu();">🔧 云同步设置</button>
                     </div>
                 </div>
+            </div>
             </div>
             <div class="sync-reminder" id="syncReminder" style="display: none;">
                 <span>📌 数据已变更，记得<a href="javascript:void(0)" onclick="uploadToCloud()">同步到云端</a></span>
@@ -2721,7 +2807,18 @@
         </div>
 
         <div id="fundsContainer" class="funds-grid"></div>
+
+        <div class="page-footer">
+            <span>基金实时估值看板</span>
+            <span class="footer-divider">|</span>
+            <span>数据来源：天天基金</span>
+            <span class="footer-divider">|</span>
+            <span id="footerSyncStatus">未同步</span>
+        </div>
     </div>
+
+    <!-- 回到顶部按钮 -->
+    <button class="scroll-top-btn" id="scrollTopBtn" onclick="window.scrollTo({top:0,behavior:'smooth'})" title="回到顶部">↑</button>
 
     <!-- 初始申购模态框 -->
     <div id="initialPurchaseModal" class="modal">
@@ -3017,12 +3114,14 @@
         function markDataChanged() {
             localStorage.setItem('hasUnsyncedChanges', 'true');
             showSyncReminder();
+            updateFooterSyncStatus();
         }
 
         function clearSyncReminder() {
             localStorage.removeItem('hasUnsyncedChanges');
             const reminder = document.getElementById('syncReminder');
             if (reminder) reminder.style.display = 'none';
+            updateFooterSyncStatus();
         }
 
         function showSyncReminder() {
@@ -3090,6 +3189,43 @@
             }
         }
         initTheme();
+
+        // 回到顶部按钮
+        (function() {
+            const scrollBtn = document.getElementById('scrollTopBtn');
+            if (!scrollBtn) return;
+            let ticking = false;
+            window.addEventListener('scroll', function() {
+                if (!ticking) {
+                    window.requestAnimationFrame(function() {
+                        if (window.scrollY > 300) {
+                            scrollBtn.classList.add('visible');
+                        } else {
+                            scrollBtn.classList.remove('visible');
+                        }
+                        ticking = false;
+                    });
+                    ticking = true;
+                }
+            });
+        })();
+
+        // 更新页脚同步状态
+        function updateFooterSyncStatus() {
+            const el = document.getElementById('footerSyncStatus');
+            if (!el) return;
+            const hasUnsynced = localStorage.getItem('hasUnsyncedChanges') === 'true';
+            const gistId = localStorage.getItem('gist_id');
+            if (!gistId) {
+                el.textContent = '未配置云同步';
+            } else if (hasUnsynced) {
+                el.textContent = '⚠️ 有未同步数据';
+                el.style.color = '#e67e22';
+            } else {
+                el.textContent = '✅ 已同步';
+                el.style.color = '';
+            }
+        }
 
         // 更多菜单
         function toggleBackupMenu() {
@@ -6995,6 +7131,9 @@
             
             // 检查同步提醒
             initSyncReminder();
+            
+            // 更新页脚同步状态
+            updateFooterSyncStatus();
             
             // 加载基金列表（优先使用缓存）
             const cachedList = loadFundListCache();
