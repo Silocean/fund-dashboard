@@ -1045,10 +1045,8 @@
             vertical-align: middle;
         }
 
-        /* 紧凑模式更新时间 */
-        .compact-update-time {
-            font-size: 10px;
-            color: var(--text-faint);
+        /* 紧凑模式迷你图占位 */
+        .compact-sparkline-wrap {
             margin-left: auto;
             flex-shrink: 0;
         }
@@ -2562,9 +2560,6 @@
                 display: none;
             }
 
-            .compact-update-time {
-                display: none;
-            }
 
             .stat-value {
                 font-size: 18px;
@@ -2727,7 +2722,6 @@
                         <span class="overview-compact-label">累计收益 <span class="compact-toggle-hint">⇄</span></span>
                         <span class="overview-compact-value" id="compactCumulativeProfit">¥0.00</span>
                     </div>
-                    <span class="compact-update-time" id="compactUpdateTime"></span>
                 </div>
                 <!-- 展开模式：完整面板 -->
                 <div class="overview-full" id="overviewFull">
@@ -5187,8 +5181,6 @@
                 minute: '2-digit' 
             });
             document.getElementById('overviewUpdateTime').textContent = now;
-            const compactTime = document.getElementById('compactUpdateTime');
-            if (compactTime) compactTime.textContent = now;
 
             // 绘制图表
             drawAllocationChart();
