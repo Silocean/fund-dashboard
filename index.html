@@ -4,10 +4,25 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>基金实时估值看板</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.js"></script>
     <style>
         :root {
-            --bg-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            --font-display: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+            --bg-gradient: linear-gradient(135deg, #06b6d4 0%, #0891b2 100%);
+            --primary: #06b6d4;
+            --primary-dark: #0891b2;
+            --primary-rgb: 6 182 212;
+            --space-xs: 8px;
+            --space-sm: 12px;
+            --space-md: 16px;
+            --space-lg: 24px;
+            --space-xl: 32px;
+            --space-2xl: 40px;
+            --section-gap: 24px;
+            --content-gap: 20px;
             --card-bg: rgba(255, 255, 255, 0.95);
             --card-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
             --text-primary: #333;
@@ -21,11 +36,14 @@
             --position-bg: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
             --dropdown-bg: white;
             --modal-bg: white;
-            --hover-bg: rgba(102, 126, 234, 0.06);
+            --hover-bg: rgb(var(--primary-rgb) / 0.06);
         }
 
         [data-theme="dark"] {
             --bg-gradient: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            --primary: #22d3ee;
+            --primary-dark: #06b6d4;
+            --primary-rgb: 34 211 238;
             --card-bg: rgba(30, 30, 50, 0.95);
             --card-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
             --text-primary: #e0e0e0;
@@ -39,7 +57,7 @@
             --position-bg: linear-gradient(135deg, #1e1e3a 0%, #2a2a4a 100%);
             --dropdown-bg: #2a2a4a;
             --modal-bg: #1e1e3a;
-            --hover-bg: rgba(102, 126, 234, 0.15);
+            --hover-bg: rgb(var(--primary-rgb) / 0.15);
         }
 
         * {
@@ -48,27 +66,96 @@
             box-sizing: border-box;
         }
 
+        @keyframes bgGradientShift {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
-            background: var(--bg-gradient);
+            font-family: var(--font-display);
+            background: linear-gradient(-45deg, #06b6d4, #0891b2, #0e7490, #155e75);
+            background-size: 400% 400%;
+            animation: bgGradientShift 24s ease infinite;
             min-height: 100vh;
-            padding: 20px;
+            padding: var(--space-lg);
+            position: relative;
+        }
+
+        [data-theme="dark"] body {
+            background: linear-gradient(-45deg, #0f172a, #0e7490, #155e75, #0c4a6e);
+            background-size: 400% 400%;
+            animation: bgGradientShift 28s ease infinite;
+        }
+
+        /* 经典紫 */
+        [data-color-theme="purple"] { --primary: #6366f1; --primary-dark: #8b5cf6; --primary-rgb: 99 102 241; --bg-gradient: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%); }
+        [data-color-theme="purple"] body { background: linear-gradient(-45deg, #6366f1, #8b5cf6, #7c3aed, #5b21b6); background-size: 400% 400%; animation: bgGradientShift 24s ease infinite; }
+        [data-theme="dark"][data-color-theme="purple"] { --primary: #818cf8; --primary-dark: #6366f1; --primary-rgb: 129 140 248; }
+        [data-theme="dark"][data-color-theme="purple"] body { background: linear-gradient(-45deg, #1e1b4b, #312e81, #3730a3, #4c1d95); background-size: 400% 400%; animation: bgGradientShift 28s ease infinite; }
+
+        /* 森林绿 */
+        [data-color-theme="green"] { --primary: #10b981; --primary-dark: #059669; --primary-rgb: 16 185 129; --bg-gradient: linear-gradient(135deg, #10b981 0%, #059669 100%); }
+        [data-color-theme="green"] body { background: linear-gradient(-45deg, #10b981, #059669, #047857, #065f46); background-size: 400% 400%; animation: bgGradientShift 24s ease infinite; }
+        [data-theme="dark"][data-color-theme="green"] { --primary: #34d399; --primary-dark: #10b981; --primary-rgb: 52 211 153; }
+        [data-theme="dark"][data-color-theme="green"] body { background: linear-gradient(-45deg, #022c22, #064e3b, #065f46, #047857); background-size: 400% 400%; animation: bgGradientShift 28s ease infinite; }
+
+        /* 暖橙 */
+        [data-color-theme="orange"] { --primary: #f59e0b; --primary-dark: #d97706; --primary-rgb: 245 158 11; --bg-gradient: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); }
+        [data-color-theme="orange"] body { background: linear-gradient(-45deg, #f59e0b, #d97706, #b45309, #92400e); background-size: 400% 400%; animation: bgGradientShift 24s ease infinite; }
+        [data-theme="dark"][data-color-theme="orange"] { --primary: #fbbf24; --primary-dark: #f59e0b; --primary-rgb: 251 191 36; }
+        [data-theme="dark"][data-color-theme="orange"] body { background: linear-gradient(-45deg, #451a03, #78350f, #92400e, #b45309); background-size: 400% 400%; animation: bgGradientShift 28s ease infinite; }
+
+        /* 樱粉 */
+        [data-color-theme="rose"] { --primary: #f43f5e; --primary-dark: #e11d48; --primary-rgb: 244 63 94; --bg-gradient: linear-gradient(135deg, #f43f5e 0%, #e11d48 100%); }
+        [data-color-theme="rose"] body { background: linear-gradient(-45deg, #f43f5e, #e11d48, #be123c, #9f1239); background-size: 400% 400%; animation: bgGradientShift 24s ease infinite; }
+        [data-theme="dark"][data-color-theme="rose"] { --primary: #fb7185; --primary-dark: #f43f5e; --primary-rgb: 251 113 133; }
+        [data-theme="dark"][data-color-theme="rose"] body { background: linear-gradient(-45deg, #4c0519, #881337, #9f1239, #be123c); background-size: 400% 400%; animation: bgGradientShift 28s ease infinite; }
+
+        /* 各主题 hover 背景（使用 primary-rgb） */
+        [data-color-theme="purple"] { --hover-bg: rgb(var(--primary-rgb) / 0.06); }
+        [data-theme="dark"][data-color-theme="purple"] { --hover-bg: rgb(var(--primary-rgb) / 0.15); }
+        [data-color-theme="green"] { --hover-bg: rgb(var(--primary-rgb) / 0.06); }
+        [data-theme="dark"][data-color-theme="green"] { --hover-bg: rgb(var(--primary-rgb) / 0.15); }
+        [data-color-theme="orange"] { --hover-bg: rgb(var(--primary-rgb) / 0.06); }
+        [data-theme="dark"][data-color-theme="orange"] { --hover-bg: rgb(var(--primary-rgb) / 0.15); }
+        [data-color-theme="rose"] { --hover-bg: rgb(var(--primary-rgb) / 0.06); }
+        [data-theme="dark"][data-color-theme="rose"] { --hover-bg: rgb(var(--primary-rgb) / 0.15); }
+
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background: radial-gradient(ellipse 90% 60% at 50% -10%, rgba(255, 255, 255, 0.15), transparent 55%);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        [data-theme="dark"] body::before {
+            background: radial-gradient(ellipse 90% 60% at 50% -10%, rgba(255, 255, 255, 0.04), transparent 55%);
         }
 
         .container {
             max-width: 1400px;
             margin: 0 auto;
+            position: relative;
+            z-index: 1;
         }
 
         .header {
             background: var(--card-bg);
             backdrop-filter: blur(10px);
-            border-radius: 15px;
-            padding: 14px 20px;
-            margin-bottom: 16px;
+            border-radius: 16px;
+            padding: var(--space-md) var(--space-lg);
+            margin-bottom: var(--section-gap);
             box-shadow: var(--card-shadow);
             position: relative;
             z-index: 100;
+            border: 1px solid rgba(255, 255, 255, 0.6);
+        }
+
+        [data-theme="dark"] .header {
+            border-color: rgba(255, 255, 255, 0.06);
         }
 
         .header-top {
@@ -82,6 +169,8 @@
             color: var(--text-primary);
             margin: 0;
             font-size: 20px;
+            font-weight: 700;
+            letter-spacing: -0.02em;
             white-space: nowrap;
             flex-shrink: 0;
         }
@@ -145,8 +234,8 @@
 
         .sort-controls select:focus {
             outline: none;
-            border-color: #667eea;
-            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgb(var(--primary-rgb) / 0.1);
         }
 
         .backup-controls {
@@ -158,7 +247,7 @@
             font-size: 14px;
             border: none;
             border-radius: 8px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
             color: white;
             cursor: pointer;
             font-weight: 500;
@@ -168,7 +257,7 @@
 
         .backup-toggle:hover {
             transform: translateY(-1px);
-            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+            box-shadow: 0 4px 12px rgb(var(--primary-rgb) / 0.4);
         }
 
         /* 主题切换按钮 */
@@ -185,6 +274,22 @@
 
         .theme-toggle:hover {
             background: var(--hover-bg);
+        }
+
+        .color-theme-select {
+            padding: 8px 10px;
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
+            font-size: 13px;
+            background: var(--input-bg);
+            color: var(--text-primary);
+            cursor: pointer;
+            min-width: 0;
+            max-width: 100px;
+        }
+        .color-theme-select:focus {
+            outline: none;
+            border-color: var(--primary);
         }
 
         .backup-toggle:disabled {
@@ -240,8 +345,8 @@
 
         .add-fund input:focus {
             outline: none;
-            border-color: #667eea;
-            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgb(var(--primary-rgb) / 0.1);
         }
 
         /* 自动补全下拉列表样式 */
@@ -263,7 +368,7 @@
             max-height: 300px;
             overflow-y: auto;
             background: var(--dropdown-bg);
-            border: 2px solid #667eea;
+            border: 2px solid var(--primary);
             border-top: none;
             border-radius: 0 0 8px 8px;
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
@@ -305,8 +410,8 @@
         .autocomplete-item-type {
             display: inline-block;
             font-size: 11px;
-            color: #667eea;
-            background: rgba(102, 126, 234, 0.1);
+            color: var(--primary);
+            background: rgb(var(--primary-rgb) / 0.1);
             padding: 2px 6px;
             border-radius: 4px;
             margin-left: 8px;
@@ -444,7 +549,7 @@
 
         .chart-range-btn.active {
             background: var(--card-bg);
-            color: #1890ff;
+            color: var(--primary);
             box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
         }
 
@@ -452,16 +557,22 @@
         .main-view-tabs {
             display: flex;
             gap: 0;
-            margin-bottom: 16px;
+            margin-top: var(--section-gap);
+            margin-bottom: var(--content-gap);
             background: var(--stat-bg);
-            border-radius: 12px;
-            padding: 4px;
+            border-radius: 14px;
+            padding: 5px;
             width: 100%;
             position: sticky;
-            top: 8px;
+            top: var(--space-xs);
             z-index: 90;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
             backdrop-filter: blur(10px);
+            border: 1px solid var(--border-color);
+        }
+
+        [data-theme="dark"] .main-view-tabs {
+            border-color: rgba(255, 255, 255, 0.06);
         }
 
         .main-view-tab {
@@ -503,7 +614,7 @@
         }
 
         .main-view-tab.active .tab-count {
-            background: #667eea;
+            background: var(--primary);
             color: #fff;
         }
 
@@ -523,13 +634,13 @@
         }
 
         .btn-primary {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
             color: white;
         }
 
         .btn-primary:hover {
             transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+            box-shadow: 0 5px 15px rgb(var(--primary-rgb) / 0.4);
         }
 
         .btn-danger {
@@ -584,17 +695,23 @@
             display: flex;
             align-items: center;
             justify-content: space-between;
-            padding: 8px 16px;
+            padding: 10px 16px;
             background: linear-gradient(135deg, #fff7e6, #fffbe6);
             border: 1px solid #ffe58f;
-            border-radius: 8px;
+            border-radius: 10px;
             margin-top: 10px;
             font-size: 13px;
             color: #ad6800;
         }
 
+        [data-theme="dark"] .sync-reminder {
+            background: linear-gradient(135deg, rgba(255, 229, 143, 0.15), rgba(255, 193, 7, 0.08));
+            border-color: rgba(255, 193, 7, 0.35);
+            color: #ffd666;
+        }
+
         .sync-reminder a {
-            color: #667eea;
+            color: var(--primary);
             font-weight: 600;
             text-decoration: none;
             margin-left: 2px;
@@ -630,7 +747,7 @@
         }
 
         .cloud-settings-info a {
-            color: #1890ff;
+            color: var(--primary);
             text-decoration: none;
         }
 
@@ -694,7 +811,7 @@
 
         /* 总览看板样式 */
         .overview-panel {
-            margin-bottom: 20px;
+            margin-bottom: var(--section-gap);
             position: relative;
             z-index: 10;
         }
@@ -702,9 +819,14 @@
         .overview-card {
             background: var(--card-bg);
             backdrop-filter: blur(10px);
-            border-radius: 15px;
-            padding: 18px 22px;
+            border-radius: 16px;
+            padding: 18px 20px;
             box-shadow: var(--card-shadow);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+        }
+
+        [data-theme="dark"] .overview-card {
+            border-color: rgba(255, 255, 255, 0.06);
         }
 
         .overview-header {
@@ -718,13 +840,14 @@
         }
 
         .overview-header.expanded {
-            margin-bottom: 16px;
-            padding-bottom: 12px;
-            border-bottom: 2px solid var(--border-color);
+            margin-bottom: 14px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid var(--border-color);
         }
 
         .overview-header h2 {
             font-size: 20px;
+            font-weight: 700;
             color: var(--text-primary);
             margin: 0;
             display: flex;
@@ -733,7 +856,7 @@
         }
 
         .overview-expand-toggle {
-            font-size: 12px;
+            font-size: 11px;
             color: var(--text-muted);
             transition: transform 0.25s;
             display: inline-block;
@@ -744,8 +867,12 @@
         }
 
         .overview-date {
-            font-size: 12px;
+            font-size: 11px;
             color: var(--text-muted);
+            padding: 4px 10px;
+            border-radius: 8px;
+            background: var(--stat-bg);
+            border: 1px solid var(--border-color);
         }
 
         /* 紧凑模式：关键指标横条 */
@@ -754,8 +881,11 @@
             align-items: center;
             gap: 20px;
             margin-top: 14px;
-            padding: 0 4px;
+            padding: 14px 18px;
             flex-wrap: wrap;
+            background: var(--stat-bg);
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
         }
 
         .overview-compact.hidden {
@@ -779,6 +909,7 @@
             font-size: 18px;
             font-weight: 700;
             color: var(--text-primary);
+            font-family: var(--font-display);
         }
 
         .overview-compact-value.positive {
@@ -808,45 +939,59 @@
             height: 20px;
             background: var(--border-color);
             flex-shrink: 0;
+            opacity: 0.7;
         }
 
         /* 展开模式：完整面板 */
         .overview-full {
             max-height: 0;
             overflow: hidden;
-            transition: max-height 0.35s ease-out, opacity 0.25s ease-out;
-            opacity: 0;
+            transition: max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
         .overview-full.expanded {
             max-height: 1500px;
+            transition: max-height 0.45s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .overview-full-inner {
+            opacity: 0;
+            transform: translateY(-12px);
+            transition: opacity 0.35s ease-out 0.05s, transform 0.35s cubic-bezier(0.34, 1.2, 0.64, 1) 0.05s;
+            padding-top: 2px;
+        }
+
+        .overview-full.expanded .overview-full-inner {
             opacity: 1;
-            transition: max-height 0.4s ease-in, opacity 0.3s ease-in;
+            transform: translateY(0);
+            transition: opacity 0.3s ease-in, transform 0.35s cubic-bezier(0.34, 1.2, 0.64, 1);
         }
 
         .overview-stats {
             display: grid;
             grid-template-columns: repeat(4, 1fr);
-            gap: 14px;
+            gap: 12px;
         }
 
         .stat-item {
             display: flex;
             flex-direction: column;
             align-items: center;
-            padding: 14px 16px;
-            border-radius: 10px;
+            justify-content: center;
+            padding: 12px 10px;
+            border-radius: 12px;
             background: var(--stat-bg);
-            transition: transform 0.2s;
+            transition: transform 0.2s, box-shadow 0.2s;
+            border: 1px solid transparent;
         }
 
         .stat-item:hover {
             transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+            box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08);
         }
 
         .stat-item.stat-primary {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
         }
 
         .stat-item.stat-primary .stat-label,
@@ -870,7 +1015,25 @@
         .stat-label {
             font-size: 13px;
             color: var(--text-secondary);
-            margin-bottom: 8px;
+            margin-bottom: 6px;
+            font-weight: 500;
+        }
+
+        .stat-detail-hint {
+            font-size: 11px;
+            color: var(--text-faint);
+            margin-left: 6px;
+            font-weight: 400;
+        }
+
+        .stat-item.stat-clickable .stat-label:hover .stat-detail-hint {
+            color: var(--primary);
+        }
+
+        .stat-sub-line {
+            font-size: 11px;
+            color: var(--text-muted);
+            margin-top: 6px;
             font-weight: 500;
         }
 
@@ -878,6 +1041,7 @@
             font-size: 22px;
             font-weight: 700;
             color: var(--text-primary);
+            font-family: var(--font-display);
         }
 
         .stat-value.positive {
@@ -922,11 +1086,13 @@
 
         /* 总览面板分区标签 */
         .overview-section-label {
-            font-size: 12px;
+            font-size: 13px;
             font-weight: 600;
-            color: var(--text-muted);
-            margin-bottom: 8px;
-            padding-left: 2px;
+            color: var(--text-secondary);
+            margin-bottom: 6px;
+            padding-left: 12px;
+            border-left: 3px solid var(--primary);
+            letter-spacing: 0.02em;
         }
 
         /* 总览面板分隔线 */
@@ -945,8 +1111,12 @@
         .overview-state.charts-row {
             display: grid;
             grid-template-columns: 200px 1fr;
-            gap: 16px;
+            gap: 14px;
             align-items: stretch;
+            background: var(--stat-bg);
+            border-radius: 12px;
+            padding: 14px;
+            border: 1px solid var(--border-color);
         }
 
         /* 持仓占比环形图 */
@@ -963,7 +1133,7 @@
         }
 
         .allocation-legend {
-            margin-top: 8px;
+            margin-top: 6px;
             font-size: 11px;
             color: var(--text-secondary);
             width: 100%;
@@ -1013,7 +1183,7 @@
             display: flex;
             justify-content: flex-end;
             gap: 4px;
-            margin-bottom: 6px;
+            margin-bottom: 4px;
         }
 
         .trend-range-btn {
@@ -1033,7 +1203,7 @@
 
         .trend-range-btn.active {
             background: var(--card-bg);
-            color: #1890ff;
+            color: var(--primary);
             box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
         }
 
@@ -1093,8 +1263,8 @@
         }
 
         .stat-item.stat-clickable:hover {
-            box-shadow: 0 4px 16px rgba(102, 126, 234, 0.25);
-            border: 1px solid #667eea;
+            box-shadow: 0 4px 16px rgb(var(--primary-rgb) / 0.25);
+            border: 1px solid var(--primary);
         }
 
         /* 历史收益明细样式 */
@@ -1201,7 +1371,7 @@
         .funds-grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
-            gap: 16px;
+            gap: var(--content-gap);
         }
 
         /* 拖拽排序 */
@@ -1215,23 +1385,23 @@
         }
 
         .fund-card.drag-over {
-            box-shadow: 0 0 0 2px #667eea;
+            box-shadow: 0 0 0 2px var(--primary);
         }
 
         .fund-card {
             background: var(--card-bg);
             backdrop-filter: blur(10px);
-            border-radius: 12px;
+            border-radius: 14px;
             padding: 14px 16px;
             box-shadow: var(--card-shadow);
-            transition: transform 0.2s, box-shadow 0.2s;
+            transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.2s;
             position: relative;
             border: 2px solid transparent;
         }
 
         .fund-card:hover {
             transform: translateY(-3px);
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+            box-shadow: 0 10px 36px rgba(0, 0, 0, 0.12);
         }
 
         /* 持有 / 自选 卡片左侧色条 */
@@ -1312,7 +1482,7 @@
         }
 
         .fund-detail-link:hover {
-            color: #667eea;
+            color: var(--primary);
         }
 
         /* 删除按钮 hover 才显示 */
@@ -1341,6 +1511,7 @@
             font-weight: 700;
             flex-shrink: 0;
             white-space: nowrap;
+            font-family: var(--font-display);
         }
 
         .percentage.positive {
@@ -1553,8 +1724,61 @@
         .loading {
             text-align: center;
             padding: 40px;
-            color: white;
-            font-size: 18px;
+            color: var(--text-muted);
+            font-size: 14px;
+        }
+
+        /* 基金卡片骨架屏 */
+        .fund-card-skeleton {
+            pointer-events: none;
+        }
+
+        .fund-card-skeleton .skeleton-block {
+            height: 16px;
+            border-radius: 6px;
+            background: linear-gradient(90deg, var(--stat-bg) 25%, var(--border-color) 50%, var(--stat-bg) 75%);
+            background-size: 200% 100%;
+            animation: skeleton-shimmer 1.2s ease-in-out infinite;
+        }
+
+        .fund-card-skeleton .skeleton-title {
+            width: 72%;
+            height: 18px;
+            margin-bottom: 8px;
+        }
+
+        .fund-card-skeleton .skeleton-code {
+            width: 28%;
+            height: 12px;
+            margin-bottom: 14px;
+        }
+
+        .fund-card-skeleton .skeleton-bar {
+            height: 44px;
+            border-radius: 8px;
+            margin-bottom: 12px;
+        }
+
+        .fund-card-skeleton .skeleton-chart {
+            height: 80px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+        }
+
+        .fund-card-skeleton .skeleton-row {
+            display: flex;
+            gap: 12px;
+            margin-top: 8px;
+        }
+
+        .fund-card-skeleton .skeleton-row .skeleton-block {
+            flex: 1;
+            height: 14px;
+        }
+
+        @keyframes skeleton-shimmer {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
         }
 
         .fund-card-failed .load-failed {
@@ -1568,15 +1792,35 @@
 
         .empty-state {
             text-align: center;
-            padding: 60px 20px;
+            padding: 56px 28px;
             background: var(--card-bg);
-            border-radius: 15px;
+            border-radius: 16px;
             color: var(--text-secondary);
+            box-shadow: var(--card-shadow);
+            border: 1px solid var(--border-color);
+        }
+
+        .empty-state .empty-state-icon {
+            font-size: 48px;
+            line-height: 1;
+            margin-bottom: 16px;
+            opacity: 0.85;
         }
 
         .empty-state h2 {
-            margin-bottom: 10px;
+            margin-bottom: 12px;
             color: var(--text-primary);
+            font-size: 18px;
+            font-weight: 600;
+            line-height: 1.4;
+        }
+
+        .empty-state p {
+            font-size: 14px;
+            color: var(--text-muted);
+            max-width: 280px;
+            margin: 0 auto;
+            line-height: 1.5;
         }
 
         /* 模态框样式 */
@@ -1587,10 +1831,15 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(0, 0, 0, 0.6);
+            background: rgba(0, 0, 0, 0.55);
             z-index: 1000;
             justify-content: center;
             align-items: center;
+            backdrop-filter: blur(2px);
+        }
+
+        [data-theme="dark"] .modal {
+            background: rgba(0, 0, 0, 0.7);
         }
 
         .modal.active {
@@ -1625,7 +1874,7 @@
             gap: 16px;
             padding: 16px;
             border-radius: 12px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
             color: white;
             margin-bottom: 16px;
         }
@@ -1854,7 +2103,7 @@
 
         .nw-history-toggle {
             font-size: 12px;
-            color: #667eea;
+            color: var(--primary);
             cursor: pointer;
             border: none;
             background: none;
@@ -1994,12 +2243,12 @@
         }
 
         .confirm-fund-info {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
             color: white;
             padding: 20px;
             border-radius: 12px;
             margin-bottom: 20px;
-            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+            box-shadow: 0 4px 15px rgb(var(--primary-rgb) / 0.3);
         }
 
         .confirm-fund-name {
@@ -2150,10 +2399,16 @@
             display: flex;
             align-items: center;
             justify-content: center;
+            border-radius: 6px;
+            outline: none;
         }
 
         .close-btn:hover {
             color: var(--text-primary);
+        }
+
+        .close-btn:focus-visible {
+            box-shadow: 0 0 0 2px var(--primary);
         }
 
         .form-group {
@@ -2181,8 +2436,8 @@
 
         .form-group input:focus {
             outline: none;
-            border-color: #667eea;
-            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.2);
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgb(var(--primary-rgb) / 0.2);
         }
 
         .form-group input[readonly] {
@@ -2201,7 +2456,7 @@
         }
         .form-group select:focus {
             outline: none;
-            border-color: #667eea;
+            border-color: var(--primary);
         }
 
         .form-group small {
@@ -2234,7 +2489,7 @@
         }
         .nav-source-tag.actual {
             background: #e6f7ff;
-            color: #1890ff;
+            color: var(--primary);
         }
         .nav-source-tag.manual {
             background: #fff7e6;
@@ -2372,9 +2627,9 @@
         }
 
         .trans-edit-form input:focus {
-            border-color: #667eea;
+            border-color: var(--primary);
             outline: none;
-            box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.2);
+            box-shadow: 0 0 0 2px rgb(var(--primary-rgb) / 0.2);
         }
 
         .trans-edit-actions {
@@ -2406,9 +2661,9 @@
         }
 
         .quick-sell-btn:hover {
-            border-color: #667eea;
-            color: #667eea;
-            background: rgba(102, 126, 234, 0.05);
+            border-color: var(--primary);
+            color: var(--primary);
+            background: rgb(var(--primary-rgb) / 0.05);
             transform: translateY(-1px);
         }
 
@@ -2423,9 +2678,13 @@
         }
 
         @media (max-width: 768px) {
+            body {
+                padding: var(--space-md);
+            }
+
             /* 头部控制区 */
             .header {
-                padding: 14px;
+                padding: var(--space-sm) var(--space-md);
             }
 
             .header-top {
@@ -2453,25 +2712,59 @@
 
             .sort-controls select {
                 flex: 1;
+                min-height: 44px;
             }
 
-            /* 主视图标签 */
+            .add-fund input {
+                min-height: 44px;
+            }
+
+            .btn-primary {
+                min-height: 44px;
+                padding: 12px 20px;
+            }
+
+            .theme-toggle,
+            .backup-toggle {
+                min-height: 44px;
+                min-width: 44px;
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+            }
+
+            .color-theme-select {
+                min-height: 44px;
+            }
+
+            /* 主视图标签：增大触摸区域 */
             .main-view-tabs {
-                margin: 12px 0;
+                margin: 14px 0;
+                padding: 5px;
             }
 
             .main-view-tab {
-                font-size: 14px;
-                padding: 8px 12px;
+                font-size: 15px;
+                padding: 12px 20px;
+                min-height: 44px;
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
             }
 
             /* 总览面板 */
             .overview-compact {
-                gap: 12px;
+                gap: 14px;
             }
 
             .overview-compact-value {
-                font-size: 15px;
+                font-size: 16px;
+            }
+
+            .overview-compact-item {
+                min-height: 44px;
+                display: inline-flex;
+                align-items: center;
             }
 
             .overview-compact-divider {
@@ -2578,8 +2871,12 @@
         }
 
         @media (max-width: 480px) {
+            body {
+                padding: var(--space-sm);
+            }
+
             .header {
-                padding: 10px;
+                padding: var(--space-sm);
             }
 
             h1 {
@@ -2587,25 +2884,32 @@
             }
 
             .add-fund input {
-                font-size: 14px;
-                padding: 10px 12px;
+                font-size: 15px;
+                padding: 12px 14px;
+                min-height: 46px;
             }
 
             .btn-primary {
-                padding: 10px 16px;
-                font-size: 14px;
+                padding: 12px 18px;
+                font-size: 15px;
+                min-height: 46px;
             }
 
             .overview-compact {
-                gap: 6px 14px;
+                gap: 8px 16px;
             }
 
             .overview-compact-value {
-                font-size: 14px;
+                font-size: 15px;
             }
 
             .overview-compact-label {
-                font-size: 11px;
+                font-size: 12px;
+            }
+
+            .main-view-tab {
+                font-size: 14px;
+                padding: 12px 16px;
             }
 
             .overview-stats {
@@ -2647,22 +2951,29 @@
                 font-size: 13px;
             }
         }
-        /* 页面底部Footer */
+        /* 页面底部Footer：顶部渐变过渡，与内容区自然衔接 */
         .page-footer {
             text-align: center;
-            padding: 24px 0 16px;
-            margin-top: 32px;
+            padding: var(--space-2xl) var(--space-md) var(--space-lg);
+            margin-top: var(--space-2xl);
             color: var(--text-muted);
             font-size: 12px;
+            letter-spacing: 0.02em;
             border-top: 1px solid var(--border-color);
+            background: linear-gradient(to bottom, transparent 0%, rgba(0, 0, 0, 0.02) 100%);
+        }
+
+        [data-theme="dark"] .page-footer {
+            background: linear-gradient(to bottom, transparent 0%, rgba(255, 255, 255, 0.02) 100%);
         }
 
         .page-footer span {
-            margin: 0 8px;
+            margin: 0 10px;
         }
 
         .page-footer .footer-divider {
-            opacity: 0.3;
+            opacity: 0.35;
+            font-weight: 300;
         }
 
         /* 回到顶部按钮 */
@@ -2674,18 +2985,20 @@
             height: 44px;
             border-radius: 50%;
             border: none;
-            background: var(--primary);
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
             color: #fff;
-            font-size: 20px;
+            font-size: 18px;
+            font-weight: 600;
             cursor: pointer;
-            box-shadow: 0 4px 12px rgba(74, 144, 226, 0.35);
+            box-shadow: 0 4px 16px rgb(var(--primary-rgb) / 0.4);
             display: flex;
             align-items: center;
             justify-content: center;
             opacity: 0;
             visibility: hidden;
-            transition: opacity 0.3s, visibility 0.3s, transform 0.3s;
+            transition: opacity 0.3s, visibility 0.3s, transform 0.25s, box-shadow 0.25s;
             z-index: 999;
+            backdrop-filter: blur(8px);
         }
 
         .scroll-top-btn.visible {
@@ -2694,8 +3007,8 @@
         }
 
         .scroll-top-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 16px rgba(74, 144, 226, 0.45);
+            transform: translateY(-3px);
+            box-shadow: 0 8px 24px rgb(var(--primary-rgb) / 0.5);
         }
 
         .scroll-top-btn:active {
@@ -2789,6 +3102,13 @@
                         <option value="asc">涨跌幅从低到高</option>
                     </select>
                 </div>
+                <select id="colorThemeSelect" class="color-theme-select" onchange="applyColorTheme(this.value)" title="主题色">
+                    <option value="purple">经典紫</option>
+                    <option value="cyan">科技青</option>
+                    <option value="green">森林绿</option>
+                    <option value="orange">暖橙</option>
+                    <option value="rose">樱粉</option>
+                </select>
                 <button class="theme-toggle" onclick="toggleTheme()" id="themeToggle" title="切换暗色/亮色模式">🌙</button>
                 <div class="backup-controls">
                     <button class="backup-toggle" onclick="toggleBackupMenu()" id="backupToggle">
@@ -2848,6 +3168,7 @@
                 </div>
                 <!-- 展开模式：完整面板 -->
                 <div class="overview-full" id="overviewFull">
+                    <div class="overview-full-inner">
                     <div class="overview-section-label">💼 持仓</div>
                     <div class="overview-stats overview-stats-4col">
                         <div class="stat-item stat-primary">
@@ -2871,11 +3192,11 @@
                     <div class="overview-section-label">📜 收益总览</div>
                     <div class="overview-stats overview-stats-4col">
                         <div class="stat-item stat-highlight stat-clickable" id="todayProfitCard" onclick="openTodayProfitDetail()" title="点击查看今日盈亏明细">
-                            <div class="stat-label">今日盈亏 <span style="font-size: 11px; color: var(--text-faint);">▶ 明细</span></div>
+                            <div class="stat-label">今日盈亏 <span class="stat-detail-hint">▶ 明细</span></div>
                             <div class="stat-value" id="todayProfit">¥0.00</div>
                         </div>
                         <div class="stat-item stat-clickable" onclick="openHistoricalProfitDetail()" title="点击查看历史收益明细">
-                            <div class="stat-label">历史收益（已实现） <span style="font-size: 11px; color: var(--text-faint);">▶ 明细</span></div>
+                            <div class="stat-label">历史收益（已实现） <span class="stat-detail-hint">▶ 明细</span></div>
                             <div class="stat-value" id="historicalProfit">¥0.00</div>
                         </div>
                         <div class="stat-item stat-cumulative">
@@ -2885,7 +3206,7 @@
                         <div class="stat-item">
                             <div class="stat-label">累计收益率 / 最大回撤</div>
                             <div class="stat-value" id="cumulativeProfitRate">0.00%</div>
-                            <div style="font-size: 11px; color: var(--text-muted); margin-top: 4px;" id="maxDrawdown">回撤: --</div>
+                            <div class="stat-sub-line" id="maxDrawdown">回撤: --</div>
                         </div>
                     </div>
                     <div class="overview-divider"></div>
@@ -2908,6 +3229,7 @@
                                 <canvas id="profitTrendChart"></canvas>
                             </div>
                         </div>
+                    </div>
                     </div>
                 </div>
             </div>
@@ -3519,6 +3841,31 @@
             }
         }
         initTheme();
+
+        function getPrimaryColor() {
+            return getComputedStyle(document.documentElement).getPropertyValue('--primary').trim() || '#06b6d4';
+        }
+
+        function applyColorTheme(value) {
+            const html = document.documentElement;
+            const valid = ['cyan', 'purple', 'green', 'orange', 'rose'].includes(value) ? value : 'cyan';
+            html.setAttribute('data-color-theme', valid);
+            localStorage.setItem('colorTheme', valid);
+            const sel = document.getElementById('colorThemeSelect');
+            if (sel) sel.value = valid;
+            if (typeof renderFunds === 'function') renderFunds();
+            if (typeof drawProfitTrendChart === 'function') drawProfitTrendChart();
+            if (typeof drawAllocationChart === 'function') drawAllocationChart();
+        }
+
+        function initColorTheme() {
+            const saved = localStorage.getItem('colorTheme');
+            const valid = ['cyan', 'purple', 'green', 'orange', 'rose'].includes(saved) ? saved : 'cyan';
+            document.documentElement.setAttribute('data-color-theme', valid);
+            const sel = document.getElementById('colorThemeSelect');
+            if (sel) sel.value = valid;
+        }
+        initColorTheme();
 
         // 回到顶部按钮
         (function() {
@@ -5869,7 +6216,7 @@
 
         // ===== 持仓占比环形图 =====
         let allocationChartInstance = null;
-        const allocationColors = ['#667eea', '#764ba2', '#f093fb', '#ff6b6b', '#ffa502', '#2ed573', '#1e90ff', '#ff6348', '#7bed9f', '#70a1ff'];
+        const allocationColors = () => [getPrimaryColor(), (getComputedStyle(document.documentElement).getPropertyValue('--primary-dark').trim() || '#0891b2'), '#f093fb', '#ff6b6b', '#ffa502', '#2ed573', '#1e90ff', '#ff6348', '#7bed9f', '#70a1ff'];
 
         function drawAllocationChart() {
             const ctx = document.getElementById('allocationChart');
@@ -5900,7 +6247,8 @@
             items.sort((a, b) => b.value - a.value);
             const labels = items.map(i => i.name.length > 6 ? i.name.slice(0, 6) + '…' : i.name);
             const data = items.map(i => i.value);
-            const colors = items.map((_, i) => allocationColors[i % allocationColors.length]);
+            const colorsArr = allocationColors();
+            const colors = items.map((_, i) => colorsArr[i % colorsArr.length]);
 
             if (allocationChartInstance && allocationChartInstance.canvas === ctx) {
                 allocationChartInstance.data.labels = labels;
@@ -6127,6 +6475,29 @@
         // 收益趋势图实例
         let profitTrendChartInstance = null;
 
+        // 收益趋势图 Y 轴范围：数据少或数值区间小时让折线更饱满，避免显得空
+        function makeProfitTrendYAxisLimits(filteredData) {
+            return function(axis) {
+                if (axis.max < 0) axis.max = 0;
+                else if (axis.min > 0) axis.min = 0;
+                let range = axis.max - axis.min;
+                const center = (axis.max + axis.min) / 2;
+                const absCenter = Math.abs(center);
+                // 数值区间过小时设定最小显示范围，避免折线几乎成一条直线
+                const minRange = Math.max(30, absCenter * 0.12);
+                if (range < minRange && range > 0) {
+                    axis.min = center - minRange / 2;
+                    axis.max = center + minRange / 2;
+                    if (axis.min < 0 && filteredData.some(v => v < 0)) axis.min = Math.min(axis.min, 0);
+                    if (axis.max > 0 && filteredData.some(v => v > 0)) axis.max = Math.max(axis.max, 0);
+                    range = axis.max - axis.min;
+                }
+                const padding = range * 0.12;
+                axis.max += padding;
+                axis.min -= padding;
+            };
+        }
+
         // 绘制收益趋势图
         function drawProfitTrendChart() {
             const ctx = document.getElementById('profitTrendChart');
@@ -6269,15 +6640,24 @@
             const lastValue = filteredData[filteredData.length - 1] || 0;
             const mainColor = lastValue >= 0 ? '#ff4d4f' : '#00b96b';
 
+            // 数据量少时放大数据点、加粗线条，让折线更醒目
+            const pointCount = filteredData.length;
+            const pointRadius = pointCount <= 5 ? 6 : pointCount <= 10 ? 5 : pointCount <= 15 ? 4 : 0;
+            const borderWidth = pointCount <= 5 ? 3 : 2.5;
+            const fillOpacity = pointCount <= 10 ? '22' : '15'; // 数据少时填充稍深
+
             if (profitTrendChartInstance && profitTrendChartInstance.canvas === ctx) {
                 // 原地更新
                 const chart = profitTrendChartInstance;
                 chart.data.labels = labels;
                 chart.data.datasets[0].data = filteredData;
                 chart.data.datasets[0].borderColor = mainColor;
-                chart.data.datasets[0].backgroundColor = `${mainColor}15`;
+                chart.data.datasets[0].backgroundColor = `${mainColor}${fillOpacity}`;
+                chart.data.datasets[0].pointRadius = pointRadius;
+                chart.data.datasets[0].borderWidth = borderWidth;
                 chart.data.datasets[1].data = filteredHistorical;
                 chart.data.datasets[2].data = filteredHolding;
+                chart.options.scales.y.afterDataLimits = makeProfitTrendYAxisLimits(filteredData);
                 chart.update('none');
                 return;
             }
@@ -6295,12 +6675,12 @@
                             label: '累计收益',
                             data: filteredData,
                             borderColor: mainColor,
-                            backgroundColor: `${mainColor}15`,
-                            borderWidth: 2.5,
-                            tension: 0.3,
+                            backgroundColor: `${mainColor}${fillOpacity}`,
+                            borderWidth: borderWidth,
+                            tension: pointCount <= 5 ? 0.2 : 0.3,
                             fill: true,
-                            pointRadius: filteredData.length <= 15 ? 4 : 0,
-                            pointHoverRadius: 5,
+                            pointRadius: pointRadius,
+                            pointHoverRadius: Math.max(pointRadius + 2, 6),
                             pointBackgroundColor: mainColor,
                             pointBorderColor: '#fff',
                             pointBorderWidth: 2,
@@ -6321,7 +6701,7 @@
                         {
                             label: '持仓收益',
                             data: filteredHolding,
-                            borderColor: '#667eea',
+                            borderColor: getPrimaryColor(),
                             borderWidth: 1.5,
                             borderDash: [3, 3],
                             tension: 0.3,
@@ -6385,14 +6765,7 @@
                                     return context.tick.value === 0 ? 1.5 : 1;
                                 }
                             },
-                            afterDataLimits: function(axis) {
-                                if (axis.max < 0) axis.max = 0;
-                                else if (axis.min > 0) axis.min = 0;
-                                const range = axis.max - axis.min;
-                                const padding = range * 0.1;
-                                axis.max += padding;
-                                axis.min -= padding;
-                            }
+                            afterDataLimits: makeProfitTrendYAxisLimits(filteredData)
                         }
                     },
                     interaction: {
@@ -6523,6 +6896,7 @@
             if (codes.length === 0) {
                 container.innerHTML = `
                     <div class="empty-state">
+                        <div class="empty-state-icon">📊</div>
                         <h2>还没有添加基金</h2>
                         <p>请在上方输入基金代码来添加基金</p>
                     </div>
@@ -6535,9 +6909,11 @@
                 const emptyMsg = state.currentMainView === 'holding' 
                     ? '暂无持有基金，买入基金后会显示在这里'
                     : '暂无自选基金，添加基金后未买入的会显示在这里';
+                const emptyIcon = state.currentMainView === 'holding' ? '💼' : '⭐';
                 container.innerHTML = `
                     <div class="empty-state">
-                        <h2>${state.currentMainView === 'holding' ? '💼' : '⭐'} ${emptyMsg}</h2>
+                        <div class="empty-state-icon">${emptyIcon}</div>
+                        <h2>${emptyMsg}</h2>
                     </div>
                 `;
                 // 持有为空时也需要更新总览
@@ -6573,8 +6949,15 @@
                 const data = state.fundsData[code];
                 if (!data) {
                     return `
-                        <div class="fund-card">
-                            <div class="loading">加载中...</div>
+                        <div class="fund-card fund-card-skeleton">
+                            <div class="skeleton-block skeleton-title"></div>
+                            <div class="skeleton-block skeleton-code"></div>
+                            <div class="skeleton-block skeleton-bar"></div>
+                            <div class="skeleton-block skeleton-chart"></div>
+                            <div class="skeleton-row">
+                                <div class="skeleton-block"></div>
+                                <div class="skeleton-block"></div>
+                            </div>
                         </div>
                     `;
                 }
@@ -6626,7 +7009,7 @@
                         <div class="position-info">
                             <div class="position-header" onclick="togglePositionDetail(this, event)">
                                 <h4><span class="position-toggle">▶</span> 💼 持仓信息 
-                                    <span style="cursor: pointer; color: #667eea; font-size: 13px; margin-left: 8px;" onclick="event.stopPropagation(); openTransactionHistoryModal('${code}')" title="查看交易历史">
+                                    <span style="cursor: pointer; color: var(--primary); font-size: 13px; margin-left: 8px;" onclick="event.stopPropagation(); openTransactionHistoryModal('${code}')" title="查看交易历史">
                                         📋 ${posInfo.transactions.length}笔
                                     </span>
                                 </h4>
@@ -6673,7 +7056,7 @@
                     // 有交易记录但已清仓（全部卖出），显示历史交易入口
                     const hasHistory = posInfo && posInfo.transactions && posInfo.transactions.length > 0;
                     const historyLink = hasHistory 
-                        ? `<span style="cursor: pointer; color: #667eea; font-size: 13px; margin-left: 8px;" onclick="openTransactionHistoryModal('${code}')" title="查看交易历史">📋 ${posInfo.transactions.length}笔交易记录</span>`
+                        ? `<span style="cursor: pointer; color: var(--primary); font-size: 13px; margin-left: 8px;" onclick="openTransactionHistoryModal('${code}')" title="查看交易历史">📋 ${posInfo.transactions.length}笔交易记录</span>`
                         : '';
                     positionHtml = `
                         <div class="position-info">
@@ -7507,11 +7890,11 @@
                         label: '买入点',
                         data: buyPointData,
                         borderColor: 'transparent',
-                        backgroundColor: '#1890ff',
+                        backgroundColor: getPrimaryColor(),
                         pointRadius: buyPointData.map(v => v !== null ? 8 : 0),
                         pointHoverRadius: buyPointData.map(v => v !== null ? 10 : 0),
                         pointStyle: 'triangle',
-                        pointBackgroundColor: '#1890ff',
+                        pointBackgroundColor: getPrimaryColor(),
                         pointBorderColor: '#fff',
                         pointBorderWidth: 2,
                         showLine: false,
@@ -7533,7 +7916,7 @@
                                 usePointStyle: true,
                                 pointStyle: 'triangle',
                                 font: { size: 11 },
-                                color: '#1890ff',
+                                color: getPrimaryColor(),
                                 padding: 10
                             },
                             position: 'top',
