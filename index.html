@@ -68,6 +68,22 @@
             box-sizing: border-box;
         }
 
+        /* 避免快速滚动时露出浏览器默认白底 */
+        html {
+            background: #0891b2;
+        }
+        [data-theme="dark"] html {
+            background: #0f172a;
+        }
+        [data-color-theme="purple"] html { background: #6366f1; }
+        [data-theme="dark"][data-color-theme="purple"] html { background: #1e1b4b; }
+        [data-color-theme="green"] html { background: #059669; }
+        [data-theme="dark"][data-color-theme="green"] html { background: #022c22; }
+        [data-color-theme="orange"] html { background: #d97706; }
+        [data-theme="dark"][data-color-theme="orange"] html { background: #451a03; }
+        [data-color-theme="rose"] html { background: #e11d48; }
+        [data-theme="dark"][data-color-theme="rose"] html { background: #4c0519; }
+
         @keyframes bgGradientShift {
             0% { background-position: 0% 50%; }
             50% { background-position: 100% 50%; }
@@ -146,7 +162,6 @@
 
         .header {
             background: var(--card-bg);
-            backdrop-filter: blur(10px);
             border-radius: 16px;
             padding: var(--space-md) var(--space-lg);
             margin-bottom: var(--section-gap);
@@ -1074,7 +1089,6 @@
 
         .overview-card {
             background: var(--card-bg);
-            backdrop-filter: blur(10px);
             border-radius: 16px;
             padding: 18px 20px;
             box-shadow: var(--card-shadow);
@@ -1672,7 +1686,6 @@
 
         .fund-card {
             background: var(--card-bg);
-            backdrop-filter: blur(10px);
             border-radius: 14px;
             padding: 14px 16px;
             box-shadow: var(--card-shadow);
