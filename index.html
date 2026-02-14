@@ -383,8 +383,10 @@
         .autocomplete-item {
             padding: 12px 16px;
             cursor: pointer;
-            transition: background 0.2s;
+            transition: background 0.2s, border-color 0.2s, box-shadow 0.2s;
             border-bottom: 1px solid var(--border-color);
+            border-left: 3px solid transparent;
+            border-right: 3px solid transparent;
         }
 
         .autocomplete-item:last-child {
@@ -393,6 +395,19 @@
 
         .autocomplete-item:hover {
             background: var(--hover-bg);
+        }
+
+        .autocomplete-item.selected {
+            background: rgb(var(--primary-rgb) / 0.18);
+            border-left-color: var(--primary);
+            border-right-color: var(--primary);
+            box-shadow: inset 0 0 0 1px rgb(var(--primary-rgb) / 0.4);
+            outline: none;
+        }
+
+        [data-theme="dark"] .autocomplete-item.selected {
+            background: rgb(var(--primary-rgb) / 0.28);
+            box-shadow: inset 0 0 0 1px rgb(var(--primary-rgb) / 0.5);
         }
 
         .autocomplete-item-name {
@@ -658,7 +673,30 @@
         .fund-list-header .list-pct { min-width: 72px; width: 72px; flex-shrink: 0; text-align: right; }
         .fund-list-header .list-val { min-width: 56px; width: 56px; flex-shrink: 0; text-align: right; }
         .fund-list-header .list-profit-cell { min-width: 72px; width: 72px; flex-shrink: 0; text-align: right; }
+        .fund-list-header .list-sparkline {
+            min-width: 88px; width: 88px; flex-shrink: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 2px;
+        }
         .fund-list-header .list-actions { min-width: 80px; width: 80px; flex-shrink: 0; text-align: right; }
+
+        .fund-list-item .list-sparkline {
+            min-width: 88px;
+            width: 88px;
+            height: 32px;
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .fund-list-item .list-sparkline svg {
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
 
         .fund-list-item {
             display: flex;
@@ -1423,13 +1461,17 @@
             box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
         }
 
-        /* 紧凑模式迷你趋势线 */
+        /* 紧凑模式迷你趋势线（与今日金额分开展示） */
+        .overview-compact-sparkline-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
         .compact-sparkline {
-            width: 60px;
-            height: 20px;
-            margin-left: 6px;
+            width: 64px;
+            height: 24px;
             flex-shrink: 0;
-            align-self: center;
+            display: block;
         }
 
         /* 紧凑模式迷你图占位 */
@@ -1602,6 +1644,16 @@
 
         .fund-card.drag-over {
             box-shadow: 0 0 0 2px var(--primary);
+        }
+
+        /* 刚添加的基金：定位后高亮，约 2.5 秒后淡出 */
+        .fund-card.fund-added-highlight,
+        .fund-list-item.fund-added-highlight {
+            box-shadow: 0 0 0 3px var(--primary), 0 4px 20px rgba(6, 182, 212, 0.35);
+            transition: box-shadow 0.35s ease-out;
+        }
+        .fund-list-item.fund-added-highlight {
+            background: rgb(var(--primary-rgb) / 0.15) !important;
         }
 
         .fund-card {
@@ -3379,6 +3431,10 @@
                     <div class="overview-compact-item">
                         <span class="overview-compact-label">今日</span>
                         <span class="overview-compact-value" id="compactTodayProfit">¥0.00</span>
+                    </div>
+                    <div class="overview-compact-divider"></div>
+                    <div class="overview-compact-item overview-compact-sparkline-item">
+                        <span class="overview-compact-label">收益走势</span>
                         <canvas class="compact-sparkline" id="compactSparkline"></canvas>
                     </div>
                     <div class="overview-compact-divider"></div>
@@ -3499,7 +3555,7 @@
         <div class="modal-content" tabindex="-1">
             <div class="modal-header">
                 <h2 id="initialPurchaseModalTitle">添加基金 - 初始申购信息</h2>
-                <button class="close-btn" onclick="closeInitialPurchaseModal()">&times;</button>
+                <button class="close-btn" onclick="closeInitialPurchaseModal(true)" title="取消添加">&times;</button>
             </div>
             <div class="form-group">
                 <label>交易日期</label>
@@ -3536,7 +3592,7 @@
                 <small id="sharesCalcHint">份额 = (申购金额 - 手续费) / 申购净值</small>
             </div>
             <div class="form-actions">
-                <button class="btn btn-secondary" onclick="closeInitialPurchaseModal()">跳过</button>
+                <button class="btn btn-secondary" onclick="closeInitialPurchaseModal(false)">跳过</button>
                 <button class="btn btn-primary" onclick="saveInitialPurchase()">确认添加</button>
             </div>
         </div>
@@ -3777,7 +3833,11 @@
             isLoadingFundDetails: false,
             overviewExpanded: localStorage.getItem('overviewExpanded') === 'true',
             lastFocusBeforeModal: null,
-            activeModalId: null
+            activeModalId: null,
+            justAddedFundCode: null,
+            autocompleteSelectedIndex: -1,
+            scrollDeferredForNewFund: false,
+            initialPurchaseModalHasOpened: false
         };
 
         // ========== UI：Toast 与确认框 ==========
@@ -3943,12 +4003,45 @@
             state._renderTimer = setTimeout(() => {
                 try {
                     renderFunds();
+                    scrollToAndHighlightAddedFund();
                 } catch (e) {
                     console.error('scheduleRender: renderFunds 错误', e);
                     showToast('列表刷新异常，请重试', 'error');
                 }
                 state._renderTimer = null;
             }, delay);
+        }
+
+        /** 将刚添加的基金滚动到视区内并高亮。可选传入 code，关闭弹窗时传入以不受 state 被清空影响 */
+        function scrollToAndHighlightAddedFund(codeFromClose) {
+            const code = codeFromClose != null ? String(codeFromClose) : state.justAddedFundCode;
+            if (!code) return;
+            if (!codeFromClose) {
+                if (document.getElementById('initialPurchaseModal').classList.contains('active')) return;
+                if (state.scrollDeferredForNewFund) {
+                    if (!state.initialPurchaseModalHasOpened) return;
+                    state.scrollDeferredForNewFund = false;
+                    state.initialPurchaseModalHasOpened = false;
+                }
+            }
+            if (state.currentMainView === 'holding') {
+                const posInfo = calculatePosition(code);
+                if (!posInfo || posInfo.totalShares <= 0) {
+                    switchMainView('watching');
+                    scheduleRender();
+                    return;
+                }
+            }
+            const el = document.querySelector('[data-code="' + code + '"]');
+            if (!el) return;
+            state.justAddedFundCode = null;
+            el.classList.add('fund-added-highlight');
+            setTimeout(function () {
+                el.scrollIntoView({ behavior: 'smooth', block: 'end', inline: 'nearest' });
+            }, 100);
+            setTimeout(function () {
+                el.classList.remove('fund-added-highlight');
+            }, 2500);
         }
 
         // ========== 基金详细信息加载队列 ==========
@@ -4366,29 +4459,28 @@
 
             // 渲染搜索结果
             listEl.innerHTML = '';
-            results.forEach(fund => {
+            results.forEach(function (fund, index) {
                 const itemDiv = document.createElement('div');
                 itemDiv.className = 'autocomplete-item';
-                itemDiv.onclick = () => selectFund(fund.code, fund.name);
-                
+                itemDiv.dataset.code = fund.code;
+                itemDiv.dataset.name = fund.name;
+                itemDiv.onclick = function () { selectFund(fund.code, fund.name); };
+                if (index === 0) itemDiv.classList.add('selected');
                 const nameDiv = document.createElement('div');
                 nameDiv.className = 'autocomplete-item-name';
                 nameDiv.textContent = fund.name;
-                
                 const typeSpan = document.createElement('span');
                 typeSpan.className = 'autocomplete-item-type';
                 typeSpan.textContent = fund.type;
                 nameDiv.appendChild(typeSpan);
-                
                 const codeDiv = document.createElement('div');
                 codeDiv.className = 'autocomplete-item-code';
                 codeDiv.textContent = fund.code;
-                
                 itemDiv.appendChild(nameDiv);
                 itemDiv.appendChild(codeDiv);
                 listEl.appendChild(itemDiv);
             });
-            
+            state.autocompleteSelectedIndex = results.length > 0 ? 0 : -1;
             listEl.classList.add('active');
         }
 
@@ -4403,12 +4495,52 @@
         function selectFund(code, name) {
             const input = document.getElementById('fundCodeInput');
             input.value = code;
-            
-            // 隐藏下拉列表
             document.getElementById('autocompleteList').classList.remove('active');
-            
-            // 自动添加基金
+            state.autocompleteSelectedIndex = -1;
             addFund();
+        }
+
+        /** 键盘切换备选列表选中项，并滚动到可见 */
+        function setAutocompleteSelection(index) {
+            const listEl = document.getElementById('autocompleteList');
+            const items = listEl.querySelectorAll('.autocomplete-item');
+            if (items.length === 0) return;
+            state.autocompleteSelectedIndex = Math.max(0, Math.min(index, items.length - 1));
+            items.forEach(function (el, i) {
+                el.classList.toggle('selected', i === state.autocompleteSelectedIndex);
+            });
+            items[state.autocompleteSelectedIndex].scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+        }
+
+        /** 处理基金输入框在备选列表展开时的键盘操作 */
+        function handleFundInputKeydown(e) {
+            const listEl = document.getElementById('autocompleteList');
+            if (!listEl || !listEl.classList.contains('active')) return;
+            const items = listEl.querySelectorAll('.autocomplete-item');
+            if (items.length === 0) return;
+            if (e.key === 'ArrowDown') {
+                e.preventDefault();
+                setAutocompleteSelection(state.autocompleteSelectedIndex + 1);
+                return;
+            }
+            if (e.key === 'ArrowUp') {
+                e.preventDefault();
+                setAutocompleteSelection(state.autocompleteSelectedIndex - 1);
+                return;
+            }
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                const idx = state.autocompleteSelectedIndex;
+                if (idx >= 0 && items[idx]) {
+                    selectFund(items[idx].dataset.code, items[idx].dataset.name);
+                }
+                return;
+            }
+            if (e.key === 'Escape') {
+                e.preventDefault();
+                listEl.classList.remove('active');
+                state.autocompleteSelectedIndex = -1;
+            }
         }
 
         // 隐藏自动补全列表
@@ -4957,11 +5089,13 @@
             codes.push(code);
             saveFundCodes(codes);
             input.value = '';
-            
+            state.justAddedFundCode = code;
+            state.scrollDeferredForNewFund = true;
+
             // 隐藏自动补全列表
             document.getElementById('autocompleteList').classList.remove('active');
-            
-            // 先加载基金数据
+
+            // 先加载基金数据（渲染后会在 scheduleRender 回调中定位并高亮该基金）
             fetchFundData(code);
             
             // 弹出初始申购模态框（延迟等待数据加载，加载失败时取消）
@@ -5266,6 +5400,7 @@
 
         // 打开初始申购模态框
         function openInitialPurchaseModal(code) {
+            state.initialPurchaseModalHasOpened = true;
             state.currentModalFundCode = code;
             const latest = getLatestTradingDateStr();
             populateTradeDateSelect('initialTradeDate', latest);
@@ -5279,20 +5414,38 @@
             onInitialTradeDateTimeChange();
         }
 
-        // 关闭初始申购模态框（跳过申购 = 自选基金）
-        function closeInitialPurchaseModal() {
-            const skippedCode = state.currentModalFundCode;
+        // 关闭初始申购模态框。cancel=true 表示用户点 X 或点击遮罩，取消添加并移除该基金；false/不传 表示跳过或确认添加，保留基金并可选定位
+        function closeInitialPurchaseModal(cancel) {
+            const code = state.currentModalFundCode;
             document.getElementById('initialPurchaseModal').classList.remove('active');
             state.currentModalFundCode = null;
-            
-            // 如果是跳过申购（基金无持仓），自动切到自选视图
-            if (skippedCode) {
-                const posInfo = calculatePosition(skippedCode);
-                const isWatching = !posInfo || posInfo.totalShares <= 0;
-                if (isWatching && state.currentMainView !== 'watching') {
-                    switchMainView('watching');
-                }
+
+            if (cancel && code) {
+                removeFund(code, true);
+                state.justAddedFundCode = null;
+                state.scrollDeferredForNewFund = false;
+                state.initialPurchaseModalHasOpened = false;
+                return;
             }
+
+            if (!code) return;
+
+            // 跳过申购（基金无持仓）时切到自选视图
+            const posInfo = calculatePosition(code);
+            const isWatching = !posInfo || posInfo.totalShares <= 0;
+            if (isWatching && state.currentMainView !== 'watching') {
+                switchMainView('watching');
+            }
+
+            // 弹窗关闭后重新渲染并定位到该基金（显式传入 code，确保跳过时也能滚动并高亮）
+            const codeToScroll = code;
+            setTimeout(function () {
+                try {
+                    renderFunds();
+                } finally {
+                    scrollToAndHighlightAddedFund(codeToScroll);
+                }
+            }, 320);
         }
 
         // 构建交易记录的 date 与扩展字段
@@ -5830,6 +5983,25 @@
             else updateOverviewPanel();
         }
 
+        /** 生成列表行内当日走势小图 SVG（基于当日 historyData） */
+        function renderListSparklineSvg(history, currentPercentage) {
+            if (!history || history.length < 2) return '';
+            const data = history.map(function (d) { return d.percentage; });
+            var minPct = Math.min.apply(null, data);
+            var maxPct = Math.max.apply(null, data);
+            var range = maxPct - minPct || 1;
+            var w = 80, h = 28, pad = 2;
+            var points = [];
+            for (var i = 0; i < data.length; i++) {
+                var x = data.length === 1 ? 0 : (i / (data.length - 1)) * (w - 1);
+                var y = pad + (1 - (data[i] - minPct) / range) * (h - 2 * pad);
+                points.push(x.toFixed(2) + ',' + y.toFixed(2));
+            }
+            var pathD = 'M ' + points.join(' L ');
+            var color = currentPercentage >= 0 ? '#ff4d4f' : '#00b96b';
+            return '<svg viewBox="0 0 80 28" xmlns="http://www.w3.org/2000/svg"><path d="' + pathD + '" fill="none" stroke="' + color + '" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+        }
+
         // 获取用于展示的当前净值/估算值及涨跌幅（优先使用晚间公布的实际净值）
         function getDisplayValues(data) {
             if (!data) return { value: '', percentage: 0, label: '估算', isActual: false };
@@ -6198,8 +6370,9 @@
                 // 卡片不存在（首次加载），需要完整渲染
                 scheduleRender();
             } else {
-                // 原地更新成功，单独更新总览面板和标签计数
+                // 原地更新成功，单独更新总览面板和标签计数；若为刚添加的基金则定位并高亮
                 updateOverviewPanel();
+                scrollToAndHighlightAddedFund();
             }
         };
 
@@ -7212,6 +7385,7 @@
                         <div class="list-pct"><span class="list-col-label">涨跌幅</span><span class="list-col-date">${headerDateStr}</span></div>
                         <div class="list-val"><span class="list-col-label">估值</span><span class="list-col-date">${headerDateStr}</span></div>
                         <div class="list-profit-cell"><span class="list-col-label">今日盈亏</span><span class="list-col-date">${headerDateStr}</span></div>
+                        <div class="list-sparkline"><span class="list-col-label">当日走势</span><span class="list-col-date">${headerDateStr}</span></div>
                         <div class="list-actions">操作</div>
                     </div>`;
                 container.innerHTML = listHeader + displayCodes.map(code => {
@@ -7219,10 +7393,10 @@
                     const posInfo = calculatePosition(code);
                     const hasPosition = posInfo && posInfo.totalShares > 0;
                     if (!data) {
-                        return `<div class="fund-list-item" data-code="${code}"><div class="list-name"><div class="list-name-main">加载中…</div><div class="list-name-code">${code}</div></div><div class="list-pct">--</div><div class="list-actions"><button class="btn-del" onclick="removeFund('${code}')">删除</button></div></div>`;
+                        return `<div class="fund-list-item" data-code="${code}"><div class="list-name"><div class="list-name-main">加载中…</div><div class="list-name-code">${code}</div></div><div class="list-pct">--</div><div class="list-val">--</div><div class="list-profit-cell">--</div><div class="list-sparkline"></div><div class="list-actions"><button class="btn-del" onclick="removeFund('${code}')">删除</button></div></div>`;
                     }
                     if (data._loadFailed) {
-                        return `<div class="fund-list-item fund-card-failed" data-code="${code}"><div class="list-name"><div class="list-name-main">加载失败</div><div class="list-name-code">${code}</div></div><div class="list-actions"><button onclick="retryFundLoad('${code}')">重试</button><button class="btn-del" onclick="removeFund('${code}')">删除</button></div></div>`;
+                        return `<div class="fund-list-item fund-card-failed" data-code="${code}"><div class="list-name"><div class="list-name-main">加载失败</div><div class="list-name-code">${code}</div></div><div class="list-pct">--</div><div class="list-val">--</div><div class="list-profit-cell">--</div><div class="list-sparkline"></div><div class="list-actions"><button onclick="retryFundLoad('${code}')">重试</button><button class="btn-del" onclick="removeFund('${code}')">删除</button></div></div>`;
                     }
                     const display = getDisplayValues(data);
                     const percentage = display.percentage;
@@ -7240,6 +7414,8 @@
                         dailyProfitStr = `<span class="list-profit ${dpClass}">${dpSymbol}¥${dailyProfit.toFixed(2)}</span>`;
                     }
                     const rowClass = hasPosition ? 'holding' : 'watching';
+                    const dayHistory = state.historyData[code];
+                    const sparklineSvg = renderListSparklineSvg(dayHistory, percentage);
                     return `
                         <div class="fund-list-item ${rowClass}" data-code="${code}">
                             <div class="list-name">
@@ -7249,6 +7425,7 @@
                             <div class="list-pct ${pctClass}">${pctStr}</div>
                             <div class="list-val">${display.label}: ${display.value}</div>
                             <div class="list-profit-cell">${dailyProfitStr}</div>
+                            <div class="list-sparkline">${sparklineSvg}</div>
                             <div class="list-actions">
                                 <a href="javascript:void(0)" onclick="openFundDetailModal('${code}')">详情</a>
                                 <button class="btn-del" onclick="removeFund('${code}')">删除</button>
@@ -8586,8 +8763,8 @@
             });
 
             const fundInput = document.getElementById('fundCodeInput');
-            
-            // 回车键添加基金
+            fundInput.addEventListener('keydown', handleFundInputKeydown);
+            // 回车键添加基金（备选列表未展开或已通过 keydown 处理时不重复添加）
             fundInput.addEventListener('keypress', (e) => {
                 if (e.key === 'Enter') {
                     addFund();
@@ -8628,10 +8805,10 @@
                 document.getElementById(id).addEventListener('input', calcSellAmount);
             });
 
-            // 点击模态框背景关闭
+            // 点击模态框背景关闭（视为取消添加）
             document.getElementById('initialPurchaseModal').addEventListener('click', (e) => {
                 if (e.target.id === 'initialPurchaseModal') {
-                    closeInitialPurchaseModal();
+                    closeInitialPurchaseModal(true);
                 }
             });
 
