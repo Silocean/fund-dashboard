@@ -1172,6 +1172,30 @@
             border: 1px solid var(--border-color);
         }
 
+        .overview-detail-entry {
+            margin-left: auto;
+        }
+
+        .overview-detail-btn {
+            font-size: 12px;
+            color: var(--primary);
+            background: transparent;
+            border: 1px solid var(--primary);
+            border-radius: 8px;
+            padding: 6px 12px;
+            cursor: pointer;
+            font-weight: 500;
+        }
+
+        .overview-detail-btn:hover {
+            background: var(--hover-bg);
+        }
+
+        /* 总览详情弹窗（宽度与圆角由 .modal-content.modal-content-overview 统一覆盖） */
+        .overview-detail-body {
+            padding: 0 4px;
+        }
+
         /* 紧凑模式：关键指标横条 */
         .overview-compact {
             display: flex;
@@ -2517,6 +2541,27 @@
             animation: modalSlideIn 0.12s cubic-bezier(0.2, 0.9, 0.35, 1);
         }
 
+        /* 总览详情弹窗：覆盖默认 modal 宽度，统一四角圆角；外层裁切圆角，内层滚动 */
+        .modal-content.modal-content-overview {
+            width: 92vw;
+            max-width: 1400px;
+            max-height: 90vh;
+            overflow: hidden;
+            border-radius: 16px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .modal-content.modal-content-overview .modal-header {
+            flex-shrink: 0;
+        }
+
+        .modal-content.modal-content-overview .overview-detail-body {
+            overflow-y: auto;
+            flex: 1;
+            min-height: 0;
+        }
+
         @keyframes modalSlideIn {
             from { transform: scale(0.97) translateY(6px); opacity: 0; }
             to { transform: scale(1) translateY(0); opacity: 1; }
@@ -3840,8 +3885,8 @@
         <!-- 总览看板 -->
         <div id="overviewPanel" class="overview-panel" style="display: none;">
             <div class="overview-card">
-                <div class="overview-header" onclick="toggleOverviewPanel()">
-                    <h2><span class="overview-expand-toggle">▶</span> 📊 投资总览</h2>
+                <div class="overview-header" onclick="openOverviewDetailModal()">
+                    <h2>📊 投资总览</h2>
                     <div class="overview-date">更新时间: <span id="overviewUpdateTime">--</span></div>
                 </div>
                 <!-- 紧凑模式：一行关键指标 -->
@@ -3871,10 +3916,22 @@
                         <span class="overview-compact-label">累计收益 <span class="compact-toggle-hint">⇄</span></span>
                         <span class="overview-compact-value" id="compactCumulativeProfit">¥0.00</span>
                     </div>
+                    <div class="overview-compact-divider"></div>
+                    <div class="overview-compact-item overview-detail-entry">
+                        <button type="button" class="overview-detail-btn" onclick="event.stopPropagation(); openOverviewDetailModal();">查看详情 ▶</button>
+                    </div>
                 </div>
-                <!-- 展开模式：完整面板 -->
-                <div class="overview-full" id="overviewFull">
-                    <div class="overview-full-inner">
+            </div>
+        </div>
+
+        <!-- 投资总览详情弹窗 -->
+        <div id="overviewDetailModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="overviewDetailModalTitle" aria-hidden="true">
+            <div class="modal-content modal-content-overview" tabindex="-1">
+                <div class="modal-header">
+                    <h2 id="overviewDetailModalTitle">📊 投资总览详情</h2>
+                    <button class="close-btn" onclick="closeOverviewDetailModal()" title="关闭">&times;</button>
+                </div>
+                <div class="overview-detail-body">
                     <div class="overview-section-label">💼 持仓</div>
                     <div class="overview-stats overview-stats-4col">
                         <div class="stat-item stat-primary">
@@ -3958,7 +4015,6 @@
                                 <canvas id="profitTrendChart"></canvas>
                             </div>
                         </div>
-                    </div>
                     </div>
                 </div>
             </div>
@@ -4359,7 +4415,14 @@
                 }
             }
         }
-        // 监听模态框显示/隐藏，统一设置 aria-hidden 与焦点
+        // 弹窗打开时禁止背景页面滚动，关闭后恢复
+        function updateBodyScrollLock() {
+            const hasActive = document.querySelectorAll('.modal.active').length > 0;
+            document.body.style.overflow = hasActive ? 'hidden' : '';
+            document.documentElement.style.overflow = hasActive ? 'hidden' : '';
+        }
+
+        // 监听模态框显示/隐藏，统一设置 aria-hidden、焦点与背景滚动锁定
         function observeModalActive() {
             document.querySelectorAll('.modal').forEach(modal => {
                 const obs = new MutationObserver(mutations => {
@@ -4367,6 +4430,7 @@
                         if (mut.attributeName !== 'class') return;
                         const isActive = modal.classList.contains('active');
                         modal.setAttribute('aria-hidden', !isActive);
+                        updateBodyScrollLock();
                         if (isActive) {
                             trapModalFocus(modal.id);
                         } else if (state.activeModalId === modal.id) {
@@ -4701,26 +4765,21 @@
         }
 
         // ========== 总览面板 ==========
-        function toggleOverviewPanel() {
-            state.overviewExpanded = !state.overviewExpanded;
-            localStorage.setItem('overviewExpanded', state.overviewExpanded);
-            applyOverviewState();
+        function openOverviewDetailModal() {
+            const modal = document.getElementById('overviewDetailModal');
+            if (!modal) return;
+            modal.classList.add('active');
+            requestAnimationFrame(function () {
+                requestAnimationFrame(function () {
+                    if (typeof drawAllocationChart === 'function') drawAllocationChart();
+                    if (typeof drawProfitTrendChart === 'function') drawProfitTrendChart();
+                    if (typeof renderPnlCalendar === 'function') renderPnlCalendar();
+                });
+            });
         }
 
-        function applyOverviewState() {
-            const header = document.querySelector('.overview-header');
-            const compact = document.getElementById('overviewCompact');
-            const full = document.getElementById('overviewFull');
-            if (!header || !compact || !full) return;
-            if (state.overviewExpanded) {
-                header.classList.add('expanded');
-                compact.classList.add('hidden');
-                full.classList.add('expanded');
-            } else {
-                header.classList.remove('expanded');
-                compact.classList.remove('hidden');
-                full.classList.remove('expanded');
-            }
+        function closeOverviewDetailModal() {
+            document.getElementById('overviewDetailModal').classList.remove('active');
         }
 
         // 持仓弹窗：打开
@@ -7320,9 +7379,6 @@
                 cumulativeProfit, cumulativeProfitRate
             };
             applyCompactDisplay();
-
-            // 应用折叠/展开状态
-            applyOverviewState();
 
             // 更新时间
             const now = new Date().toLocaleString('zh-CN', { 
