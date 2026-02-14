@@ -553,26 +553,242 @@
             box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
         }
 
-        /* 主视图切换标签 */
-        .main-view-tabs {
+        /* 主视图切换标签与展示方式 */
+        .main-view-tabs-wrap {
             display: flex;
+            align-items: stretch;
             gap: 0;
             margin-top: var(--section-gap);
             margin-bottom: var(--content-gap);
+            flex-wrap: wrap;
             background: var(--stat-bg);
             border-radius: 14px;
             padding: 5px;
-            width: 100%;
+            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+            border: 1px solid var(--border-color);
             position: sticky;
             top: var(--space-xs);
             z-index: 90;
-            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
-            backdrop-filter: blur(10px);
+        }
+
+        [data-theme="dark"] .main-view-tabs-wrap {
+            border-color: rgba(255, 255, 255, 0.06);
+        }
+
+        .main-view-tabs {
+            display: flex;
+            gap: 0;
+            flex: 1;
+            min-width: 0;
+            padding: 0;
+            border: none;
+            box-shadow: none;
+            background: transparent;
+        }
+
+        .view-mode-switch {
+            display: flex;
+            gap: 0;
+            padding: 0 4px 0 12px;
+            background: transparent;
+            border: none;
+            border-left: 1px solid var(--border-color);
+            margin-left: 4px;
+        }
+
+        .view-mode-btn {
+            padding: 8px 14px;
+            border: none;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            background: transparent;
+            color: var(--text-muted);
+            transition: all 0.2s;
+        }
+
+        .view-mode-btn:hover {
+            color: var(--text-secondary);
+        }
+
+        .view-mode-btn.active {
+            background: var(--card-bg);
+            color: var(--primary);
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+        }
+
+        /* 基金列表样式（缩略列表模式） */
+        #fundsContainer.fund-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0;
+            background: var(--card-bg);
+            border-radius: 14px;
+            overflow: hidden;
+            box-shadow: var(--card-shadow);
             border: 1px solid var(--border-color);
         }
 
-        [data-theme="dark"] .main-view-tabs {
-            border-color: rgba(255, 255, 255, 0.06);
+        .fund-list-header {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            padding: 10px 16px 10px 20px; /* 左 20px = 16+4，与 list-item 的 border-left:4px 对齐 */
+            background: var(--stat-bg);
+            border-bottom: 1px solid var(--border-color);
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-muted);
+            min-height: 40px;
+        }
+
+        .fund-list-header .list-name { flex: 1; min-width: 0; }
+        .fund-list-header .list-pct,
+        .fund-list-header .list-val,
+        .fund-list-header .list-profit-cell {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            justify-content: center;
+            gap: 2px;
+        }
+        .fund-list-header .list-col-label { font-weight: 600; }
+        .fund-list-header .list-col-date { font-size: 10px; font-weight: 400; opacity: 0.85; }
+        .fund-list-header .list-pct { min-width: 72px; width: 72px; flex-shrink: 0; text-align: right; }
+        .fund-list-header .list-val { min-width: 56px; width: 56px; flex-shrink: 0; text-align: right; }
+        .fund-list-header .list-profit-cell { min-width: 72px; width: 72px; flex-shrink: 0; text-align: right; }
+        .fund-list-header .list-actions { min-width: 80px; width: 80px; flex-shrink: 0; text-align: right; }
+
+        .fund-list-item {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            padding: 12px 16px;
+            border-bottom: 1px solid var(--border-color);
+            background: var(--card-bg);
+            transition: background 0.2s ease;
+            min-height: 52px;
+        }
+
+        .fund-list-item:nth-child(even) {
+            background: rgba(0, 0, 0, 0.02);
+        }
+
+        [data-theme="dark"] .fund-list-item:nth-child(even) {
+            background: rgba(255, 255, 255, 0.03);
+        }
+
+        .fund-list-item:last-child {
+            border-bottom: none;
+        }
+
+        .fund-list-item:hover {
+            background: var(--hover-bg) !important;
+        }
+
+        .fund-list-item.holding {
+            border-left: 4px solid #ff4d4f;
+        }
+
+        .fund-list-item.watching {
+            border-left: 4px solid #ffd93d;
+        }
+
+        .fund-list-item .list-name {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .fund-list-item .list-name-main {
+            font-size: 15px;
+            font-weight: 600;
+            color: var(--text-primary);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .fund-list-item .list-name-code {
+            font-size: 12px;
+            color: var(--text-muted);
+            margin-top: 2px;
+        }
+
+        .fund-list-item .list-pct {
+            font-size: 16px;
+            font-weight: 700;
+            min-width: 72px;
+            width: 72px;
+            flex-shrink: 0;
+            text-align: right;
+        }
+
+        .fund-list-item .list-pct.positive { color: #ff4d4f; }
+        .fund-list-item .list-pct.negative { color: #00b96b; }
+
+        .fund-list-item .list-val {
+            font-size: 13px;
+            color: var(--text-secondary);
+            min-width: 56px;
+            width: 56px;
+            flex-shrink: 0;
+            text-align: right;
+        }
+
+        .fund-list-item .list-profit {
+            font-size: 13px;
+            font-weight: 600;
+            min-width: 72px;
+            text-align: right;
+        }
+
+        .fund-list-item .list-profit.positive { color: #ff4d4f; }
+        .fund-list-item .list-profit.negative { color: #00b96b; }
+
+        .fund-list-item .list-profit-cell {
+            min-width: 72px;
+            width: 72px;
+            flex-shrink: 0;
+            text-align: right;
+            font-size: 13px;
+        }
+
+        .fund-list-item .list-actions {
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            gap: 6px;
+            min-width: 80px;
+            width: 80px;
+            flex-shrink: 0;
+        }
+
+        .fund-list-item .list-actions a,
+        .fund-list-item .list-actions button {
+            font-size: 12px;
+            padding: 4px 8px;
+            border-radius: 6px;
+            text-decoration: none;
+            color: var(--text-muted);
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            transition: color 0.15s, background 0.15s;
+        }
+
+        .fund-list-item .list-actions a:hover,
+        .fund-list-item .list-actions button:hover {
+            color: var(--primary);
+            background: var(--hover-bg);
+        }
+
+        .fund-list-item .list-actions .btn-del {
+            color: #ff6b6b;
+        }
+
+        .fund-list-item .list-actions .btn-del:hover {
+            background: rgba(255, 107, 107, 0.1);
         }
 
         .main-view-tab {
@@ -1397,6 +1613,15 @@
             transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.2s;
             position: relative;
             border: 2px solid transparent;
+            border-top: 3px solid transparent;
+        }
+
+        .fund-card.holding {
+            border-top-color: rgba(255, 77, 79, 0.35);
+        }
+
+        .fund-card.watching {
+            border-top-color: rgba(255, 217, 61, 0.5);
         }
 
         .fund-card:hover {
@@ -2738,8 +2963,10 @@
             }
 
             /* 主视图标签：增大触摸区域 */
-            .main-view-tabs {
+            .main-view-tabs-wrap {
                 margin: 14px 0;
+            }
+            .main-view-tabs {
                 padding: 5px;
             }
 
@@ -3236,13 +3463,19 @@
         </div>
 
         <!-- 持有/自选切换标签 -->
-        <div class="main-view-tabs" id="mainViewTabs" role="tablist" aria-label="持有与自选视图切换">
-            <button type="button" class="main-view-tab active" data-view="holding" role="tab" aria-selected="true" aria-controls="fundsContainer" id="tab-holding" onclick="switchMainView('holding')">
-                💼 持有 <span class="tab-count" id="holdingCount">0</span>
-            </button>
-            <button type="button" class="main-view-tab" data-view="watching" role="tab" aria-selected="false" aria-controls="fundsContainer" id="tab-watching" onclick="switchMainView('watching')">
-                ⭐ 自选 <span class="tab-count" id="watchingCount">0</span>
-            </button>
+        <div class="main-view-tabs-wrap">
+            <div class="main-view-tabs" id="mainViewTabs" role="tablist" aria-label="持有与自选视图切换">
+                <button type="button" class="main-view-tab active" data-view="holding" role="tab" aria-selected="true" aria-controls="fundsContainer" id="tab-holding" onclick="switchMainView('holding')">
+                    💼 持有 <span class="tab-count" id="holdingCount">0</span>
+                </button>
+                <button type="button" class="main-view-tab" data-view="watching" role="tab" aria-selected="false" aria-controls="fundsContainer" id="tab-watching" onclick="switchMainView('watching')">
+                    ⭐ 自选 <span class="tab-count" id="watchingCount">0</span>
+                </button>
+            </div>
+            <div class="view-mode-switch" role="group" aria-label="展示方式">
+                <button type="button" class="view-mode-btn active" id="viewModeCard" onclick="setFundListViewMode('card')" title="卡片详情">📋 卡片</button>
+                <button type="button" class="view-mode-btn" id="viewModeList" onclick="setFundListViewMode('list')" title="缩略列表">📑 列表</button>
+            </div>
         </div>
 
         <div id="fundsContainer" class="funds-grid"></div>
@@ -3528,6 +3761,7 @@
             loadingFundCodes: new Set(),
             sortOrder: 'default',
             currentMainView: 'holding',
+            fundListViewMode: localStorage.getItem('fundListViewMode') || 'card',
             positions: {},
             dailyRanges: {},
             currentModalFundCode: null,
@@ -3866,6 +4100,7 @@
             if (sel) sel.value = valid;
         }
         initColorTheme();
+        initFundListViewMode();
 
         // 回到顶部按钮
         (function() {
@@ -5979,6 +6214,23 @@
             renderFunds();
         }
 
+        // 切换展示方式（卡片 / 列表）
+        function setFundListViewMode(mode) {
+            state.fundListViewMode = mode;
+            localStorage.setItem('fundListViewMode', mode);
+            document.getElementById('viewModeCard').classList.toggle('active', mode === 'card');
+            document.getElementById('viewModeList').classList.toggle('active', mode === 'list');
+            renderFunds();
+        }
+
+        function initFundListViewMode() {
+            const mode = state.fundListViewMode;
+            const cardBtn = document.getElementById('viewModeCard');
+            const listBtn = document.getElementById('viewModeList');
+            if (cardBtn) cardBtn.classList.toggle('active', mode === 'card');
+            if (listBtn) listBtn.classList.toggle('active', mode === 'list');
+        }
+
         // 改变排序方式
         function changeSortOrder() {
             state.sortOrder = document.getElementById('sortSelect').value;
@@ -6943,6 +7195,69 @@
                         return percentageA - percentageB; // 升序：从低到高
                     }
                 });
+            }
+
+            container.className = state.fundListViewMode === 'list' ? 'fund-list' : 'funds-grid';
+
+            if (state.fundListViewMode === 'list') {
+                // 涨跌幅/估值对应的交易日：交易日即当天，非交易日为上一交易日（显示的是该日实际净值）
+                const now = new Date();
+                const todayStr = toDateStr(now);
+                const dataTradeDateStr = isTradingDay(now) ? todayStr : getPreviousTradingDay(todayStr);
+                const dataTradeDate = new Date(dataTradeDateStr + 'T12:00:00');
+                const headerDateStr = (dataTradeDate.getMonth() + 1) + '/' + dataTradeDate.getDate();
+                const listHeader = `
+                    <div class="fund-list-header">
+                        <div class="list-name">名称</div>
+                        <div class="list-pct"><span class="list-col-label">涨跌幅</span><span class="list-col-date">${headerDateStr}</span></div>
+                        <div class="list-val"><span class="list-col-label">估值</span><span class="list-col-date">${headerDateStr}</span></div>
+                        <div class="list-profit-cell"><span class="list-col-label">今日盈亏</span><span class="list-col-date">${headerDateStr}</span></div>
+                        <div class="list-actions">操作</div>
+                    </div>`;
+                container.innerHTML = listHeader + displayCodes.map(code => {
+                    const data = state.fundsData[code];
+                    const posInfo = calculatePosition(code);
+                    const hasPosition = posInfo && posInfo.totalShares > 0;
+                    if (!data) {
+                        return `<div class="fund-list-item" data-code="${code}"><div class="list-name"><div class="list-name-main">加载中…</div><div class="list-name-code">${code}</div></div><div class="list-pct">--</div><div class="list-actions"><button class="btn-del" onclick="removeFund('${code}')">删除</button></div></div>`;
+                    }
+                    if (data._loadFailed) {
+                        return `<div class="fund-list-item fund-card-failed" data-code="${code}"><div class="list-name"><div class="list-name-main">加载失败</div><div class="list-name-code">${code}</div></div><div class="list-actions"><button onclick="retryFundLoad('${code}')">重试</button><button class="btn-del" onclick="removeFund('${code}')">删除</button></div></div>`;
+                    }
+                    const display = getDisplayValues(data);
+                    const percentage = display.percentage;
+                    const isPositive = percentage >= 0;
+                    const pctClass = isPositive ? 'positive' : 'negative';
+                    const pctSymbol = isPositive ? '+' : '';
+                    const pctStr = pctSymbol + percentage.toFixed(2) + '%';
+                    let dailyProfitStr = '';
+                    if (hasPosition) {
+                        const yesterdayValue = parseFloat(data.dwjz);
+                        const eligibleShares = getSharesEligibleForTodayProfit(code);
+                        const dailyProfit = eligibleShares * yesterdayValue * (percentage / 100);
+                        const dpClass = dailyProfit > 0 ? 'positive' : dailyProfit < 0 ? 'negative' : '';
+                        const dpSymbol = dailyProfit > 0 ? '+' : (dailyProfit < 0 ? '' : '');
+                        dailyProfitStr = `<span class="list-profit ${dpClass}">${dpSymbol}¥${dailyProfit.toFixed(2)}</span>`;
+                    }
+                    const rowClass = hasPosition ? 'holding' : 'watching';
+                    return `
+                        <div class="fund-list-item ${rowClass}" data-code="${code}">
+                            <div class="list-name">
+                                <div class="list-name-main">${data.name || code}</div>
+                                <div class="list-name-code">${data.fundcode}</div>
+                            </div>
+                            <div class="list-pct ${pctClass}">${pctStr}</div>
+                            <div class="list-val">${display.label}: ${display.value}</div>
+                            <div class="list-profit-cell">${dailyProfitStr}</div>
+                            <div class="list-actions">
+                                <a href="javascript:void(0)" onclick="openFundDetailModal('${code}')">详情</a>
+                                <button class="btn-del" onclick="removeFund('${code}')">删除</button>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+                updateOverviewPanel();
+                return;
             }
 
             container.innerHTML = displayCodes.map(code => {
