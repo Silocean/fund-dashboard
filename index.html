@@ -1405,6 +1405,144 @@
             margin: 12px 0 10px;
         }
 
+        /* 盈亏日历 */
+        .pnl-calendar-wrap {
+            background: var(--overview-block-bg);
+            border-radius: 12px;
+            padding: 14px;
+            border: 1px solid var(--border-color);
+        }
+        .pnl-calendar-toolbar {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 10px;
+        }
+        .pnl-calendar-view-tabs,
+        .pnl-calendar-display-tabs {
+            display: flex;
+            gap: 4px;
+        }
+        .pnl-tab,
+        .pnl-display-tab {
+            padding: 6px 12px;
+            font-size: 12px;
+            border: 1px solid var(--border-color);
+            background: var(--input-bg);
+            color: var(--text-primary);
+            border-radius: 8px;
+            cursor: pointer;
+        }
+        .pnl-tab:hover,
+        .pnl-display-tab:hover {
+            background: var(--hover-bg);
+        }
+        .pnl-tab.active,
+        .pnl-display-tab.active {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary);
+        }
+        .pnl-calendar-nav {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-left: auto;
+        }
+        .pnl-nav-btn {
+            width: 28px;
+            height: 28px;
+            border: 1px solid var(--border-color);
+            background: var(--input-bg);
+            color: var(--text-primary);
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            line-height: 1;
+        }
+        .pnl-nav-btn:hover {
+            background: var(--hover-bg);
+        }
+        .pnl-calendar-title {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-primary);
+            min-width: 72px;
+            text-align: center;
+        }
+        .pnl-calendar-hint {
+            font-size: 11px;
+            color: var(--text-muted);
+            margin-bottom: 8px;
+        }
+        .pnl-calendar-grid {
+            display: grid;
+            gap: 4px;
+            font-size: 11px;
+        }
+        .pnl-calendar-grid.by-day {
+            grid-template-columns: repeat(7, 1fr);
+        }
+        .pnl-calendar-grid.by-month {
+            grid-template-columns: repeat(4, 1fr);
+        }
+        .pnl-calendar-grid.by-year {
+            grid-template-columns: repeat(4, 1fr);
+        }
+        .pnl-cell {
+            padding: 6px 4px;
+            border-radius: 6px;
+            text-align: center;
+            border: 1px solid transparent;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 2px;
+        }
+        .pnl-cell.head {
+            color: var(--text-muted);
+            font-weight: 600;
+        }
+        .pnl-cell.empty {
+            visibility: hidden;
+        }
+        .pnl-cell.positive {
+            background: rgba(255, 77, 79, 0.12);
+            color: #cf1322;
+        }
+        [data-theme="dark"] .pnl-cell.positive {
+            background: rgba(255, 77, 79, 0.2);
+            color: #ff7875;
+        }
+        .pnl-cell.negative {
+            background: rgba(0, 185, 107, 0.12);
+            color: #00965e;
+        }
+        [data-theme="dark"] .pnl-cell.negative {
+            background: rgba(0, 185, 107, 0.2);
+            color: #36cfc9;
+        }
+        .pnl-cell.zero {
+            background: var(--data-bar-bg);
+            color: var(--text-muted);
+        }
+        .pnl-cell .pnl-value {
+            font-weight: 600;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .pnl-cell .pnl-label {
+            color: var(--text-muted);
+            font-size: 11px;
+            order: 1;
+        }
+        .pnl-cell .pnl-value {
+            order: 2;
+        }
+
         /* 统一4列布局 */
         .overview-stats-4col {
             grid-template-columns: repeat(4, 1fr);
@@ -3778,6 +3916,28 @@
                         </div>
                     </div>
                     <div class="overview-divider"></div>
+                    <div class="overview-section-label">📅 盈亏日历</div>
+                    <div class="pnl-calendar-wrap">
+                        <div class="pnl-calendar-toolbar">
+                            <div class="pnl-calendar-view-tabs">
+                                <button type="button" class="pnl-tab active" data-view="day" onclick="setPnlCalendarView('day')">按日</button>
+                                <button type="button" class="pnl-tab" data-view="month" onclick="setPnlCalendarView('month')">按月</button>
+                                <button type="button" class="pnl-tab" data-view="year" onclick="setPnlCalendarView('year')">按年</button>
+                            </div>
+                            <div class="pnl-calendar-display-tabs">
+                                <button type="button" class="pnl-display-tab active" data-display="amount" onclick="setPnlCalendarDisplay('amount')">金额</button>
+                                <button type="button" class="pnl-display-tab" data-display="percent" onclick="setPnlCalendarDisplay('percent')">百分比</button>
+                            </div>
+                            <div class="pnl-calendar-nav">
+                                <button type="button" class="pnl-nav-btn" id="pnlCalendarPrev" onclick="pnlCalendarPrev()" aria-label="上一页">‹</button>
+                                <span class="pnl-calendar-title" id="pnlCalendarTitle">--年--月</span>
+                                <button type="button" class="pnl-nav-btn" id="pnlCalendarNext" onclick="pnlCalendarNext()" aria-label="下一页">›</button>
+                            </div>
+                        </div>
+                        <div class="pnl-calendar-hint" id="pnlCalendarHint"></div>
+                        <div class="pnl-calendar-grid" id="pnlCalendarGrid"></div>
+                    </div>
+                    <div class="overview-divider"></div>
                     <div class="overview-section-label">📈 图表</div>
                     <div class="overview-state charts-row">
                         <div class="allocation-chart-container">
@@ -4147,6 +4307,10 @@
             fundDetailsQueue: [],
             isLoadingFundDetails: false,
             overviewExpanded: localStorage.getItem('overviewExpanded') === 'true',
+            calendarView: localStorage.getItem('pnlCalendarView') || 'day',
+            calendarDisplay: localStorage.getItem('pnlCalendarDisplay') || 'amount',
+            calendarYear: new Date().getFullYear(),
+            calendarMonth: new Date().getMonth() + 1,
             lastFocusBeforeModal: null,
             activeModalId: null,
             justAddedFundCode: null,
@@ -4278,16 +4442,124 @@
             return getNextTradingDay(tradeDateStr);
         }
 
-        // 从净值走势中获取某日的实际净值
+        /** 从净值数据项得到 YYYY-MM-DD 字符串（兼容 x 为时间戳或日期字符串） */
+        function netWorthItemDateStr(x) {
+            if (x == null || x.x == null) return '';
+            const t = typeof x.x === 'number' ? new Date(x.x < 1e10 ? x.x * 1000 : x.x) : new Date(x.x);
+            if (isNaN(t.getTime())) return '';
+            return toDateStr(t);
+        }
+
+        // 从净值走势中获取某日的实际净值（精确匹配）
         function getNavForEffectiveDate(code, effectiveDateStr) {
             const details = state.fundDetails[code];
             if (!details || !details.netWorthData || details.netWorthData.length === 0) return null;
-            const target = new Date(effectiveDateStr + 'T12:00:00').getTime();
-            const item = details.netWorthData.find(x => {
-                const t = new Date(x.x);
-                return toDateStr(t) === effectiveDateStr;
-            });
+            const item = details.netWorthData.find(x => netWorthItemDateStr(x) === effectiveDateStr);
             return item ? item.y : null;
+        }
+
+        /** 获取该日或之前最近一次净值（用于日历市值，避免缺数据时相邻日跳变） */
+        function getNavOnOrBefore(code, dateStr) {
+            const details = state.fundDetails[code];
+            if (!details || !details.netWorthData || details.netWorthData.length === 0) return null;
+            let best = null;
+            details.netWorthData.forEach(x => {
+                const d = netWorthItemDateStr(x);
+                if (d && d <= dateStr && (best === null || d > netWorthItemDateStr(best))) best = x;
+            });
+            return best ? best.y : null;
+        }
+
+        /** 某笔交易生效的净值日期（份额从该日起计入持仓） */
+        function getTransEffectiveDate(trans) {
+            if (trans.effectiveNavDate) return trans.effectiveNavDate;
+            const tradeDate = trans.tradeDate || toDateStr(new Date(trans.date));
+            const beforeCutoff = trans.beforeCutoff !== false;
+            return getEffectiveNavDate(tradeDate, beforeCutoff);
+        }
+
+        /** 回放到 dateStr 当日结束时的持仓份额与成本（dateStr 为 YYYY-MM-DD）；按有效净值日期判断，15:00 后下单从下一交易日才计入 */
+        function getSharesAndCostAtDate(code, dateStr) {
+            const position = state.positions[code];
+            if (!position || !position.transactions) return { shares: 0, cost: 0 };
+            let shares = 0, cost = 0;
+            position.transactions.forEach(trans => {
+                const effDate = getTransEffectiveDate(trans);
+                if (effDate > dateStr) return;
+                if (trans.type === 'buy') {
+                    shares += trans.shares;
+                    cost += trans.amount;
+                } else if (trans.type === 'sell') {
+                    const ratio = shares > 0 ? trans.shares / shares : 0;
+                    cost -= cost * ratio;
+                    shares -= trans.shares;
+                }
+            });
+            shares = parseFloat(Math.max(0, shares).toFixed(2));
+            return { shares, cost };
+        }
+
+        /** 计算某日收盘时组合总市值（使用该日或之前最近净值，避免缺数据日导致相邻日盈亏跳变） */
+        function getPortfolioValueAtDate(dateStr) {
+            const codes = loadFundCodes();
+            let total = 0;
+            for (const code of codes) {
+                const { shares } = getSharesAndCostAtDate(code, dateStr);
+                if (shares <= 0) continue;
+                const nav = getNavOnOrBefore(code, dateStr);
+                if (nav == null) continue;
+                total += shares * nav;
+            }
+            return total;
+        }
+
+        /** 生成盈亏日历用的每日数据：dateStr -> { amount, rate, value }，仅包含有净值的交易日 */
+        function getDailyPnlMap() {
+            const codes = loadFundCodes();
+            const dateSet = new Set();
+            codes.forEach(code => {
+                const position = state.positions[code];
+                if (!position || !position.transactions) return;
+                position.transactions.forEach(trans => {
+                    dateSet.add(trans.tradeDate || toDateStr(new Date(trans.date)));
+                    dateSet.add(getTransEffectiveDate(trans));
+                });
+            });
+            const today = toDateStr(new Date());
+            dateSet.add(today);
+            const sorted = Array.from(dateSet).sort();
+            if (sorted.length < 2) return {};
+            const first = sorted[0];
+            let d = new Date(first + 'T12:00:00');
+            const end = new Date(today + 'T12:00:00');
+            const tradingDays = [];
+            while (d <= end) {
+                const s = toDateStr(d);
+                if (isTradingDay(d)) tradingDays.push(s);
+                d.setDate(d.getDate() + 1);
+            }
+            const map = {};
+            for (let i = 1; i < tradingDays.length; i++) {
+                const cur = tradingDays[i];
+                const prev = tradingDays[i - 1];
+                // 与「今日盈亏」一致：仅算持仓市值变动 = 前一交易日收盘持仓 × (今日净值 - 昨日净值)，不含当日申购/赎回资金流
+                let amount = 0;
+                let valuePrevForRate = 0;
+                codes.forEach(code => {
+                    const { shares: sharesPrev } = getSharesAndCostAtDate(code, prev);
+                    if (sharesPrev <= 0) return;
+                    const navPrev = getNavOnOrBefore(code, prev);
+                    const navCur = getNavOnOrBefore(code, cur);
+                    if (navPrev == null || navCur == null) return;
+                    amount += sharesPrev * (navCur - navPrev);
+                    valuePrevForRate += sharesPrev * navPrev;
+                });
+                const valueCur = getPortfolioValueAtDate(cur);
+                const valuePrev = getPortfolioValueAtDate(prev);
+                const rate = valuePrevForRate > 0 ? (amount / valuePrevForRate) * 100 : 0;
+                map[cur] = { amount, rate, value: valueCur, prevValue: valuePrev };
+            }
+            return map;
         }
 
         // 生成可选的交易日列表（最近约一年 + 未来一个月）
@@ -7064,6 +7336,151 @@
             // 绘制图表
             drawAllocationChart();
             drawProfitTrendChart();
+            if (typeof renderPnlCalendar === 'function') renderPnlCalendar();
+        }
+
+        // ===== 盈亏日历 =====
+        function setPnlCalendarView(view) {
+            state.calendarView = view;
+            localStorage.setItem('pnlCalendarView', view);
+            document.querySelectorAll('.pnl-tab').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.view === view);
+            });
+            renderPnlCalendar();
+        }
+        function setPnlCalendarDisplay(display) {
+            state.calendarDisplay = display;
+            localStorage.setItem('pnlCalendarDisplay', display);
+            document.querySelectorAll('.pnl-display-tab').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.display === display);
+            });
+            renderPnlCalendar();
+        }
+        function pnlCalendarPrev() {
+            if (state.calendarView === 'day') {
+                state.calendarMonth--;
+                if (state.calendarMonth < 1) {
+                    state.calendarMonth = 12;
+                    state.calendarYear--;
+                }
+            } else if (state.calendarView === 'month') {
+                state.calendarYear--;
+            } else {
+                state.calendarYear -= 4;
+            }
+            renderPnlCalendar();
+        }
+        function pnlCalendarNext() {
+            if (state.calendarView === 'day') {
+                state.calendarMonth++;
+                if (state.calendarMonth > 12) {
+                    state.calendarMonth = 1;
+                    state.calendarYear++;
+                }
+            } else if (state.calendarView === 'month') {
+                state.calendarYear++;
+            } else {
+                state.calendarYear += 4;
+            }
+            renderPnlCalendar();
+        }
+        function renderPnlCalendar() {
+            const gridEl = document.getElementById('pnlCalendarGrid');
+            const titleEl = document.getElementById('pnlCalendarTitle');
+            const hintEl = document.getElementById('pnlCalendarHint');
+            const prevBtn = document.getElementById('pnlCalendarPrev');
+            const nextBtn = document.getElementById('pnlCalendarNext');
+            if (!gridEl || !titleEl) return;
+
+            const dailyMap = getDailyPnlMap();
+            const hasData = Object.keys(dailyMap).length > 0;
+            hintEl.textContent = hasData ? '每日为当日相对前一交易日的组合盈亏（基于历史净值）' : '暂无历史净值数据，请打开基金详情加载净值走势后查看';
+
+            if (state.calendarView === 'day') {
+                titleEl.textContent = state.calendarYear + '年' + state.calendarMonth + '月';
+                const showAmount = state.calendarDisplay === 'amount';
+                const firstDay = new Date(state.calendarYear, state.calendarMonth - 1, 1);
+                const lastDay = new Date(state.calendarYear, state.calendarMonth, 0);
+                const startPad = (firstDay.getDay() + 6) % 7;
+                const daysInMonth = lastDay.getDate();
+                gridEl.className = 'pnl-calendar-grid by-day';
+                const weekHeads = ['一', '二', '三', '四', '五', '六', '日'];
+                let html = weekHeads.map(w => `<div class="pnl-cell head">${w}</div>`).join('');
+                for (let i = 0; i < startPad; i++) html += '<div class="pnl-cell empty"></div>';
+                for (let d = 1; d <= daysInMonth; d++) {
+                    const dateStr = state.calendarYear + '-' + String(state.calendarMonth).padStart(2, '0') + '-' + String(d).padStart(2, '0');
+                    const info = dailyMap[dateStr];
+                    let cls = 'pnl-cell';
+                    let valueHtml = '';
+                    if (info) {
+                        if (info.amount > 0) cls += ' positive';
+                        else if (info.amount < 0) cls += ' negative';
+                        else cls += ' zero';
+                        const value = showAmount
+                            ? (info.amount >= 0 ? '+' : '') + '¥' + info.amount.toFixed(2)
+                            : (info.rate >= 0 ? '+' : '') + info.rate.toFixed(2) + '%';
+                        valueHtml = `<span class="pnl-value">${value}</span>`;
+                    }
+                    html += `<div class="${cls}" title="${dateStr}${info ? ' ' + (showAmount ? '¥' + info.amount.toFixed(2) : info.rate.toFixed(2) + '%') : ''}"><span class="pnl-label">${d}</span>${valueHtml}</div>`;
+                }
+                gridEl.innerHTML = html;
+                prevBtn.style.visibility = 'visible';
+                nextBtn.style.visibility = 'visible';
+            } else if (state.calendarView === 'month') {
+                titleEl.textContent = state.calendarYear + '年';
+                const showAmount = state.calendarDisplay === 'amount';
+                gridEl.className = 'pnl-calendar-grid by-month';
+                let html = '';
+                for (let m = 1; m <= 12; m++) {
+                    let sumAmount = 0;
+                    const firstDayStr = state.calendarYear + '-' + String(m).padStart(2, '0') + '-01';
+                    const valueStart = getPortfolioValueAtDate(firstDayStr);
+                    Object.keys(dailyMap).forEach(dateStr => {
+                        const y = parseInt(dateStr.slice(0, 4), 10);
+                        const mo = parseInt(dateStr.slice(5, 7), 10);
+                        if (y === state.calendarYear && mo === m) sumAmount += dailyMap[dateStr].amount;
+                    });
+                    const rate = valueStart > 0 ? (sumAmount / valueStart) * 100 : 0;
+                    let cls = 'pnl-cell';
+                    if (sumAmount > 0) cls += ' positive';
+                    else if (sumAmount < 0) cls += ' negative';
+                    else cls += ' zero';
+                    const value = showAmount
+                        ? (sumAmount >= 0 ? '+' : '') + '¥' + sumAmount.toFixed(2)
+                        : (rate >= 0 ? '+' : '') + rate.toFixed(2) + '%';
+                    html += `<div class="${cls}"><span class="pnl-value">${value}</span><span class="pnl-label">${m}月</span></div>`;
+                }
+                gridEl.innerHTML = html;
+                prevBtn.style.visibility = 'visible';
+                nextBtn.style.visibility = 'visible';
+            } else {
+                const startYear = Math.floor(state.calendarYear / 4) * 4;
+                titleEl.textContent = startYear + '–' + (startYear + 3) + '年';
+                const showAmount = state.calendarDisplay === 'amount';
+                gridEl.className = 'pnl-calendar-grid by-year';
+                let html = '';
+                for (let y = 0; y < 4; y++) {
+                    const yr = startYear + y;
+                    let sumAmount = 0;
+                    Object.keys(dailyMap).forEach(dateStr => {
+                        const dateYear = parseInt(dateStr.slice(0, 4), 10);
+                        if (dateYear === yr) sumAmount += dailyMap[dateStr].amount;
+                    });
+                    const valueStart = getPortfolioValueAtDate(yr + '-01-01');
+                    const rate = valueStart > 0 ? (sumAmount / valueStart) * 100 : 0;
+                    let cls = 'pnl-cell';
+                    if (sumAmount > 0) cls += ' positive';
+                    else if (sumAmount < 0) cls += ' negative';
+                    else cls += ' zero';
+                    const value = showAmount
+                        ? (sumAmount >= 0 ? '+' : '') + '¥' + sumAmount.toFixed(2)
+                        : (rate >= 0 ? '+' : '') + rate.toFixed(2) + '%';
+                    html += `<div class="${cls}"><span class="pnl-value">${value}</span><span class="pnl-label">${yr}年</span></div>`;
+                }
+                gridEl.innerHTML = html;
+                prevBtn.style.visibility = 'visible';
+                nextBtn.style.visibility = 'visible';
+            }
         }
 
         // ===== 今日盈亏明细弹窗 =====
