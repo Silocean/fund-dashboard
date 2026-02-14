@@ -84,51 +84,41 @@
         [data-color-theme="rose"] html { background: #e11d48; }
         [data-theme="dark"][data-color-theme="rose"] html { background: #4c0519; }
 
-        @keyframes bgGradientShift {
-            0% { background-position: 0% 50%; }
-            50% { background-position: 100% 50%; }
-            100% { background-position: 0% 50%; }
-        }
-
         body {
             font-family: var(--font-display);
-            background: linear-gradient(-45deg, #06b6d4, #0891b2, #0e7490, #155e75);
-            background-size: 400% 400%;
-            animation: bgGradientShift 24s ease infinite;
+            background: linear-gradient(135deg, #06b6d4 0%, #0891b2 50%, #0e7490 100%);
             min-height: 100vh;
             padding: var(--space-lg);
             position: relative;
         }
 
         [data-theme="dark"] body {
-            background: linear-gradient(-45deg, #0f172a, #0e7490, #155e75, #0c4a6e);
-            background-size: 400% 400%;
-            animation: bgGradientShift 28s ease infinite;
+            background: linear-gradient(135deg, #0f172a 0%, #0e7490 50%, #0c4a6e 100%);
         }
 
         /* 经典紫 */
         [data-color-theme="purple"] { --primary: #6366f1; --primary-dark: #8b5cf6; --primary-rgb: 99 102 241; --bg-gradient: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%); }
-        [data-color-theme="purple"] body { background: linear-gradient(-45deg, #6366f1, #8b5cf6, #7c3aed, #5b21b6); background-size: 400% 400%; animation: bgGradientShift 24s ease infinite; }
+        [data-color-theme="purple"] body { background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #7c3aed 100%); }
         [data-theme="dark"][data-color-theme="purple"] { --primary: #818cf8; --primary-dark: #6366f1; --primary-rgb: 129 140 248; }
-        [data-theme="dark"][data-color-theme="purple"] body { background: linear-gradient(-45deg, #1e1b4b, #312e81, #3730a3, #4c1d95); background-size: 400% 400%; animation: bgGradientShift 28s ease infinite; }
+        [data-theme="dark"][data-color-theme="purple"] body { background: linear-gradient(135deg, #1e1b4b 0%, #312e81 50%, #4c1d95 100%); }
 
         /* 森林绿 */
         [data-color-theme="green"] { --primary: #10b981; --primary-dark: #059669; --primary-rgb: 16 185 129; --bg-gradient: linear-gradient(135deg, #10b981 0%, #059669 100%); }
-        [data-color-theme="green"] body { background: linear-gradient(-45deg, #10b981, #059669, #047857, #065f46); background-size: 400% 400%; animation: bgGradientShift 24s ease infinite; }
+        [data-color-theme="green"] body { background: linear-gradient(135deg, #10b981 0%, #059669 50%, #047857 100%); }
         [data-theme="dark"][data-color-theme="green"] { --primary: #34d399; --primary-dark: #10b981; --primary-rgb: 52 211 153; }
-        [data-theme="dark"][data-color-theme="green"] body { background: linear-gradient(-45deg, #022c22, #064e3b, #065f46, #047857); background-size: 400% 400%; animation: bgGradientShift 28s ease infinite; }
+        [data-theme="dark"][data-color-theme="green"] body { background: linear-gradient(135deg, #022c22 0%, #064e3b 50%, #047857 100%); }
 
         /* 暖橙 */
         [data-color-theme="orange"] { --primary: #f59e0b; --primary-dark: #d97706; --primary-rgb: 245 158 11; --bg-gradient: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); }
-        [data-color-theme="orange"] body { background: linear-gradient(-45deg, #f59e0b, #d97706, #b45309, #92400e); background-size: 400% 400%; animation: bgGradientShift 24s ease infinite; }
+        [data-color-theme="orange"] body { background: linear-gradient(135deg, #f59e0b 0%, #d97706 50%, #b45309 100%); }
         [data-theme="dark"][data-color-theme="orange"] { --primary: #fbbf24; --primary-dark: #f59e0b; --primary-rgb: 251 191 36; }
-        [data-theme="dark"][data-color-theme="orange"] body { background: linear-gradient(-45deg, #451a03, #78350f, #92400e, #b45309); background-size: 400% 400%; animation: bgGradientShift 28s ease infinite; }
+        [data-theme="dark"][data-color-theme="orange"] body { background: linear-gradient(135deg, #451a03 0%, #78350f 50%, #b45309 100%); }
 
         /* 樱粉 */
         [data-color-theme="rose"] { --primary: #f43f5e; --primary-dark: #e11d48; --primary-rgb: 244 63 94; --bg-gradient: linear-gradient(135deg, #f43f5e 0%, #e11d48 100%); }
-        [data-color-theme="rose"] body { background: linear-gradient(-45deg, #f43f5e, #e11d48, #be123c, #9f1239); background-size: 400% 400%; animation: bgGradientShift 24s ease infinite; }
+        [data-color-theme="rose"] body { background: linear-gradient(135deg, #f43f5e 0%, #e11d48 50%, #be123c 100%); }
         [data-theme="dark"][data-color-theme="rose"] { --primary: #fb7185; --primary-dark: #f43f5e; --primary-rgb: 251 113 133; }
-        [data-theme="dark"][data-color-theme="rose"] body { background: linear-gradient(-45deg, #4c0519, #881337, #9f1239, #be123c); background-size: 400% 400%; animation: bgGradientShift 28s ease infinite; }
+        [data-theme="dark"][data-color-theme="rose"] body { background: linear-gradient(135deg, #4c0519 0%, #881337 50%, #be123c 100%); }
 
         /* 各主题 hover 背景（使用 primary-rgb） */
         [data-color-theme="purple"] { --hover-bg: rgb(var(--primary-rgb) / 0.06); }
@@ -151,6 +141,23 @@
 
         [data-theme="dark"] body::before {
             background: radial-gradient(ellipse 90% 60% at 50% -10%, rgba(255, 255, 255, 0.04), transparent 55%);
+        }
+
+        /* 两侧淡淡光晕装饰，仅宽屏留白处若隐若现 */
+        body::after {
+            content: '';
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            z-index: 0;
+            background:
+                radial-gradient(ellipse 55% 140% at 0% 50%, rgba(255, 255, 255, 0.08), transparent 48%),
+                radial-gradient(ellipse 55% 140% at 100% 50%, rgba(255, 255, 255, 0.08), transparent 48%);
+        }
+        [data-theme="dark"] body::after {
+            background:
+                radial-gradient(ellipse 55% 140% at 0% 50%, rgba(255, 255, 255, 0.04), transparent 48%),
+                radial-gradient(ellipse 55% 140% at 100% 50%, rgba(255, 255, 255, 0.04), transparent 48%);
         }
 
         .container {
@@ -769,6 +776,26 @@
             color: var(--text-muted);
             margin-top: 2px;
         }
+        .fund-list-item .list-name-holding {
+            font-size: 12px;
+            margin-top: 2px;
+        }
+        .fund-list-item .list-name-holding .list-holding-link {
+            cursor: pointer;
+            color: var(--text-muted);
+            text-decoration: none;
+            transition: color 0.15s;
+        }
+        .fund-list-item .list-name-holding .list-holding-link:hover {
+            color: var(--primary);
+        }
+        .fund-list-item .list-name-holding .list-holding-rate {
+            margin-left: 0.6em;
+        }
+        .fund-list-item .list-name-holding .holding-profit { color: #e63946; }
+        .fund-list-item .list-name-holding .holding-loss { color: #059669; }
+        [data-theme="dark"] .fund-list-item .list-name-holding .holding-profit { color: #f87171; }
+        [data-theme="dark"] .fund-list-item .list-name-holding .holding-loss { color: #34d399; }
 
         .fund-list-item .list-pct {
             font-size: 16px;
@@ -1745,23 +1772,29 @@
         .fund-sector-tag {
             display: inline-flex;
             align-items: center;
-            padding: 2px 8px;
-            border-radius: 6px;
+            padding: 3px 10px;
+            border-radius: 8px;
             font-size: 11px;
-            font-weight: 500;
+            font-weight: 600;
             white-space: nowrap;
             cursor: pointer;
-            background: var(--overview-block-bg);
+            background: rgb(var(--primary-rgb) / 0.12);
             color: var(--primary);
-            border: 1px solid var(--border-color);
+            border: 1px solid rgb(var(--primary-rgb) / 0.28);
             transition: background 0.2s, border-color 0.2s;
         }
         .fund-sector-tag:hover {
-            background: var(--hover-bg);
-            border-color: var(--primary);
+            background: rgb(var(--primary-rgb) / 0.2);
+            border-color: rgb(var(--primary-rgb) / 0.45);
         }
         .fund-sector-tag.auto {
+            background: var(--overview-block-bg);
             color: var(--text-muted);
+            border-color: var(--border-color);
+        }
+        .fund-sector-tag.auto:hover {
+            background: var(--hover-bg);
+            border-color: var(--text-muted);
         }
 
         .fund-code {
@@ -1925,7 +1958,7 @@
 
         .position-header h4 {
             font-size: 14px;
-            color: #555;
+            color: var(--text-primary);
             margin: 0;
             display: flex;
             align-items: center;
@@ -1968,20 +2001,22 @@
         }
 
         .position-summary-tag {
-            padding: 2px 8px;
-            border-radius: 4px;
+            padding: 3px 10px;
+            border-radius: 8px;
             font-weight: 600;
             font-size: 13px;
         }
 
         .position-summary-tag.profit {
-            color: #ff4d4f;
-            background: rgba(255, 77, 79, 0.1);
+            color: #e63946;
+            background: rgba(230, 57, 70, 0.12);
+            border: 1px solid rgba(230, 57, 70, 0.25);
         }
 
         .position-summary-tag.loss {
-            color: #00b96b;
-            background: rgba(0, 185, 107, 0.1);
+            color: #059669;
+            background: rgba(5, 150, 105, 0.12);
+            border: 1px solid rgba(5, 150, 105, 0.25);
         }
 
         .position-actions {
@@ -2020,11 +2055,187 @@
             color: #00b96b; /* 亏损：鲜艳绿色 */
         }
 
+        [data-theme="dark"] .position-summary-tag.profit {
+            color: #f87171;
+            background: rgba(248, 113, 113, 0.15);
+            border-color: rgba(248, 113, 113, 0.35);
+        }
+        [data-theme="dark"] .position-summary-tag.loss {
+            color: #34d399;
+            background: rgba(52, 211, 153, 0.15);
+            border-color: rgba(52, 211, 153, 0.35);
+        }
+
         .no-position {
             text-align: center;
             color: var(--text-muted);
             font-size: 13px;
             padding: 10px;
+        }
+
+        /* 卡片上的持仓入口（与数据条同背景，风格统一） */
+        .position-entry {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+            flex-wrap: wrap;
+            padding: 8px 12px;
+            margin-bottom: 8px;
+            border-radius: 8px;
+            background: var(--data-bar-bg);
+        }
+        .position-entry-click {
+            flex: 1;
+            min-width: 0;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+            font-size: 13px;
+            color: var(--text-secondary);
+            transition: color 0.15s;
+        }
+        .position-entry-click:hover {
+            color: var(--primary);
+        }
+        .position-entry-tag {
+            font-weight: 600;
+            font-size: 13px;
+        }
+        .position-entry-tag.profit { color: #e63946; }
+        .position-entry-tag.loss { color: #059669; }
+        [data-theme="dark"] .position-entry-tag.profit { color: #f87171; }
+        [data-theme="dark"] .position-entry-tag.loss { color: #34d399; }
+        .position-entry-actions {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        /* 链接式操作，不抢视觉焦点 */
+        .position-entry-actions .btn {
+            padding: 0;
+            min-height: auto;
+            font-size: 12px;
+            font-weight: 500;
+            background: none;
+            border: none;
+            border-radius: 0;
+            color: var(--text-muted);
+            box-shadow: none;
+            transition: color 0.15s;
+        }
+        .position-entry-actions .btn:hover {
+            color: var(--primary);
+            background: none;
+            border: none;
+        }
+        .position-entry-actions .btn-warning {
+            color: var(--text-muted);
+        }
+        .position-entry-actions .btn-warning:hover {
+            color: #d97706;
+        }
+        [data-theme="dark"] .position-entry-actions .btn-warning:hover {
+            color: #fbbf24;
+        }
+
+        /* 持仓弹窗内样式复用 + 居中 */
+        #positionModalContent {
+            text-align: center;
+        }
+        #positionModalContent .position-summary {
+            margin-top: 0;
+            margin-bottom: 12px;
+            justify-content: center;
+        }
+        #positionModalContent .position-grid {
+            margin-bottom: 16px;
+        }
+        #positionModalContent .position-item {
+            align-items: center;
+            text-align: center;
+        }
+        #positionModalContent .no-position { margin-bottom: 12px; }
+        #positionModalContent > p { text-align: center; }
+        /* 持仓弹窗内操作区统一：按钮尺寸与间距一致 */
+        #positionModalContent .position-modal-actions {
+            justify-content: center;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        #positionModalContent .position-modal-actions .btn {
+            min-width: 140px;
+            min-height: 44px;
+            padding: 12px 24px;
+            font-size: 16px;
+            font-weight: 500;
+            border-radius: 8px;
+            box-sizing: border-box;
+        }
+        #positionModalContent .position-modal-actions .btn-warning {
+            min-height: 44px;
+            padding: 12px 24px;
+            font-size: 16px;
+            font-weight: 500;
+        }
+        #positionModalContent .position-modal-actions--column {
+            flex-direction: column;
+            gap: 14px;
+        }
+        #positionModalContent .position-modal-actions--column .empty-link {
+            font-size: 13px;
+            color: var(--primary);
+            text-decoration: none;
+            cursor: pointer;
+            transition: opacity 0.15s;
+        }
+        #positionModalContent .position-modal-actions--column .empty-link:hover {
+            opacity: 0.85;
+        }
+
+        /* 持仓弹窗 - 暂无持仓/已清仓 空状态 */
+        .position-modal-empty {
+            text-align: center;
+            padding: 28px 20px 24px;
+        }
+        .position-modal-empty .empty-icon {
+            font-size: 40px;
+            line-height: 1;
+            margin-bottom: 14px;
+            opacity: 0.7;
+        }
+        .position-modal-empty .empty-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin: 0 0 6px;
+        }
+        .position-modal-empty .empty-desc {
+            font-size: 13px;
+            color: var(--text-muted);
+            margin: 0 0 22px;
+            line-height: 1.45;
+        }
+        .position-modal-empty .empty-actions {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 14px;
+        }
+        .position-modal-empty .empty-actions .btn {
+            min-width: 140px;
+        }
+        .position-modal-empty .empty-actions .empty-link {
+            font-size: 13px;
+            color: var(--primary);
+            text-decoration: none;
+            cursor: pointer;
+            transition: opacity 0.15s;
+        }
+        .position-modal-empty .empty-actions .empty-link:hover {
+            opacity: 0.85;
         }
 
         .loading {
@@ -3310,7 +3521,7 @@
                 font-size: 13px;
             }
         }
-        /* 页面底部Footer：顶部渐变过渡，与内容区自然衔接 */
+        /* 页面底部Footer：与页面背景一致，无单独背景 */
         .page-footer {
             text-align: center;
             padding: var(--space-2xl) var(--space-md) var(--space-lg);
@@ -3318,12 +3529,6 @@
             color: var(--text-muted);
             font-size: 12px;
             letter-spacing: 0.02em;
-            border-top: 1px solid var(--border-color);
-            background: linear-gradient(to bottom, transparent 0%, rgba(0, 0, 0, 0.02) 100%);
-        }
-
-        [data-theme="dark"] .page-footer {
-            background: linear-gradient(to bottom, transparent 0%, rgba(255, 255, 255, 0.02) 100%);
         }
 
         .page-footer span {
@@ -3826,6 +4031,19 @@
         </div>
     </div>
 
+    <!-- 持仓信息模态框 -->
+    <div id="positionModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="positionModalTitle" aria-hidden="true">
+        <div class="modal-content" style="max-width: 480px;" tabindex="-1">
+            <div class="modal-header">
+                <h2 id="positionModalTitle">💼 持仓信息</h2>
+                <button class="close-btn" onclick="closePositionModal()">&times;</button>
+            </div>
+            <div id="positionModalContent">
+                <!-- 持仓内容由 JS 填充 -->
+            </div>
+        </div>
+    </div>
+
     <!-- 历史收益明细模态框 -->
     <div id="historicalProfitModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="historicalProfitModalTitle" aria-hidden="true">
         <div class="modal-content" style="max-width: 600px;" tabindex="-1">
@@ -4233,18 +4451,65 @@
             }
         }
 
-        // 持仓详情折叠
-        function togglePositionDetail(headerEl, event) {
-            const isExpanded = headerEl.classList.toggle('expanded');
-            const body = headerEl.parentElement.querySelector('.position-body');
-            const summary = headerEl.parentElement.querySelector('.position-summary');
-            if (isExpanded) {
-                body.classList.add('expanded');
-                if (summary) summary.classList.add('hidden');
+        // 持仓弹窗：打开
+        function openPositionModal(code) {
+            const data = state.fundsData[code];
+            const posInfo = calculatePosition(code);
+            const titleEl = document.getElementById('positionModalTitle');
+            const contentEl = document.getElementById('positionModalContent');
+            const fundName = (data && data.name) ? data.name : code;
+            titleEl.textContent = '💼 持仓信息 - ' + fundName;
+
+            if (posInfo && posInfo.totalShares > 0) {
+                const display = getDisplayValues(data || {});
+                const currentNav = display.isActual ? parseFloat(display.value) : parseFloat((data && data.gsz) ? data.gsz : 0);
+                const currentValue = posInfo.totalShares * currentNav;
+                const profit = currentValue - posInfo.totalCost;
+                const profitRate = ((currentNav - posInfo.avgCost) / posInfo.avgCost * 100).toFixed(2);
+                const profitClass = profit >= 0 ? 'profit' : 'loss';
+                const profitSymbol = profit >= 0 ? '+' : '';
+                contentEl.innerHTML = `
+                    <div class="position-summary">
+                        <span>市值 ¥${currentValue.toFixed(2)}</span>
+                        <span class="position-summary-tag ${profitClass}">${profitSymbol}¥${profit.toFixed(2)}（${profitRate >= 0 ? '+' : ''}${profitRate}%）</span>
+                    </div>
+                    <p style="margin-bottom:12px;font-size:13px;">
+                        <a href="javascript:void(0)" onclick="closePositionModal(); openTransactionHistoryModal('${code}')" style="color:var(--primary);">📋 ${posInfo.transactions.length}笔交易记录</a>
+                    </p>
+                    <div class="position-grid">
+                        <div class="position-item"><div class="position-label">持有份额</div><div class="position-value">${posInfo.totalShares.toFixed(2)}</div></div>
+                        <div class="position-item"><div class="position-label">平均成本</div><div class="position-value">${posInfo.avgCost.toFixed(4)}</div></div>
+                        <div class="position-item"><div class="position-label">当前市值</div><div class="position-value">¥${currentValue.toFixed(2)}</div></div>
+                        <div class="position-item"><div class="position-label">持仓成本</div><div class="position-value">¥${posInfo.totalCost.toFixed(2)}</div></div>
+                        <div class="position-item"><div class="position-label">收益金额</div><div class="position-value ${profitClass}">${profitSymbol}¥${profit.toFixed(2)}</div></div>
+                        <div class="position-item"><div class="position-label">收益率</div><div class="position-value ${profitClass}">${profitRate >= 0 ? '+' : ''}${profitRate}%</div></div>
+                    </div>
+                    <div class="position-modal-actions">
+                        <button class="btn btn-primary" onclick="closePositionModal(); openBuyModal('${code}')">买入</button>
+                        <button class="btn btn-warning" onclick="closePositionModal(); openSellModal('${code}')">卖出</button>
+                    </div>
+                `;
             } else {
-                body.classList.remove('expanded');
-                if (summary) summary.classList.remove('hidden');
+                const hasHistory = posInfo && posInfo.transactions && posInfo.transactions.length > 0;
+                const emptyTitle = hasHistory ? '已清仓' : '暂无持仓';
+                const emptyDesc = hasHistory ? '该基金当前无持仓，可买入建仓或查看历史交易记录。' : '添加自选后尚未买入，点击下方按钮开始第一笔申购。';
+                contentEl.innerHTML = `
+                    <div class="position-modal-empty">
+                        <div class="empty-icon">💼</div>
+                        <h3 class="empty-title">${emptyTitle}</h3>
+                        <p class="empty-desc">${emptyDesc}</p>
+                        <div class="position-modal-actions position-modal-actions--column">
+                            <button class="btn btn-primary" onclick="closePositionModal(); openBuyModal('${code}')">买入</button>
+                            ${hasHistory ? '<a href="javascript:void(0)" class="empty-link" onclick="closePositionModal(); openTransactionHistoryModal(\'' + code + '\')">📋 查看交易记录</a>' : ''}
+                        </div>
+                    </div>
+                `;
             }
+            document.getElementById('positionModal').classList.add('active');
+        }
+
+        function closePositionModal() {
+            document.getElementById('positionModal').classList.remove('active');
         }
 
         // 暗色模式
@@ -7499,7 +7764,7 @@
                 headerTimeEl.textContent = data.gztime || '';
             }
 
-            // 5. 更新持仓动态数值（市值、收益金额、收益率）
+            // 5. 更新持仓入口动态数值（市值、盈亏）
             if (posInfo && posInfo.totalShares > 0) {
                 const currentNav = display.isActual ? parseFloat(display.value) : parseFloat(data.gsz);
                 const currentValue = posInfo.totalShares * currentNav;
@@ -7507,25 +7772,12 @@
                 const profitRate = ((currentNav - posInfo.avgCost) / posInfo.avgCost * 100).toFixed(2);
                 const profitClass = profit >= 0 ? 'profit' : 'loss';
                 const profitSymbol = profit >= 0 ? '+' : '';
-                const positionValues = realtimeTab.querySelectorAll('.position-grid .position-value');
-                if (positionValues.length >= 6) {
-                    positionValues[2].textContent = '¥' + currentValue.toFixed(2);
-                    positionValues[4].textContent = profitSymbol + '¥' + profit.toFixed(2);
-                    positionValues[4].className = 'position-value ' + profitClass;
-                    positionValues[5].textContent = (profitRate >= 0 ? '+' : '') + profitRate + '%';
-                    positionValues[5].className = 'position-value ' + profitClass;
-                }
-
-                // 更新折叠摘要行
-                const summaryEl = realtimeTab.querySelector('.position-summary');
-                if (summaryEl) {
-                    const spans = summaryEl.querySelectorAll('span');
-                    if (spans.length >= 1) spans[0].textContent = '市值 ¥' + currentValue.toFixed(2);
-                    const tagEl = summaryEl.querySelector('.position-summary-tag');
-                    if (tagEl) {
-                        tagEl.className = 'position-summary-tag ' + profitClass;
-                        tagEl.textContent = profitSymbol + '¥' + profit.toFixed(2) + '（' + (profitRate >= 0 ? '+' : '') + profitRate + '%）';
-                    }
+                const mktEl = realtimeTab.querySelector('.position-entry-mkt');
+                const tagEl = realtimeTab.querySelector('.position-entry-tag');
+                if (mktEl) mktEl.textContent = '¥' + currentValue.toFixed(2);
+                if (tagEl) {
+                    tagEl.className = 'position-entry-tag ' + profitClass;
+                    tagEl.textContent = profitSymbol + '¥' + profit.toFixed(2) + '（' + (profitRate >= 0 ? '+' : '') + profitRate + '%）';
                 }
             }
 
@@ -7659,11 +7911,27 @@
                     const rowClass = hasPosition ? 'holding' : 'watching';
                     const dayHistory = state.historyData[code];
                     const sparklineSvg = renderListSparklineSvg(dayHistory, percentage);
+                    let nameSubHtml = '';
+                    if (hasPosition) {
+                        const currentNav = display.isActual ? parseFloat(display.value) : parseFloat(data.gsz);
+                        const currentValue = posInfo.totalShares * currentNav;
+                        const profit = currentValue - posInfo.totalCost;
+                        const profitRateNum = (currentNav - posInfo.avgCost) / posInfo.avgCost * 100;
+                        const profitRate = profitRateNum.toFixed(2);
+                        const profitClass = profit >= 0 ? 'holding-profit' : 'holding-loss';
+                        const profitSymbol = profit >= 0 ? '+' : '';
+                        const valueStr = '¥' + currentValue.toFixed(2);
+                        const rateStr = profitRateNum === 0 ? '0.00%' : (profitRateNum > 0 ? '+' : '') + profitRate + '%';
+                        const fullTitle = '市值 ¥' + currentValue.toFixed(2) + ' · 收益 ' + profitSymbol + '¥' + profit.toFixed(2) + '（' + rateStr + '）';
+                        nameSubHtml = `<div class="list-name-holding"><a href="javascript:void(0)" class="list-holding-link" onclick="openPositionModal('${code}')" title="${fullTitle}">${valueStr}<span class="list-holding-rate ${profitClass}">${rateStr}</span></a></div>`;
+                    } else {
+                        nameSubHtml = `<div class="list-name-code">${data.fundcode}</div>`;
+                    }
                     return `
                         <div class="fund-list-item ${rowClass}" data-code="${code}">
                             <div class="list-name">
                                 <div class="list-name-main">${data.name || code}</div>
-                                <div class="list-name-code">${data.fundcode}</div>
+                                ${nameSubHtml}
                             </div>
                             <div class="list-pct ${pctClass}">${pctStr}</div>
                             <div class="list-val">${display.label}: ${display.value}</div>
@@ -7739,69 +8007,27 @@
                     const profitRate = ((currentNav - posInfo.avgCost) / posInfo.avgCost * 100).toFixed(2);
                     const profitClass = profit >= 0 ? 'profit' : 'loss';
                     const profitSymbol = profit >= 0 ? '+' : '';
-                    
                     positionHtml = `
-                        <div class="position-info">
-                            <div class="position-header" onclick="togglePositionDetail(this, event)">
-                                <h4><span class="position-toggle">▶</span> 💼 持仓信息 
-                                    <span style="cursor: pointer; color: var(--primary); font-size: 13px; margin-left: 8px;" onclick="event.stopPropagation(); openTransactionHistoryModal('${code}')" title="查看交易历史">
-                                        📋 ${posInfo.transactions.length}笔
-                                    </span>
-                                </h4>
-                                <div class="position-actions" onclick="event.stopPropagation();">
-                                    <button class="btn btn-secondary" onclick="openBuyModal('${code}')">买入</button>
-                                    <button class="btn btn-warning" onclick="openSellModal('${code}')">卖出</button>
-                                </div>
+                        <div class="position-entry" data-code="${code}">
+                            <div class="position-entry-click" onclick="openPositionModal('${code}')">
+                                <span>💼 持仓</span>
+                                <span class="position-entry-mkt">¥${currentValue.toFixed(2)}</span>
+                                <span class="position-entry-tag ${profitClass}">${profitSymbol}¥${profit.toFixed(2)}（${profitRate >= 0 ? '+' : ''}${profitRate}%）</span>
                             </div>
-                            <div class="position-summary">
-                                <span>市值 ¥${currentValue.toFixed(2)}</span>
-                                <span class="position-summary-tag ${profitClass}">${profitSymbol}¥${profit.toFixed(2)}（${profitRate >= 0 ? '+' : ''}${profitRate}%）</span>
-                            </div>
-                            <div class="position-body">
-                                <div class="position-grid">
-                                    <div class="position-item">
-                                        <div class="position-label">持有份额</div>
-                                        <div class="position-value">${posInfo.totalShares.toFixed(2)}</div>
-                                    </div>
-                                    <div class="position-item">
-                                        <div class="position-label">平均成本</div>
-                                        <div class="position-value">${posInfo.avgCost.toFixed(4)}</div>
-                                    </div>
-                                    <div class="position-item">
-                                        <div class="position-label">当前市值</div>
-                                        <div class="position-value">¥${currentValue.toFixed(2)}</div>
-                                    </div>
-                                    <div class="position-item">
-                                        <div class="position-label">持仓成本</div>
-                                        <div class="position-value">¥${posInfo.totalCost.toFixed(2)}</div>
-                                    </div>
-                                    <div class="position-item">
-                                        <div class="position-label">收益金额</div>
-                                        <div class="position-value ${profitClass}">${profitSymbol}¥${profit.toFixed(2)}</div>
-                                    </div>
-                                    <div class="position-item">
-                                        <div class="position-label">收益率</div>
-                                        <div class="position-value ${profitClass}">${profitRate >= 0 ? '+' : ''}${profitRate}%</div>
-                                    </div>
-                                </div>
+                            <div class="position-entry-actions" onclick="event.stopPropagation()">
+                                <button class="btn btn-secondary" onclick="openBuyModal('${code}')">买入</button>
+                                <button class="btn btn-warning" onclick="openSellModal('${code}')">卖出</button>
                             </div>
                         </div>
                     `;
                 } else {
-                    // 有交易记录但已清仓（全部卖出），显示历史交易入口
                     const hasHistory = posInfo && posInfo.transactions && posInfo.transactions.length > 0;
-                    const historyLink = hasHistory 
-                        ? `<span style="cursor: pointer; color: var(--primary); font-size: 13px; margin-left: 8px;" onclick="openTransactionHistoryModal('${code}')" title="查看交易历史">📋 ${posInfo.transactions.length}笔交易记录</span>`
-                        : '';
                     positionHtml = `
-                        <div class="position-info">
-                            <div class="position-header">
-                                <h4>💼 持仓信息 ${historyLink}</h4>
-                                <div class="position-actions">
-                                    <button class="btn btn-secondary" onclick="openBuyModal('${code}')">买入</button>
-                                </div>
+                        <div class="position-entry" data-code="${code}">
+                            <div class="position-entry-click" onclick="openPositionModal('${code}')">💼 ${hasHistory ? '已清仓' : '暂无持仓'}</div>
+                            <div class="position-entry-actions" onclick="event.stopPropagation()">
+                                <button class="btn btn-secondary" onclick="openBuyModal('${code}')">买入</button>
                             </div>
-                            <div class="no-position">${hasHistory ? '已清仓' : '暂无持仓，点击买入开始交易'}</div>
                         </div>
                     `;
                 }
