@@ -5529,7 +5529,10 @@
                     fetchFundData(code);
                 });
 
-                showToast(`✅ 数据导入成功！已导入 ${importedData.fundCodes.length} 只基金\n导出日期：${new Date(importedData.exportDate).toLocaleString('zh-CN')}`, 'success');
+                const dateStr = importedData.exportDate || importedData.syncDate;
+                const dateDisplay = dateStr ? (() => { const d = new Date(dateStr); return isNaN(d.getTime()) ? '' : d.toLocaleString('zh-CN'); })() : '';
+                const dateLine = dateDisplay ? `\n${importedData.syncDate ? '同步' : '导出'}时间：${dateDisplay}` : '';
+                showToast(`✅ 数据导入成功！已导入 ${importedData.fundCodes.length} 只基金${dateLine}`, 'success');
             } catch (error) {
                 console.error('完全导入失败：', error);
                 showToast('❌ 导入过程中出错：' + error.message, 'error');
