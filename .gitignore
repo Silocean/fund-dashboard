@@ -1,0 +1,2 @@
+# 基金列表原始数据（约 3MB），可从 https://fund.eastmoney.com/js/fundcode_search.js 下载后运行 scripts/extract_sector_candidates.py 生成 sector-candidates.json
+fundcode_search.js

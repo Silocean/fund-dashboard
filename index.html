@@ -1381,11 +1381,17 @@
             border: 1px solid var(--border-color);
         }
 
-        /* 持仓占比环形图 */
+        /* 持仓/板块占比环形图 */
         .allocation-chart-container {
             display: flex;
             flex-direction: column;
             align-items: center;
+        }
+        .allocation-chart-caption {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            margin-bottom: 6px;
         }
 
         .allocation-chart-wrapper {
@@ -1723,24 +1729,26 @@
             flex-wrap: wrap;
         }
 
-        .fund-badge {
+        .fund-sector-tag {
             display: inline-flex;
             align-items: center;
-            padding: 1px 6px;
-            border-radius: 4px;
-            font-size: 10px;
-            font-weight: 600;
+            padding: 2px 8px;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: 500;
             white-space: nowrap;
+            cursor: pointer;
+            background: var(--overview-block-bg);
+            color: var(--primary);
+            border: 1px solid var(--border-color);
+            transition: background 0.2s, border-color 0.2s;
         }
-
-        .fund-badge.holding {
-            background: linear-gradient(135deg, #ff6b6b 0%, #ee5a5a 100%);
-            color: white;
+        .fund-sector-tag:hover {
+            background: var(--hover-bg);
+            border-color: var(--primary);
         }
-
-        .fund-badge.watching {
-            background: linear-gradient(135deg, #ffd93d 0%, #f5c842 100%);
-            color: #7a6400;
+        .fund-sector-tag.auto {
+            color: var(--text-muted);
         }
 
         .fund-code {
@@ -2495,6 +2503,57 @@
         .modal-confirm {
             max-width: 600px;
             max-height: 85vh;
+        }
+
+        .modal-sector-picker {
+            max-width: 420px;
+            max-height: 90vh;
+            display: flex;
+            flex-direction: column;
+        }
+        .modal-sector-picker .modal-header { flex-shrink: 0; }
+        .modal-sector-picker .sector-picker-fund-name,
+        .modal-sector-picker .sector-picker-hint { flex-shrink: 0; }
+        .modal-sector-picker .form-actions { flex-shrink: 0; }
+        .sector-picker-fund-name {
+            font-size: 13px;
+            color: var(--text-secondary);
+            margin: -8px 0 8px;
+        }
+        .sector-picker-hint {
+            font-size: 11px;
+            color: var(--text-muted);
+            margin: 0 0 12px;
+            line-height: 1.4;
+        }
+        .sector-picker-options {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 16px;
+            max-height: 50vh;
+            overflow-y: auto;
+            flex-shrink: 1;
+            min-height: 0;
+        }
+        .sector-picker-options .sector-btn {
+            padding: 8px 14px;
+            border-radius: 10px;
+            border: 1px solid var(--border-color);
+            background: var(--stat-bg);
+            color: var(--text-primary);
+            font-size: 14px;
+            cursor: pointer;
+            transition: background 0.2s, border-color 0.2s;
+        }
+        .sector-picker-options .sector-btn:hover {
+            background: var(--hover-bg);
+            border-color: var(--primary);
+        }
+        .sector-picker-options .sector-btn.active {
+            background: var(--primary);
+            border-color: var(--primary);
+            color: white;
         }
 
         .confirm-message {
@@ -3504,6 +3563,7 @@
                     <div class="overview-section-label">📈 图表</div>
                     <div class="overview-state charts-row">
                         <div class="allocation-chart-container">
+                            <div class="allocation-chart-caption">板块占比</div>
                             <div class="allocation-chart-wrapper">
                                 <canvas id="allocationChart"></canvas>
                             </div>
@@ -3775,6 +3835,22 @@
             </div>
             <div id="fundDetailModalContent" style="max-height: 70vh; overflow-y: auto;">
                 <!-- 基金详情内容动态填充 -->
+            </div>
+        </div>
+    </div>
+
+    <!-- 设置基金板块（用于总览饼图按板块占比） -->
+    <div id="sectorPickerModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="sectorPickerModalTitle" aria-hidden="true">
+        <div class="modal-content modal-sector-picker" tabindex="-1">
+            <div class="modal-header">
+                <h2 id="sectorPickerModalTitle">设置所属板块</h2>
+                <button class="close-btn" onclick="closeSectorPicker()">&times;</button>
+            </div>
+            <p class="sector-picker-fund-name" id="sectorPickerFundName"></p>
+            <p class="sector-picker-hint">未设置时：优先按基金名称推断板块，名称无法匹配时才用天天基金「基金类型」。</p>
+            <div class="sector-picker-options" id="sectorPickerOptions"></div>
+            <div class="form-actions">
+                <button class="btn btn-secondary" onclick="chooseSector(null)">清除（使用名称推断+类型补充）</button>
             </div>
         </div>
     </div>
@@ -4268,6 +4344,100 @@
             markDataChanged();
         }
 
+        // 基金所属板块：code -> 板块名，用于总览饼图按板块汇总
+        // 优先级：1) 用户手动设置  2) 按名称关键词推断  3) 仅当名称无法匹配时再用天天基金「基金类型」
+        // 候选板块来自 fund.eastmoney.com/js/fundcode_search.js 全量基金名称分析，见 sector-candidates.json；可用 scripts/extract_sector_candidates.py 重新生成
+        const SECTOR_OPTIONS = ['债券', '指数', '科技', '港股', '医疗', '消费', '金融', '红利', '养老', '新能源', '纳斯达克', '机器人', '有色', '央企', '国企', '军工', '同业存单', '地产', '黄金', '传媒', '农业', 'ESG', '电力', '环保', '光伏产业', '化工', '港股通科技', '基建', '石油', '红利低波动', '港股通互联网', '电池主题', '一带一路', '煤炭', '上海环交所碳中和', '油气', '港股通高股息投资', '钢铁', '新能源汽车', '天然气', '长三角', '细分化工产业主题', '卫星', '创新药产业', '金融科技主题', '芯片产业', '消费电子主题', '港股通央企红利', '农业主题', '物流', '软件服务', '卫星产业', '主要消费', '红利低波', '畜牧养殖', '动漫游戏', '工业有色金属主题', '有色金属矿业主题', '绿色电力', '电信主题', '物联网主题', '信息技术应用创新产业', '港股通创新药', '港股通医疗主题', '国企一带一路', '稀土产业', '人工智能主题', '稀有金属主题', '生物科技主题', '港股通消费主题', '云计算与大数据主题', '汽车零部件主题', '沪港深云计算产业', '数字经济主题', '大数据产业', '油气资源', '科创创业人工智能', '体育', '长江保护主题', '机床', '装备产业', '油气产业', '通用航空主题', '工程机械主题', '建筑', '智能电动汽车', '新材料主题', '智能汽车主题', '金融地产', '基建工程', '生物医药', '京津冀', '央企创新驱动', '红利质量', '石化产业', '半导体产业', '香港内地国有企业', '车联网主题', '工业互联网主题', '香港科技', '其他'];
+        function loadFundSectors() {
+            const saved = localStorage.getItem('fundSectors');
+            return saved ? JSON.parse(saved) : {};
+        }
+        function saveFundSectors(sectors) {
+            localStorage.setItem('fundSectors', JSON.stringify(sectors));
+            markDataChanged();
+        }
+        /** 从已加载的基金列表（fundcode_search.js）获取该基金的「基金类型」 */
+        function getFundTypeFromApi(code) {
+            if (!state.fundList || state.fundList.length === 0) return null;
+            const fund = state.fundList.find(f => f.code === code);
+            return fund && fund.type ? fund.type : null;
+        }
+        /** 将天天基金「基金类型」映射为板块（仅能区分指数/债券/QDII 等，股票型/混合型仍靠名称推断） */
+        function mapApiTypeToSector(apiType) {
+            if (!apiType) return null;
+            const t = String(apiType);
+            if (/指数|ETF/.test(t)) return '指数';
+            if (/债券|债基|纯债|短债|中短债|信用债|利率债/.test(t)) return '债券';
+            if (/QDII|QDII型/.test(t)) return '海外';
+            if (/货币/.test(t)) return '其他';
+            return null; // 股票型、混合型等无法从类型得知板块，返回 null 走名称推断
+        }
+        function getFundSector(code, fundName) {
+            const sectors = loadFundSectors();
+            if (sectors[code]) return sectors[code];
+            const name = fundName || '';
+            const fromName = inferSectorFromName(name);
+            // 名称能推断出具体板块时优先用名称；只有推断为「其他」时才用 API 类型（指数/债券/QDII）
+            if (fromName !== '其他') return fromName;
+            const apiType = getFundTypeFromApi(code);
+            const sectorFromApi = mapApiTypeToSector(apiType);
+            return sectorFromApi || '其他';
+        }
+        function setFundSector(code, sector) {
+            const sectors = loadFundSectors();
+            if (sector) sectors[code] = sector; else delete sectors[code];
+            saveFundSectors(sectors);
+        }
+        /** 按基金名称推断板块，关键词与市面行业/主题命名对齐（顺序：更具体的先匹配） */
+        function inferSectorFromName(name) {
+            if (!name) return '其他';
+            const n = name;
+            // 医药
+            if (/医药|医疗|生物|创新药|CXO|中药|医疗器械|医疗服务/.test(n)) return '医药';
+            // 消费（白酒/食品/家电/汽车/旅游等）
+            if (/消费|白酒|食品|饮料|家电|汽车|旅游|免税|纺织服装|零售/.test(n)) return '消费';
+            // 新能源（光伏/电池/储能/新能车）
+            if (/新能源|光伏|电池|锂电|储能|新能车|电动车|碳中和/.test(n)) return '新能源';
+            // 金融
+            if (/金融|银行|证券|保险|券商/.test(n)) return '金融';
+            // 卫星（卫星互联网/导航/低轨等，单独板块，先于军工匹配）
+            if (/卫星|北斗|低轨|星链|卫星互联网|卫星导航/.test(n)) return '卫星';
+            // 军工
+            if (/军工|国防|航空|航天|兵器/.test(n)) return '军工';
+            // 地产
+            if (/地产|房地产/.test(n)) return '地产';
+            // 电网/电力（输配/绿电）
+            if (/电网|电力|输配|绿电|水电|火电/.test(n)) return '电网';
+            // 有色金属（有色/稀土/工业金属，先于黄金匹配）
+            if (/有色金属|有色|稀土|工业金属|铜|铝业|稀有金属/.test(n)) return '有色金属';
+            // 黄金/贵金属
+            if (/黄金|贵金属/.test(n)) return '黄金';
+            // 机器人/高端制造/自动化（单独板块，先于科技匹配）
+            if (/机器人|智能机器|工业机器人|自动化|高端制造|智能装备|数控/.test(n)) return '机器人';
+            // 科技（半导体/芯片/电子/计算机/互联网/软件/AI等）
+            if (/科技|半导体|芯片|电子|通信|计算机|互联网|软件|人工智能|AI|数字经济|云计算|大数据/.test(n)) return '科技';
+            // 煤炭
+            if (/煤炭|煤矿/.test(n)) return '煤炭';
+            // 钢铁
+            if (/钢铁|黑色金属/.test(n)) return '钢铁';
+            // 化工
+            if (/化工|化学|化纤/.test(n)) return '化工';
+            // 建材
+            if (/建材|水泥|玻璃|陶瓷/.test(n)) return '建材';
+            // 传媒/游戏
+            if (/传媒|游戏|影视|动漫|文化传播|娱乐|手游|电竞/.test(n)) return '传媒';
+            // 环保（与新能源的碳中和已归新能源，此处为环保/ESG等）
+            if (/环保|ESG|节能|污水处理/.test(n)) return '环保';
+            // 农业
+            if (/农业|养殖|畜牧|种业|农林牧渔|生猪|饲料/.test(n)) return '农业';
+            // 港股/海外/债券/指数
+            if (/港股|恒生|沪港深/.test(n)) return '港股';
+            if (/纳斯达克|标普|美股|QDII|海外/.test(n)) return '海外';
+            if (/债券|纯债|短债|中短债|信用债|利率债/.test(n)) return '债券';
+            if (/宽基|指数|沪深|中证|上证|创业板|科创/.test(n)) return '指数';
+            return '其他';
+        }
+
         // 加载历史数据
         function loadHistoryData() {
             const saved = localStorage.getItem('fundHistoryData');
@@ -4565,6 +4735,7 @@
                 version: '1.1',
                 exportDate: new Date().toISOString(),
                 fundCodes: loadFundCodes(),
+                fundSectors: loadFundSectors(),
                 positions: state.positions,
                 historyData: state.historyData,
                 dailyRanges: {
@@ -4713,6 +4884,9 @@
                 
                 // 导入所有数据
                 saveFundCodes(importedData.fundCodes || []);
+                if (importedData.fundSectors && typeof importedData.fundSectors === 'object') {
+                    saveFundSectors(importedData.fundSectors);
+                }
                 state.positions = importedData.positions || {};
                 savePositions();
                 state.historyData = importedData.historyData || {};
@@ -4762,6 +4936,11 @@
                 // 合并基金代码（去重）
                 const mergedCodes = [...new Set([...currentCodes, ...newCodes])];
                 saveFundCodes(mergedCodes);
+                if (importedData.fundSectors && typeof importedData.fundSectors === 'object') {
+                    const currentSectors = loadFundSectors();
+                    Object.assign(currentSectors, importedData.fundSectors);
+                    saveFundSectors(currentSectors);
+                }
 
                 // 合并持仓数据（导入的数据优先）
                 Object.keys(importedData.positions || {}).forEach(code => {
@@ -4876,6 +5055,7 @@
                 version: '1.1',
                 syncDate: new Date().toISOString(),
                 fundCodes: loadFundCodes(),
+                fundSectors: loadFundSectors(),
                 positions: state.positions,
                 historyData: state.historyData,
                 dailyRanges: {
@@ -5221,6 +5401,9 @@
             delete state.positions[code];
             delete state.dailyRanges[code];
             delete state.fundDetails[code];
+            const sectors = loadFundSectors();
+            delete sectors[code];
+            saveFundSectors(sectors);
             saveHistoryData();
             savePositions();
             saveDailyRanges();
@@ -5232,6 +5415,34 @@
             if (!skipConfirm) {
                 showToast('✅ 基金已删除，建议定期导出数据备份', 'success');
             }
+        }
+
+        let sectorPickerCode = null;
+        function openSectorPicker(code) {
+            sectorPickerCode = code;
+            const data = state.fundsData[code];
+            const name = data ? data.name : code;
+            const sectors = loadFundSectors();
+            const current = sectors[code] || '';
+            document.getElementById('sectorPickerFundName').textContent = name + ' (' + code + ')';
+            const container = document.getElementById('sectorPickerOptions');
+            container.innerHTML = SECTOR_OPTIONS.map(s => {
+                const isActive = current === s ? ' active' : '';
+                return `<button type="button" class="sector-btn${isActive}" data-sector="${s}" onclick="chooseSector('${s}')">${s}</button>`;
+            }).join('');
+            document.getElementById('sectorPickerModal').classList.add('active');
+        }
+        function closeSectorPicker() {
+            sectorPickerCode = null;
+            document.getElementById('sectorPickerModal').classList.remove('active');
+        }
+        function chooseSector(sector) {
+            if (!sectorPickerCode) return;
+            setFundSector(sectorPickerCode, sector || null);
+            closeSectorPicker();
+            renderFunds();
+            updateOverviewPanel();
+            showToast(sector ? `已设为「${sector}」` : '已清除，将按名称自动推断板块', 'success');
         }
 
         // 计算参与今日盈亏的份额（排除今日买入 + 上一交易日买入的份额，其按当日净值成交不产生今日涨跌收益）
@@ -6656,7 +6867,8 @@
             if (!ctx) return;
 
             const codes = loadFundCodes();
-            const items = [];
+            const sectorSums = {};
+            const sectorFunds = {};
             let total = 0;
 
             codes.forEach(code => {
@@ -6666,9 +6878,18 @@
                 const display = getDisplayValues(data);
                 const currentNav = display.isActual ? parseFloat(display.value) : parseFloat(data.gsz);
                 const mv = posInfo.totalShares * currentNav;
-                items.push({ code, name: data.name || code, value: mv });
+                const sector = getFundSector(code, data.name) || '其他';
+                sectorSums[sector] = (sectorSums[sector] || 0) + mv;
+                if (!sectorFunds[sector]) sectorFunds[sector] = [];
+                sectorFunds[sector].push({ name: data.name || code, value: mv });
                 total += mv;
             });
+
+            const items = Object.keys(sectorSums).map(sector => ({
+                sector,
+                value: sectorSums[sector],
+                funds: sectorFunds[sector] || []
+            })).sort((a, b) => b.value - a.value);
 
             if (items.length === 0) {
                 if (allocationChartInstance) { allocationChartInstance.destroy(); allocationChartInstance = null; }
@@ -6677,8 +6898,7 @@
                 return;
             }
 
-            items.sort((a, b) => b.value - a.value);
-            const labels = items.map(i => i.name.length > 6 ? i.name.slice(0, 6) + '…' : i.name);
+            const labels = items.map(i => i.sector);
             const data = items.map(i => i.value);
             const colorsArr = allocationColors();
             const colors = items.map((_, i) => colorsArr[i % colorsArr.length]);
@@ -6712,7 +6932,11 @@
                                 callbacks: {
                                     label: function(ctx) {
                                         const pct = total > 0 ? (ctx.parsed / total * 100).toFixed(1) : 0;
-                                        return `${ctx.label}: ¥${ctx.parsed.toFixed(0)} (${pct}%)`;
+                                        const funds = items[ctx.dataIndex].funds;
+                                        const fundList = funds.length <= 3
+                                            ? funds.map(f => f.name).join('、')
+                                            : funds.slice(0, 2).map(f => f.name).join('、') + ' 等' + funds.length + '只';
+                                        return [`${ctx.label}: ¥${ctx.parsed.toFixed(0)} (${pct}%)`, fundList];
                                     }
                                 }
                             }
@@ -6721,15 +6945,13 @@
                 });
             }
 
-            // 更新图例
             const legendEl = document.getElementById('allocationLegend');
             if (legendEl) {
-                legendEl.innerHTML = items.slice(0, 6).map((item, i) => {
+                legendEl.innerHTML = items.slice(0, 8).map((item, i) => {
                     const pct = total > 0 ? (item.value / total * 100).toFixed(1) : '0';
-                    const name = item.name.length > 5 ? item.name.slice(0, 5) + '…' : item.name;
                     return `<div class="allocation-legend-item">
                         <span class="allocation-legend-dot" style="background:${colors[i]}"></span>
-                        <span class="allocation-legend-name">${name}</span>
+                        <span class="allocation-legend-name">${item.sector}</span>
                         <span class="allocation-legend-pct">${pct}%</span>
                     </div>`;
                 }).join('');
@@ -7571,11 +7793,7 @@
                     `;
                 }
 
-                // 持有/自选标识
                 const hasPosition = posInfo && posInfo.totalShares > 0;
-                const fundBadge = hasPosition 
-                    ? '<span class="fund-badge holding">持有</span>' 
-                    : '<span class="fund-badge watching">自选</span>';
 
                 return `
                     <div class="fund-card ${hasPosition ? 'holding' : 'watching'}" draggable="true" data-code="${code}">
@@ -7583,7 +7801,7 @@
                             <div class="fund-title">
                                 <div class="fund-name">
                                     <span>${data.name}</span>
-                                    ${fundBadge}
+                                    <span class="fund-sector-tag ${loadFundSectors()[code] ? '' : 'auto'}" onclick="event.stopPropagation(); openSectorPicker('${code}')" title="点击设置板块，用于总览饼图">${getFundSector(code, data.name)}</span>
                                 </div>
                                 <div class="fund-meta">
                                     <span class="fund-code">${data.fundcode}</span>
