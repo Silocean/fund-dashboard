@@ -32,6 +32,7 @@
             --border-color: #e0e0e0;
             --input-bg: white;
             --stat-bg: #f8f9fa;
+            --overview-block-bg: #f0f2f5;
             --data-bar-bg: #f8f9fa;
             --position-bg: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
             --dropdown-bg: white;
@@ -53,6 +54,7 @@
             --border-color: #3a3a5c;
             --input-bg: #2a2a4a;
             --stat-bg: #252545;
+            --overview-block-bg: #2a2a4a;
             --data-bar-bg: #252545;
             --position-bg: linear-gradient(135deg, #1e1e3a 0%, #2a2a4a 100%);
             --dropdown-bg: #2a2a4a;
@@ -1125,7 +1127,7 @@
             color: var(--text-muted);
             padding: 4px 10px;
             border-radius: 8px;
-            background: var(--stat-bg);
+            background: var(--overview-block-bg);
             border: 1px solid var(--border-color);
         }
 
@@ -1137,7 +1139,7 @@
             margin-top: 14px;
             padding: 14px 18px;
             flex-wrap: wrap;
-            background: var(--stat-bg);
+            background: var(--overview-block-bg);
             border-radius: 12px;
             border: 1px solid var(--border-color);
         }
@@ -1236,7 +1238,7 @@
             border-radius: 12px;
             background: var(--stat-bg);
             transition: transform 0.2s, box-shadow 0.2s;
-            border: 1px solid transparent;
+            border: 1px solid var(--border-color);
         }
 
         .stat-item:hover {
@@ -1246,6 +1248,7 @@
 
         .stat-item.stat-primary {
             background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            border-color: transparent;
         }
 
         .stat-item.stat-primary .stat-label,
@@ -1254,8 +1257,8 @@
         }
 
         .stat-item.stat-highlight {
-            background: var(--stat-bg);
-            border: 2px solid var(--border-color);
+            background: var(--hover-bg);
+            border: 2px solid var(--primary);
         }
 
         .stat-item.stat-highlight .stat-label {
@@ -1323,9 +1326,14 @@
             color: white;
         }
 
-        /* 累计收益卡片样式 */
+        /* 累计收益卡片样式（浅色：粉紫渐变；深色：主色系渐变以统一风格） */
         .stat-item.stat-cumulative {
             background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            border-color: transparent;
+        }
+
+        [data-theme="dark"] .stat-item.stat-cumulative {
+            background: linear-gradient(135deg, #7c3aed 0%, #06b6d4 100%);
         }
 
         .stat-item.stat-cumulative .stat-label,
@@ -1367,7 +1375,7 @@
             grid-template-columns: 200px 1fr;
             gap: 14px;
             align-items: stretch;
-            background: var(--stat-bg);
+            background: var(--overview-block-bg);
             border-radius: 12px;
             padding: 14px;
             border: 1px solid var(--border-color);
