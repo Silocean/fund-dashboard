@@ -3621,6 +3621,93 @@
             .confirm-final-title {
                 font-size: 18px;
             }
+
+            /* 列表模式：手机端改为网格布局，避免拥挤与信息被裁切 */
+            #fundsContainer.fund-list {
+                border-radius: 12px;
+            }
+
+            .fund-list-header {
+                display: grid;
+                grid-template-columns: 1fr auto;
+                grid-template-rows: auto auto auto;
+                gap: 8px 12px;
+                padding: 10px 12px;
+                font-size: 11px;
+            }
+
+            .fund-list-header .list-name { grid-column: 1; grid-row: 1; text-align: left; }
+            .fund-list-header .list-pct { grid-column: 2; grid-row: 1; min-width: 56px; }
+            .fund-list-header .list-val { grid-column: 1; grid-row: 2; text-align: left; }
+            .fund-list-header .list-profit-cell { grid-column: 2; grid-row: 2; min-width: 56px; }
+            .fund-list-header .list-sparkline { grid-column: 1; grid-row: 3; text-align: left; max-width: 120px; }
+            .fund-list-header .list-actions { grid-column: 2; grid-row: 3; min-width: 0; justify-content: flex-end; }
+
+            .fund-list-item {
+                display: grid;
+                grid-template-columns: 1fr auto;
+                grid-template-rows: auto auto auto;
+                gap: 8px 12px;
+                padding: 12px;
+                min-height: unset;
+                align-items: center;
+            }
+
+            .fund-list-item .list-name {
+                grid-column: 1;
+                grid-row: 1;
+                min-width: 0;
+            }
+
+            .fund-list-item .list-pct {
+                grid-column: 2;
+                grid-row: 1;
+                min-width: 56px;
+                width: auto;
+                font-size: 15px;
+            }
+
+            .fund-list-item .list-val {
+                grid-column: 1;
+                grid-row: 2;
+                min-width: 0;
+                font-size: 12px;
+                text-align: left;
+            }
+
+            .fund-list-item .list-profit-cell {
+                grid-column: 2;
+                grid-row: 2;
+                min-width: 56px;
+                width: auto;
+                font-size: 12px;
+            }
+
+            .fund-list-item .list-sparkline {
+                grid-column: 1;
+                grid-row: 3;
+                min-width: 0;
+                width: 100%;
+                max-width: 120px;
+                height: 28px;
+            }
+
+            .fund-list-item .list-actions {
+                grid-column: 2;
+                grid-row: 3;
+                min-width: 0;
+                width: auto;
+                justify-content: flex-end;
+            }
+
+            .fund-list-item .list-name-main {
+                font-size: 14px;
+            }
+
+            .fund-list-item .list-name-code,
+            .fund-list-item .list-name-holding {
+                font-size: 11px;
+            }
         }
 
         @media (max-width: 480px) {
@@ -3702,6 +3789,19 @@
 
             .data-val-num {
                 font-size: 13px;
+            }
+
+            /* 列表模式：超小屏进一步收紧，当日走势缩小以留出空间 */
+            .fund-list-item .list-sparkline {
+                max-width: 90px;
+                height: 24px;
+            }
+
+            .fund-list-item .list-actions a,
+            .fund-list-item .list-actions button {
+                min-height: 36px;
+                padding: 6px 10px;
+                font-size: 12px;
             }
         }
         /* 页面底部Footer：与页面背景一致，无单独背景 */
