@@ -794,8 +794,10 @@
         }
         .fund-list-item .list-name-holding .holding-profit { color: #e63946; }
         .fund-list-item .list-name-holding .holding-loss { color: #059669; }
+        .fund-list-item .list-name-holding .holding-neutral { color: #6b7280; }
         [data-theme="dark"] .fund-list-item .list-name-holding .holding-profit { color: #f87171; }
         [data-theme="dark"] .fund-list-item .list-name-holding .holding-loss { color: #34d399; }
+        [data-theme="dark"] .fund-list-item .list-name-holding .holding-neutral { color: #6b7280; }
 
         .fund-list-item .list-pct {
             font-size: 16px;
@@ -827,6 +829,7 @@
 
         .fund-list-item .list-profit.positive { color: #ff4d4f; }
         .fund-list-item .list-profit.negative { color: #00b96b; }
+        .fund-list-item .list-profit.neutral { color: #6b7280; }
 
         .fund-list-item .list-profit-cell {
             min-width: 72px;
@@ -1832,9 +1835,10 @@
             color: #00b96b;
         }
 
+        /* 收益为 0 时用灰色，不用绿色 */
         .historical-fund-profit .profit-amount.neutral,
         .historical-profit-summary .summary-value.neutral {
-            color: var(--text-muted);
+            color: #6b7280;
         }
 
         .historical-fund-profit .profit-sells {
@@ -2043,7 +2047,7 @@
         }
 
         .daily-profit.neutral {
-            color: var(--text-muted);
+            color: #6b7280;
             background: transparent;
         }
 
@@ -2181,6 +2185,12 @@
             border: 1px solid rgba(5, 150, 105, 0.25);
         }
 
+        .position-summary-tag.neutral {
+            color: #6b7280;
+            background: rgba(107, 114, 128, 0.12);
+            border: 1px solid rgba(107, 114, 128, 0.2);
+        }
+
         .position-actions {
             display: flex;
             gap: 5px;
@@ -2215,6 +2225,10 @@
 
         .position-value.loss {
             color: #00b96b; /* 亏损：鲜艳绿色 */
+        }
+
+        .position-value.neutral {
+            color: #6b7280;
         }
 
         [data-theme="dark"] .position-summary-tag.profit {
@@ -2267,8 +2281,10 @@
         }
         .position-entry-tag.profit { color: #e63946; }
         .position-entry-tag.loss { color: #059669; }
+        .position-entry-tag.neutral { color: #6b7280; }
         [data-theme="dark"] .position-entry-tag.profit { color: #f87171; }
         [data-theme="dark"] .position-entry-tag.loss { color: #34d399; }
+        [data-theme="dark"] .position-entry-tag.neutral { color: #6b7280; }
         .position-entry-actions {
             display: flex;
             gap: 10px;
@@ -4023,12 +4039,12 @@
                 <div class="overview-compact" id="overviewCompact">
                     <div class="overview-compact-item">
                         <span class="overview-compact-label">总市值</span>
-                        <span class="overview-compact-value" id="compactMarketValue">¥0.00</span>
+                        <span class="overview-compact-value" id="compactMarketValue">0.00</span>
                     </div>
                     <div class="overview-compact-divider"></div>
                     <div class="overview-compact-item">
                         <span class="overview-compact-label">今日</span>
-                        <span class="overview-compact-value" id="compactTodayProfit">¥0.00</span>
+                        <span class="overview-compact-value" id="compactTodayProfit">0.00</span>
                     </div>
                     <div class="overview-compact-divider"></div>
                     <div class="overview-compact-item overview-compact-sparkline-item">
@@ -4038,13 +4054,13 @@
                     <div class="overview-compact-divider"></div>
                     <div class="overview-compact-item" onclick="toggleCompactDisplay()" style="cursor: pointer;" title="点击切换金额/收益率">
                         <span class="overview-compact-label">持仓收益 <span class="compact-toggle-hint">⇄</span></span>
-                        <span class="overview-compact-value" id="compactHoldingProfit">¥0.00</span>
+                        <span class="overview-compact-value" id="compactHoldingProfit">0.00</span>
                         <span class="overview-compact-sub" id="compactHoldingRate"></span>
                     </div>
                     <div class="overview-compact-divider"></div>
                     <div class="overview-compact-item" onclick="toggleCompactDisplay()" style="cursor: pointer;" title="点击切换金额/收益率">
                         <span class="overview-compact-label">累计收益 <span class="compact-toggle-hint">⇄</span></span>
-                        <span class="overview-compact-value" id="compactCumulativeProfit">¥0.00</span>
+                        <span class="overview-compact-value" id="compactCumulativeProfit">0.00</span>
                     </div>
                     <div class="overview-compact-divider"></div>
                     <div class="overview-compact-item overview-detail-entry">
@@ -4066,15 +4082,15 @@
                     <div class="overview-stats overview-stats-4col">
                         <div class="stat-item stat-primary">
                             <div class="stat-label">总市值</div>
-                            <div class="stat-value" id="totalMarketValue">¥0.00</div>
+                            <div class="stat-value" id="totalMarketValue">0.00</div>
                         </div>
                         <div class="stat-item">
                             <div class="stat-label">持仓成本</div>
-                            <div class="stat-value" id="totalCost">¥0.00</div>
+                            <div class="stat-value" id="totalCost">0.00</div>
                         </div>
-                        <div class="stat-item">
-                            <div class="stat-label">持仓收益</div>
-                            <div class="stat-value" id="totalProfit">¥0.00</div>
+                        <div class="stat-item stat-clickable" onclick="openHoldingProfitDetail()" title="点击查看持仓收益明细">
+                            <div class="stat-label">持仓收益 <span class="stat-detail-hint">▶ 明细</span></div>
+                            <div class="stat-value" id="totalProfit">0.00</div>
                         </div>
                         <div class="stat-item">
                             <div class="stat-label">持仓收益率</div>
@@ -4086,15 +4102,15 @@
                     <div class="overview-stats overview-stats-4col">
                         <div class="stat-item stat-highlight stat-clickable" id="todayProfitCard" onclick="openTodayProfitDetail()" title="点击查看今日盈亏明细">
                             <div class="stat-label">今日盈亏 <span class="stat-detail-hint">▶ 明细</span></div>
-                            <div class="stat-value" id="todayProfit">¥0.00</div>
+                            <div class="stat-value" id="todayProfit">0.00</div>
                         </div>
                         <div class="stat-item stat-clickable" onclick="openHistoricalProfitDetail()" title="点击查看历史收益明细">
                             <div class="stat-label">历史收益（已实现） <span class="stat-detail-hint">▶ 明细</span></div>
-                            <div class="stat-value" id="historicalProfit">¥0.00</div>
+                            <div class="stat-value" id="historicalProfit">0.00</div>
                         </div>
                         <div class="stat-item stat-cumulative">
                             <div class="stat-label">累计收益</div>
-                            <div class="stat-value" id="cumulativeProfit">¥0.00</div>
+                            <div class="stat-value" id="cumulativeProfit">0.00</div>
                         </div>
                         <div class="stat-item">
                             <div class="stat-label">累计收益率 / 最大回撤</div>
@@ -4403,6 +4419,19 @@
         </div>
     </div>
 
+    <!-- 持仓收益明细模态框 -->
+    <div id="holdingProfitModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="holdingProfitModalTitle" aria-hidden="true">
+        <div class="modal-content" style="max-width: 600px;" tabindex="-1">
+            <div class="modal-header">
+                <h2 id="holdingProfitModalTitle">💼 持仓收益明细</h2>
+                <button class="close-btn" onclick="closeHoldingProfitDetail()">&times;</button>
+            </div>
+            <div id="holdingProfitContent" style="max-height: 500px; overflow-y: auto;">
+                <!-- 持仓收益明细内容 -->
+            </div>
+        </div>
+    </div>
+
     <!-- 基金详情模态框 -->
     <div id="fundDetailModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="fundDetailModalTitle" aria-hidden="true">
         <div class="modal-content" style="max-width: 650px;" tabindex="-1">
@@ -4672,14 +4701,15 @@
             return getEffectiveNavDate(tradeDate, beforeCutoff);
         }
 
-        /** 回放到 dateStr 当日结束时的持仓份额与成本（dateStr 为 YYYY-MM-DD）；按有效净值日期判断，15:00 后下单从下一交易日才计入 */
+        /** 回放到 dateStr 当日结束时的持仓份额与成本（dateStr 为 YYYY-MM-DD）；按有效净值日期判断，并按有效日排序后回放避免顺序错乱 */
         function getSharesAndCostAtDate(code, dateStr) {
             const position = state.positions[code];
             if (!position || !position.transactions) return { shares: 0, cost: 0 };
+            const upToDate = position.transactions
+                .filter(trans => getTransEffectiveDate(trans) <= dateStr)
+                .sort((a, b) => getTransEffectiveDate(a).localeCompare(getTransEffectiveDate(b)));
             let shares = 0, cost = 0;
-            position.transactions.forEach(trans => {
-                const effDate = getTransEffectiveDate(trans);
-                if (effDate > dateStr) return;
+            upToDate.forEach(trans => {
                 if (trans.type === 'buy') {
                     shares += trans.shares;
                     cost += trans.amount;
@@ -4926,13 +4956,16 @@
                 const currentNav = display.isActual ? parseFloat(display.value) : parseFloat((data && data.gsz) ? data.gsz : 0);
                 const currentValue = posInfo.totalShares * currentNav;
                 const profit = currentValue - posInfo.totalCost;
-                const profitRate = ((currentNav - posInfo.avgCost) / posInfo.avgCost * 100).toFixed(2);
-                const profitClass = profit >= 0 ? 'profit' : 'loss';
-                const profitSymbol = profit >= 0 ? '+' : '';
+                const profitRateNum = (currentNav - posInfo.avgCost) / posInfo.avgCost * 100;
+                const isZeroProfit = Math.abs(profit) < 0.005;
+                const isZeroRate = Math.abs(profitRateNum) < 0.005;
+                const profitClass = isZeroProfit ? 'neutral' : (profit >= 0 ? 'profit' : 'loss');
+                const profitAmountStr = isZeroProfit ? '0.00' : (profit >= 0 ? '+' : '') + (profit < 0 ? Math.abs(profit) : profit).toFixed(2);
+                const profitRateStr = isZeroRate ? '0.00' : (profitRateNum >= 0 ? '+' : (profitRateNum < 0 ? '-' : '')) + (profitRateNum < 0 ? Math.abs(profitRateNum) : profitRateNum).toFixed(2);
                 contentEl.innerHTML = `
                     <div class="position-summary">
-                        <span>市值 ¥${currentValue.toFixed(2)}</span>
-                        <span class="position-summary-tag ${profitClass}">${profitSymbol}¥${profit.toFixed(2)}（${profitRate >= 0 ? '+' : ''}${profitRate}%）</span>
+                        <span>市值 ${currentValue.toFixed(2)}</span>
+                        <span class="position-summary-tag ${profitClass}">${profitAmountStr}（${profitRateStr}%）</span>
                     </div>
                     <p style="margin-bottom:12px;font-size:13px;">
                         <a href="javascript:void(0)" onclick="closePositionModal(); openTransactionHistoryModal('${code}')" style="color:var(--primary);">📋 ${posInfo.transactions.length}笔交易记录</a>
@@ -4940,10 +4973,10 @@
                     <div class="position-grid">
                         <div class="position-item"><div class="position-label">持有份额</div><div class="position-value">${posInfo.totalShares.toFixed(2)}</div></div>
                         <div class="position-item"><div class="position-label">平均成本</div><div class="position-value">${posInfo.avgCost.toFixed(4)}</div></div>
-                        <div class="position-item"><div class="position-label">当前市值</div><div class="position-value">¥${currentValue.toFixed(2)}</div></div>
-                        <div class="position-item"><div class="position-label">持仓成本</div><div class="position-value">¥${posInfo.totalCost.toFixed(2)}</div></div>
-                        <div class="position-item"><div class="position-label">收益金额</div><div class="position-value ${profitClass}">${profitSymbol}¥${profit.toFixed(2)}</div></div>
-                        <div class="position-item"><div class="position-label">收益率</div><div class="position-value ${profitClass}">${profitRate >= 0 ? '+' : ''}${profitRate}%</div></div>
+                        <div class="position-item"><div class="position-label">当前市值</div><div class="position-value">${currentValue.toFixed(2)}</div></div>
+                        <div class="position-item"><div class="position-label">持仓成本</div><div class="position-value">${posInfo.totalCost.toFixed(2)}</div></div>
+                        <div class="position-item"><div class="position-label">收益金额</div><div class="position-value ${profitClass}">${profitAmountStr}</div></div>
+                        <div class="position-item"><div class="position-label">收益率</div><div class="position-value ${profitClass}">${profitRateStr}%</div></div>
                     </div>
                     <div class="position-modal-actions">
                         <button class="btn btn-primary" onclick="closePositionModal(); openBuyModal('${code}')">买入</button>
@@ -6064,11 +6097,11 @@
                     messageHtml += '</div>';
                     messageHtml += '<div class="confirm-detail-item">';
                     messageHtml += '<div class="confirm-detail-label">平均成本</div>';
-                    messageHtml += '<div class="confirm-detail-value">¥' + posInfo.avgCost.toFixed(4) + '</div>';
+                    messageHtml += '<div class="confirm-detail-value">' + posInfo.avgCost.toFixed(4) + '</div>';
                     messageHtml += '</div>';
                     messageHtml += '<div class="confirm-detail-item">';
                     messageHtml += '<div class="confirm-detail-label">持仓成本</div>';
-                    messageHtml += '<div class="confirm-detail-value highlight">¥' + posInfo.totalCost.toFixed(2) + '</div>';
+                    messageHtml += '<div class="confirm-detail-value highlight">' + posInfo.totalCost.toFixed(2) + '</div>';
                     messageHtml += '</div>';
                     messageHtml += '<div class="confirm-detail-item">';
                     messageHtml += '<div class="confirm-detail-label">交易记录</div>';
@@ -6116,7 +6149,7 @@
                     finalMessageHtml += '<div class="confirm-final-title">最后确认</div>';
                     finalMessageHtml += '<div class="confirm-final-content">';
                     finalMessageHtml += '您还持有 <strong>' + posInfo.totalShares.toFixed(2) + '</strong> 份该基金<br>';
-                    finalMessageHtml += '持仓成本 <strong>¥' + posInfo.totalCost.toFixed(2) + '</strong><br><br>';
+                    finalMessageHtml += '持仓成本 <strong>' + posInfo.totalCost.toFixed(2) + '</strong><br><br>';
                     finalMessageHtml += '<strong>删除后无法恢复！</strong>';
                     finalMessageHtml += '</div>';
                     finalMessageHtml += '<div class="confirm-final-note">💡 建议：如不再持有该基金，可将份额卖出至0，保留交易记录供日后参考</div>';
@@ -6207,24 +6240,25 @@
             return Math.max(0, posInfo.totalShares - excludeShares + soldShares);
         }
 
-        // 计算持仓信息
+        // 计算持仓信息（按有效净值日期排序后回放，保证成本分摊正确）
         function calculatePosition(code) {
             const position = state.positions[code];
             if (!position || !position.transactions || position.transactions.length === 0) {
                 return null;
             }
 
+            const sorted = position.transactions.slice().sort((a, b) => getTransEffectiveDate(a).localeCompare(getTransEffectiveDate(b)));
             let totalShares = 0;
             let totalCost = 0;
 
-            position.transactions.forEach(trans => {
+            sorted.forEach(trans => {
                 if (trans.type === 'buy') {
                     totalShares += trans.shares;
                     totalCost += trans.amount;  // 包含手续费的总成本
                 } else if (trans.type === 'sell') {
                     totalShares -= trans.shares;
                     // 卖出时按比例减少成本
-                    const sellRatio = trans.shares / (totalShares + trans.shares);
+                    const sellRatio = totalShares + trans.shares > 0 ? trans.shares / (totalShares + trans.shares) : 0;
                     totalCost -= totalCost * sellRatio;
                 }
             });
@@ -6646,7 +6680,9 @@
                 let totalSellAmount = 0;
                 let totalCostBasis = 0;
 
-                position.transactions.forEach(trans => {
+                // 与总览一致：按有效净值日期排序后回放，否则交易顺序与日期不一致时成本分摊会错，导致单只基金显示为负
+                const sorted = position.transactions.slice().sort((a, b) => getTransEffectiveDate(a).localeCompare(getTransEffectiveDate(b)));
+                sorted.forEach(trans => {
                     if (trans.type === 'buy') {
                         runningShares += trans.shares;
                         runningCost += trans.amount;
@@ -6684,20 +6720,22 @@
                 fundProfits.sort((a, b) => b.profit - a.profit);
 
                 const totalClass = totalHistorical > 0 ? 'positive' : (totalHistorical < 0 ? 'negative' : 'neutral');
-                const totalSymbol = totalHistorical > 0 ? '+' : (totalHistorical < 0 ? '' : '');
+                const totalAmountStr = (totalHistorical > 0 ? '+' : (totalHistorical < 0 ? '-' : '')) + (totalHistorical < 0 ? Math.abs(totalHistorical) : totalHistorical).toFixed(2);
 
                 let html = `
                     <div class="historical-profit-summary">
                         <div class="summary-label">历史收益合计</div>
-                        <div class="summary-value ${totalClass}">${totalSymbol}¥${totalHistorical.toFixed(2)}</div>
+                        <div class="summary-value ${totalClass}">${totalAmountStr}</div>
                     </div>
                 `;
 
                 html += fundProfits.map(fp => {
-                    const profitClass = fp.profit > 0 ? 'positive' : (fp.profit < 0 ? 'negative' : 'neutral');
-                    const profitSymbol = fp.profit > 0 ? '+' : (fp.profit < 0 ? '' : '');
-                    const profitRate = fp.totalCostBasis > 0 ? (fp.profit / fp.totalCostBasis * 100).toFixed(2) : '0.00';
-                    const rateSymbol = fp.profit >= 0 ? '+' : '';
+                    const isZeroProfit = Math.abs(fp.profit) < 0.005;
+                    const profitClass = isZeroProfit ? 'neutral' : (fp.profit > 0 ? 'positive' : 'negative');
+                    const profitAmountStr = isZeroProfit ? '0.00' : (fp.profit > 0 ? '+' : (fp.profit < 0 ? '-' : '')) + (fp.profit < 0 ? Math.abs(fp.profit) : fp.profit).toFixed(2);
+                    const profitRateNum = fp.totalCostBasis > 0 ? (fp.profit / fp.totalCostBasis * 100) : 0;
+                    const isZeroRate = Math.abs(profitRateNum) < 0.005;
+                    const profitRateStr = isZeroRate ? '0.00' : (profitRateNum > 0 ? '+' : (profitRateNum < 0 ? '-' : '')) + (profitRateNum < 0 ? Math.abs(profitRateNum) : profitRateNum).toFixed(2);
 
                     return `
                         <div class="historical-fund-item">
@@ -6705,11 +6743,11 @@
                                 <div class="historical-fund-name">${fp.name}</div>
                                 <div class="historical-fund-code">${fp.code}</div>
                                 <div class="historical-fund-detail">
-                                    卖出 ${fp.sellCount} 笔 · 收回 ¥${fp.totalSellAmount.toFixed(2)} · 成本 ¥${fp.totalCostBasis.toFixed(2)} · 收益率 ${rateSymbol}${profitRate}%
+                                    卖出 ${fp.sellCount} 笔 · 收回 ${fp.totalSellAmount.toFixed(2)} · 成本 ${fp.totalCostBasis.toFixed(2)} · 收益率 ${profitRateStr}%
                                 </div>
                             </div>
                             <div class="historical-fund-profit">
-                                <div class="profit-amount ${profitClass}">${profitSymbol}¥${fp.profit.toFixed(2)}</div>
+                                <div class="profit-amount ${profitClass}">${profitAmountStr}</div>
                                 <div class="profit-sells">${fp.sellCount} 笔卖出</div>
                             </div>
                         </div>
@@ -6727,6 +6765,85 @@
             document.getElementById('historicalProfitModal').classList.remove('active');
         }
 
+        // 打开持仓收益明细弹窗
+        function openHoldingProfitDetail() {
+            const codes = loadFundCodes();
+            const modal = document.getElementById('holdingProfitModal');
+            const content = document.getElementById('holdingProfitContent');
+
+            const items = [];
+            let totalProfit = 0;
+
+            codes.forEach(code => {
+                const data = state.fundsData[code];
+                const posInfo = calculatePosition(code);
+                if (!posInfo || posInfo.totalShares <= 0 || !data) return;
+
+                const display = getDisplayValues(data);
+                const currentNav = display.isActual ? parseFloat(display.value) : parseFloat(data.gsz);
+                if (Number.isNaN(currentNav)) return;
+                const currentValue = posInfo.totalShares * currentNav;
+                const profit = currentValue - posInfo.totalCost;
+                const rate = posInfo.totalCost > 0 ? (profit / posInfo.totalCost * 100) : 0;
+
+                items.push({
+                    code: code,
+                    name: data.name || code,
+                    currentValue: currentValue,
+                    cost: posInfo.totalCost,
+                    profit: profit,
+                    rate: rate
+                });
+                totalProfit += profit;
+            });
+
+            items.sort((a, b) => b.profit - a.profit);
+
+            const totalClass = totalProfit > 0 ? 'positive' : (totalProfit < 0 ? 'negative' : 'neutral');
+            const totalAmountStr = (totalProfit > 0 ? '+' : (totalProfit < 0 ? '-' : '')) + (totalProfit < 0 ? Math.abs(totalProfit) : totalProfit).toFixed(2);
+
+            let html = `
+                <div class="historical-profit-summary">
+                    <div class="summary-label">持仓收益合计</div>
+                    <div class="summary-value ${totalClass}">${totalAmountStr}</div>
+                </div>
+            `;
+
+            if (items.length === 0) {
+                html += '<div class="no-position" style="padding: 40px;">暂无持仓</div>';
+            } else {
+                items.forEach(item => {
+                    const isZeroProfit = Math.abs(item.profit) < 0.005;
+                    const profitClass = isZeroProfit ? 'neutral' : (item.profit > 0 ? 'positive' : 'negative');
+                    const profitAmountStr = isZeroProfit ? '0.00' : (item.profit > 0 ? '+' : (item.profit < 0 ? '-' : '')) + (item.profit < 0 ? Math.abs(item.profit) : item.profit).toFixed(2);
+                    const isZeroRate = Math.abs(item.rate) < 0.005;
+                    const rateStr = isZeroRate ? '0.00' : (item.rate > 0 ? '+' : (item.rate < 0 ? '-' : '')) + (item.rate < 0 ? Math.abs(item.rate) : item.rate).toFixed(2);
+                    html += `
+                        <div class="historical-fund-item">
+                            <div class="historical-fund-info">
+                                <div class="historical-fund-name">${item.name}</div>
+                                <div class="historical-fund-code">${item.code}</div>
+                                <div class="historical-fund-detail">
+                                    市值 ${item.currentValue.toFixed(2)} · 成本 ${item.cost.toFixed(2)} · 收益率 ${rateStr}%
+                                </div>
+                            </div>
+                            <div class="historical-fund-profit">
+                                <div class="profit-amount ${profitClass}">${profitAmountStr}</div>
+                            </div>
+                        </div>
+                    `;
+                });
+            }
+
+            content.innerHTML = html;
+            modal.classList.add('active');
+        }
+
+        // 关闭持仓收益明细弹窗
+        function closeHoldingProfitDetail() {
+            document.getElementById('holdingProfitModal').classList.remove('active');
+        }
+
         // 打开交易历史模态框
         function openTransactionHistoryModal(code) {
             state.currentModalFundCode = code;
@@ -6736,16 +6853,18 @@
             if (!position || !position.transactions || position.transactions.length === 0) {
                 content.innerHTML = '<div class="no-position" style="padding: 40px;">暂无交易记录</div>';
             } else {
-                const transHtml = position.transactions.map((trans, index) => {
+                const getTradeDateStr = (trans) => trans.tradeDate || (() => { const d = new Date(trans.date); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); })();
+                const withIndex = position.transactions.map((trans, i) => ({ trans, originalIndex: i }));
+                withIndex.sort((a, b) => getTradeDateStr(b.trans).localeCompare(getTradeDateStr(a.trans))); // 按交易日期降序，最新在上
+                const transHtml = withIndex.map(({ trans, originalIndex }) => {
                     const d = new Date(trans.date);
                     const tradeDate = trans.tradeDate || (d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'));
                     const cutoffText = trans.beforeCutoff === false ? '15:00后' : (trans.beforeCutoff === true ? '15:00前' : '');
                     const navTag = trans.navSource === 'actual' ? '<span class="nav-source-tag actual">实际</span>' : (trans.navSource === 'manual' ? '<span class="nav-source-tag manual">手动</span>' : '');
                     const typeText = trans.type === 'buy' ? '买入' : '卖出';
                     const typeClass = trans.type;
-                    
                     return `
-                        <div class="transaction-item" data-index="${index}">
+                        <div class="transaction-item" data-index="${originalIndex}">
                             <div class="transaction-info">
                                 <div>
                                     <span class="transaction-type ${typeClass}">${typeText}</span>
@@ -6754,19 +6873,18 @@
                                 </div>
                                 <div class="transaction-details">
                                     净值: ${trans.netValue.toFixed(4)} | 
-                                    ${trans.type === 'buy' ? '投入' : '收回'}: ¥${trans.amount.toFixed(2)} | 
-                                    手续费: ¥${trans.fee.toFixed(2)}
+                                    ${trans.type === 'buy' ? '投入' : '收回'}: ${trans.amount.toFixed(2)} | 
+                                    手续费: ${trans.fee.toFixed(2)}
                                 </div>
                                 <div class="transaction-date">${tradeDate} ${cutoffText}</div>
                             </div>
                             <div class="transaction-actions">
-                                <button class="trans-action-btn trans-edit-btn" onclick="editTransaction('${code}', ${index})" title="编辑">✏️</button>
-                                <button class="trans-action-btn trans-delete-btn" onclick="deleteTransaction('${code}', ${index})" title="删除">🗑️</button>
+                                <button class="trans-action-btn trans-edit-btn" onclick="editTransaction('${code}', ${originalIndex})" title="编辑">✏️</button>
+                                <button class="trans-action-btn trans-delete-btn" onclick="deleteTransaction('${code}', ${originalIndex})" title="删除">🗑️</button>
                             </div>
                         </div>
                     `;
-                }).reverse().join('');  // 倒序显示，最新的在上面
-                
+                }).join('');
                 content.innerHTML = transHtml;
             }
             
@@ -6780,7 +6898,7 @@
 
             const trans = position.transactions[index];
             const typeText = trans.type === 'buy' ? '买入' : '卖出';
-            if (!confirm(`确认删除这笔${typeText}记录？\n份额: ${trans.shares.toFixed(2)}\n金额: ¥${trans.amount.toFixed(2)}`)) return;
+            if (!confirm(`确认删除这笔${typeText}记录？\n份额: ${trans.shares.toFixed(2)}\n金额: ${trans.amount.toFixed(2)}`)) return;
 
             position.transactions.splice(index, 1);
             // 如果交易记录清空，删除整个 position
@@ -7420,23 +7538,22 @@
                     todayProfit += dailyProfit;
                 }
 
-                // 历史收益计算：回放交易记录，计算每笔卖出的已实现盈亏
+                // 历史收益计算：按有效净值日期排序后回放，计算每笔卖出的已实现盈亏
                 const position = state.positions[code];
                 if (position && position.transactions && position.transactions.length > 0) {
                     let runningShares = 0;
                     let runningCost = 0;
+                    const sorted = position.transactions.slice().sort((a, b) => getTransEffectiveDate(a).localeCompare(getTransEffectiveDate(b)));
 
-                    position.transactions.forEach(trans => {
+                    sorted.forEach(trans => {
                         if (trans.type === 'buy') {
                             runningShares += trans.shares;
                             runningCost += trans.amount;
                             totalHistoricalCost += trans.amount; // 累计所有买入成本
                         } else if (trans.type === 'sell') {
                             hasHistory = true;
-                            // 卖出时的成本基准 = 按比例分摊的持仓成本
                             const sellRatio = runningShares > 0 ? trans.shares / runningShares : 0;
                             const costBasis = runningCost * sellRatio;
-                            // 已实现收益 = 卖出所得 - 成本基准
                             historicalProfit += trans.amount - costBasis;
                             runningShares -= trans.shares;
                             runningCost -= costBasis;
@@ -7458,8 +7575,8 @@
             const holdingProfit = totalMarketValue - totalCost;
             const holdingProfitRate = totalCost > 0 ? (holdingProfit / totalCost * 100) : 0;
 
-            document.getElementById('totalMarketValue').textContent = `¥${totalMarketValue.toFixed(2)}`;
-            document.getElementById('totalCost').textContent = `¥${totalCost.toFixed(2)}`;
+            document.getElementById('totalMarketValue').textContent = `${totalMarketValue.toFixed(2)}`;
+            document.getElementById('totalCost').textContent = `${totalCost.toFixed(2)}`;
             
             const totalProfitEl = document.getElementById('totalProfit');
             animateValue(totalProfitEl, holdingProfit.toFixed(2), '', '', 400);
@@ -7496,12 +7613,12 @@
             
             // === 更新紧凑模式指标 ===
             const compactMV = document.getElementById('compactMarketValue');
-            if (compactMV) compactMV.textContent = `¥${totalMarketValue.toFixed(2)}`;
+            if (compactMV) compactMV.textContent = `${totalMarketValue.toFixed(2)}`;
 
             const todayProfitSymbol = todayProfit >= 0 ? '+' : '';
             const compactToday = document.getElementById('compactTodayProfit');
             if (compactToday) {
-                compactToday.textContent = `${todayProfitSymbol}¥${todayProfit.toFixed(2)}`;
+                compactToday.textContent = `${todayProfitSymbol}${todayProfit.toFixed(2)}`;
                 compactToday.className = 'overview-compact-value ' + (todayProfit >= 0 ? 'positive' : 'negative');
             }
 
@@ -7606,11 +7723,11 @@
                         else if (info.amount < 0) cls += ' negative';
                         else cls += ' zero';
                         const value = showAmount
-                            ? (info.amount >= 0 ? '+' : '') + '¥' + info.amount.toFixed(2)
+                            ? (info.amount >= 0 ? '+' : '') + info.amount.toFixed(2)
                             : (info.rate >= 0 ? '+' : '') + info.rate.toFixed(2) + '%';
                         valueHtml = `<span class="pnl-value">${value}</span>`;
                     }
-                    html += `<div class="${cls}" title="${dateStr}${info ? ' ' + (showAmount ? '¥' + info.amount.toFixed(2) : info.rate.toFixed(2) + '%') : ''}"><span class="pnl-label">${d}</span>${valueHtml}</div>`;
+                    html += `<div class="${cls}" title="${dateStr}${info ? ' ' + (showAmount ? info.amount.toFixed(2) : info.rate.toFixed(2) + '%') : ''}"><span class="pnl-label">${d}</span>${valueHtml}</div>`;
                 }
                 gridEl.innerHTML = html;
                 prevBtn.style.visibility = 'visible';
@@ -7635,7 +7752,7 @@
                     else if (sumAmount < 0) cls += ' negative';
                     else cls += ' zero';
                     const value = showAmount
-                        ? (sumAmount >= 0 ? '+' : '') + '¥' + sumAmount.toFixed(2)
+                        ? (sumAmount >= 0 ? '+' : '') + sumAmount.toFixed(2)
                         : (rate >= 0 ? '+' : '') + rate.toFixed(2) + '%';
                     html += `<div class="${cls}"><span class="pnl-value">${value}</span><span class="pnl-label">${m}月</span></div>`;
                 }
@@ -7662,7 +7779,7 @@
                     else if (sumAmount < 0) cls += ' negative';
                     else cls += ' zero';
                     const value = showAmount
-                        ? (sumAmount >= 0 ? '+' : '') + '¥' + sumAmount.toFixed(2)
+                        ? (sumAmount >= 0 ? '+' : '') + sumAmount.toFixed(2)
                         : (rate >= 0 ? '+' : '') + rate.toFixed(2) + '%';
                     html += `<div class="${cls}"><span class="pnl-value">${value}</span><span class="pnl-label">${yr}年</span></div>`;
                 }
@@ -7707,12 +7824,12 @@
             items.sort((a, b) => b.profit - a.profit);
 
             const totalCls = totalToday > 0 ? 'positive' : (totalToday < 0 ? 'negative' : 'neutral');
-            const totalSymbol = totalToday > 0 ? '+' : (totalToday < 0 ? '' : '');
+            const totalAmountStr = (totalToday > 0 ? '+' : (totalToday < 0 ? '-' : '')) + (totalToday < 0 ? Math.abs(totalToday) : totalToday).toFixed(2);
 
             let html = `
                 <div class="historical-profit-summary">
                     <span class="summary-label">今日总盈亏</span>
-                    <span class="summary-value ${totalCls}">${totalSymbol}¥${totalToday.toFixed(2)}</span>
+                    <span class="summary-value ${totalCls}">${totalAmountStr}</span>
                 </div>
             `;
 
@@ -7720,9 +7837,11 @@
                 html += '<div class="no-position" style="padding: 30px;">暂无持仓基金</div>';
             } else {
                 items.forEach(item => {
-                    const cls = item.profit > 0 ? 'positive' : (item.profit < 0 ? 'negative' : 'neutral');
-                    const symbol = item.profit > 0 ? '+' : (item.profit < 0 ? '' : '');
-                    const pctSymbol = item.percentage >= 0 ? '+' : '';
+                    const isZeroProfit = Math.abs(item.profit) < 0.005;
+                    const cls = isZeroProfit ? 'neutral' : (item.profit > 0 ? 'positive' : 'negative');
+                    const profitAmountStr = isZeroProfit ? '0.00' : (item.profit > 0 ? '+' : (item.profit < 0 ? '-' : '')) + (item.profit < 0 ? Math.abs(item.profit) : item.profit).toFixed(2);
+                    const isZeroPct = Math.abs(item.percentage) < 0.005;
+                    const pctStr = isZeroPct ? '0.00' : (item.percentage > 0 ? '+' : (item.percentage < 0 ? '-' : '')) + (item.percentage < 0 ? Math.abs(item.percentage) : item.percentage).toFixed(2);
                     html += `
                         <div class="historical-fund-item">
                             <div class="historical-fund-info">
@@ -7730,8 +7849,8 @@
                                 <div class="historical-fund-code">${item.code}</div>
                             </div>
                             <div class="historical-fund-profit">
-                                <div class="profit-amount ${cls}">${symbol}¥${item.profit.toFixed(2)}</div>
-                                <div class="profit-sells">${pctSymbol}${item.percentage.toFixed(2)}%</div>
+                                <div class="profit-amount ${cls}">${profitAmountStr}</div>
+                                <div class="profit-sells">${pctStr}%</div>
                             </div>
                         </div>
                     `;
@@ -7820,7 +7939,7 @@
                                         const fundList = funds.length <= 3
                                             ? funds.map(f => f.name).join('、')
                                             : funds.slice(0, 2).map(f => f.name).join('、') + ' 等' + funds.length + '只';
-                                        return [`${ctx.label}: ¥${ctx.parsed.toFixed(0)} (${pct}%)`, fundList];
+                                        return [`${ctx.label}: ${ctx.parsed.toFixed(0)} (${pct}%)`, fundList];
                                     }
                                 }
                             }
@@ -7912,7 +8031,8 @@
             const endVal = parseFloat(endValue) || 0;
 
             if (Math.abs(startVal - endVal) < 0.005) {
-                el.textContent = `${prefix}${endValue}${suffix}`;
+                const amountPrefix = (suffix !== '%') ? (endVal > 0 ? '+' : '') : prefix;
+                el.textContent = `${amountPrefix}${endValue}${suffix}`;
                 return;
             }
 
@@ -7928,7 +8048,7 @@
                 if (suffix === '%') {
                     el.textContent = `${prefix}${symbol}${current.toFixed(2)}${suffix}`;
                 } else {
-                    el.textContent = `${prefix}${symbol}¥${current.toFixed(2)}`;
+                    el.textContent = `${prefix}${symbol}${current.toFixed(2)}`;
                 }
                 if (progress < 1) requestAnimationFrame(step);
             }
@@ -7969,7 +8089,7 @@
                 // 显示金额
                 if (compactHP) {
                     const s = d.holdingProfit >= 0 ? '+' : '';
-                    compactHP.textContent = `${s}¥${d.holdingProfit.toFixed(2)}`;
+                    compactHP.textContent = `${s}${d.holdingProfit.toFixed(2)}`;
                     compactHP.className = 'overview-compact-value ' + (d.holdingProfit >= 0 ? 'positive' : 'negative');
                 }
                 if (compactHR) {
@@ -7979,7 +8099,7 @@
                 }
                 if (compactCP) {
                     const s = d.cumulativeProfit >= 0 ? '+' : '';
-                    compactCP.textContent = `${s}¥${d.cumulativeProfit.toFixed(2)}`;
+                    compactCP.textContent = `${s}${d.cumulativeProfit.toFixed(2)}`;
                     compactCP.className = 'overview-compact-value ' + (d.cumulativeProfit >= 0 ? 'positive' : 'negative');
                 }
             }
@@ -8064,23 +8184,26 @@
 
             allTransactions.sort((a, b) => new Date(a.date) - new Date(b.date));
 
-            // 计算每一天的累计投入成本和持仓净值
-            // 收集所有交易日期作为时间节点
+            // 时间轴：从首笔交易日到今天的每个交易日（按天粒度）
             const dateSet = new Set();
             allTransactions.forEach(t => {
-                const d = new Date(t.date).toLocaleDateString('zh-CN');
-                dateSet.add(d);
+                dateSet.add(t.tradeDate || toDateStr(new Date(t.date)));
+                dateSet.add(getTransEffectiveDate(t));
             });
-            // 加入今天
-            dateSet.add(new Date().toLocaleDateString('zh-CN'));
+            dateSet.add(toDateStr(new Date()));
+            const sortedSet = Array.from(dateSet).sort();
+            const firstDateStr = sortedSet[0];
+            const endDateStr = toDateStr(new Date());
+            let d = new Date(firstDateStr + 'T12:00:00');
+            const end = new Date(endDateStr + 'T12:00:00');
+            const dates = [];
+            while (d <= end) {
+                if (isTradingDay(d)) dates.push(toDateStr(d));
+                d.setDate(d.getDate() + 1);
+            }
 
-            const dates = Array.from(dateSet).sort((a, b) => {
-                const da = new Date(a.replace(/\//g, '-'));
-                const db = new Date(b.replace(/\//g, '-'));
-                return da - db;
-            });
-
-            // 对每个时间点，回放到该时刻的交易，计算持仓收益 + 已实现收益
+            // 每个时间点：按当日历史净值算持仓市值，按有效日回放算已实现收益
+            const todayStr = toDateStr(new Date());
             const dataPoints = [];
             const holdingProfitPoints = [];
             const historicalProfitPoints = [];
@@ -8088,6 +8211,7 @@
             dates.forEach(dateStr => {
                 let totalHoldingProfit = 0;
                 let totalHistoricalProfit = 0;
+                const isToday = dateStr === todayStr;
 
                 codes.forEach(code => {
                     const position = state.positions[code];
@@ -8097,14 +8221,11 @@
                     let runningCost = 0;
                     let realizedProfit = 0;
 
-                    // 回放到 dateStr 为止的交易
-                    position.transactions.forEach(trans => {
-                        const tDate = new Date(trans.date).toLocaleDateString('zh-CN');
-                        // 对比日期字符串（同格式）
-                        const tTime = new Date(trans.date).getTime();
-                        const endOfDate = new Date(dateStr.replace(/\//g, '-')).getTime() + 86400000;
-                        if (tTime > endOfDate) return;
-
+                    // 只考虑有效日 <= dateStr 的交易，并按有效日排序后回放，避免顺序错乱导致已实现收益算错
+                    const upToDate = position.transactions
+                        .filter(trans => getTransEffectiveDate(trans) <= dateStr)
+                        .sort((a, b) => getTransEffectiveDate(a).localeCompare(getTransEffectiveDate(b)));
+                    upToDate.forEach(trans => {
                         if (trans.type === 'buy') {
                             runningShares += trans.shares;
                             runningCost += trans.amount;
@@ -8119,15 +8240,20 @@
 
                     totalHistoricalProfit += realizedProfit;
 
-                    // 对于持仓收益，用当前最新估值计算（简化：所有节点用当前净值）
-                    if (runningShares > 0) {
-                        const data = state.fundsData[code];
-                        if (data) {
-                            const display = getDisplayValues(data);
-                            const currentNav = display.isActual ? parseFloat(display.value) : parseFloat(data.gsz);
-                            const currentValue = runningShares * currentNav;
-                            totalHoldingProfit += currentValue - runningCost;
+                    // 持仓收益：历史日期用该日净值，今日用总览一致的最新展示净值，使折线末端与「累计收益」一致
+                    const { shares, cost } = getSharesAndCostAtDate(code, dateStr);
+                    if (shares > 0) {
+                        let nav = null;
+                        if (isToday) {
+                            const data = state.fundsData[code];
+                            if (data) {
+                                const display = getDisplayValues(data);
+                                const v = display.isActual ? parseFloat(display.value) : parseFloat(data.gsz);
+                                if (!Number.isNaN(v)) nav = v;
+                            }
                         }
+                        if (nav == null) nav = getNavOnOrBefore(code, dateStr);
+                        if (nav != null) totalHoldingProfit += shares * nav - cost;
                     }
                 });
 
@@ -8169,10 +8295,14 @@
                 }
             }
 
-            // 格式化日期标签（只显示月/日）
+            // 格式化日期标签：跨年时显示年份（如 24/12/31），否则只显示月/日
+            const yearsInRange = new Set(filteredDates.map(d => (d.split('-')[0] || '')));
+            const showYear = yearsInRange.size > 1;
             const labels = filteredDates.map(d => {
-                const parts = d.split('/');
-                return parts.length >= 3 ? `${parts[1]}/${parts[2]}` : d;
+                const parts = d.split('-');
+                if (parts.length < 3) return d;
+                if (showYear) return `${parts[0].slice(-2)}/${parts[1]}/${parts[2]}`;
+                return `${parts[1]}/${parts[2]}`;
             });
 
             // 累计收益线颜色：正红负绿
@@ -8271,7 +8401,7 @@
                                 label: function(context) {
                                     const val = context.parsed.y;
                                     const symbol = val >= 0 ? '+' : '';
-                                    return `${context.dataset.label}: ${symbol}¥${val.toFixed(2)}`;
+                                    return `${context.dataset.label}: ${symbol}${val.toFixed(2)}`;
                                 }
                             }
                         }
@@ -8291,7 +8421,7 @@
                             display: true,
                             ticks: {
                                 callback: function(value) {
-                                    return (value >= 0 ? '+' : '') + '¥' + value.toFixed(0);
+                                    return (value >= 0 ? '+' : '') + value.toFixed(0);
                                 },
                                 font: { size: 10 }
                             },
@@ -8348,10 +8478,11 @@
                 const yesterdayValue = parseFloat(data.dwjz);
                 const eligibleShares = getSharesEligibleForTodayProfit(code);
                 const dailyProfit = eligibleShares * yesterdayValue * (percentage / 100);
-                const dailyProfitSymbol = dailyProfit > 0 ? '+' : (dailyProfit < 0 ? '' : '');
-                const dailyProfitClass = dailyProfit > 0 ? 'positive' : (dailyProfit < 0 ? 'negative' : 'neutral');
+                const isZeroDaily = Math.abs(dailyProfit) < 0.005;
+                const dailyProfitSymbol = isZeroDaily ? '' : (dailyProfit > 0 ? '+' : '');
+                const dailyProfitClass = isZeroDaily ? 'neutral' : (dailyProfit > 0 ? 'positive' : 'negative');
                 dailyProfitEl.className = 'daily-profit ' + dailyProfitClass;
-                dailyProfitEl.textContent = dailyProfitSymbol + '¥' + dailyProfit.toFixed(2);
+                dailyProfitEl.textContent = dailyProfitSymbol + (isZeroDaily ? '0.00' : dailyProfit.toFixed(2));
             }
 
             // 3. 更新净值和估算/实际值（新布局：.data-val-num）
@@ -8375,15 +8506,18 @@
                 const currentNav = display.isActual ? parseFloat(display.value) : parseFloat(data.gsz);
                 const currentValue = posInfo.totalShares * currentNav;
                 const profit = currentValue - posInfo.totalCost;
-                const profitRate = ((currentNav - posInfo.avgCost) / posInfo.avgCost * 100).toFixed(2);
-                const profitClass = profit >= 0 ? 'profit' : 'loss';
-                const profitSymbol = profit >= 0 ? '+' : '';
+                const profitRateNum = (currentNav - posInfo.avgCost) / posInfo.avgCost * 100;
+                const isZeroProfit = Math.abs(profit) < 0.005;
+                const isZeroRate = Math.abs(profitRateNum) < 0.005;
+                const profitClass = isZeroProfit ? 'neutral' : (profit >= 0 ? 'profit' : 'loss');
+                const profitAmountStr = isZeroProfit ? '0.00' : (profit >= 0 ? '+' : '') + (profit < 0 ? Math.abs(profit) : profit).toFixed(2);
+                const profitRateStr = isZeroRate ? '0.00' : (profitRateNum >= 0 ? '+' : '') + (profitRateNum < 0 ? Math.abs(profitRateNum) : profitRateNum).toFixed(2);
                 const mktEl = realtimeTab.querySelector('.position-entry-mkt');
                 const tagEl = realtimeTab.querySelector('.position-entry-tag');
-                if (mktEl) mktEl.textContent = '¥' + currentValue.toFixed(2);
+                if (mktEl) mktEl.textContent = currentValue.toFixed(2);
                 if (tagEl) {
                     tagEl.className = 'position-entry-tag ' + profitClass;
-                    tagEl.textContent = profitSymbol + '¥' + profit.toFixed(2) + '（' + (profitRate >= 0 ? '+' : '') + profitRate + '%）';
+                    tagEl.textContent = profitAmountStr + '（' + profitRateStr + '%）';
                 }
             }
 
@@ -8510,9 +8644,11 @@
                         const yesterdayValue = parseFloat(data.dwjz);
                         const eligibleShares = getSharesEligibleForTodayProfit(code);
                         const dailyProfit = eligibleShares * yesterdayValue * (percentage / 100);
-                        const dpClass = dailyProfit > 0 ? 'positive' : dailyProfit < 0 ? 'negative' : '';
-                        const dpSymbol = dailyProfit > 0 ? '+' : (dailyProfit < 0 ? '' : '');
-                        dailyProfitStr = `<span class="list-profit ${dpClass}">${dpSymbol}¥${dailyProfit.toFixed(2)}</span>`;
+                        const isZeroDaily = Math.abs(dailyProfit) < 0.005;
+                        const dpClass = isZeroDaily ? 'neutral' : (dailyProfit > 0 ? 'positive' : 'negative');
+                        const dpSymbol = isZeroDaily ? '' : (dailyProfit > 0 ? '+' : '');
+                        const dailyAmountStr = isZeroDaily ? '0.00' : (dailyProfit < 0 ? '-' : dpSymbol) + (dailyProfit < 0 ? Math.abs(dailyProfit) : dailyProfit).toFixed(2);
+                        dailyProfitStr = `<span class="list-profit ${dpClass}">${dailyAmountStr}</span>`;
                     }
                     const rowClass = hasPosition ? 'holding' : 'watching';
                     const dayHistory = state.historyData[code];
@@ -8523,12 +8659,14 @@
                         const currentValue = posInfo.totalShares * currentNav;
                         const profit = currentValue - posInfo.totalCost;
                         const profitRateNum = (currentNav - posInfo.avgCost) / posInfo.avgCost * 100;
-                        const profitRate = profitRateNum.toFixed(2);
-                        const profitClass = profit >= 0 ? 'holding-profit' : 'holding-loss';
-                        const profitSymbol = profit >= 0 ? '+' : '';
-                        const valueStr = '¥' + currentValue.toFixed(2);
-                        const rateStr = profitRateNum === 0 ? '0.00%' : (profitRateNum > 0 ? '+' : '') + profitRate + '%';
-                        const fullTitle = '市值 ¥' + currentValue.toFixed(2) + ' · 收益 ' + profitSymbol + '¥' + profit.toFixed(2) + '（' + rateStr + '）';
+                        const isZeroProfit = Math.abs(profit) < 0.005;
+                        const isZeroRate = Math.abs(profitRateNum) < 0.005;
+                        const profitClass = isZeroProfit ? 'holding-neutral' : (profit >= 0 ? 'holding-profit' : 'holding-loss');
+                        const profitSymbol = isZeroProfit ? '' : (profit >= 0 ? '+' : '');
+                        const valueStr = currentValue.toFixed(2);
+                        const profitAmountStr = isZeroProfit ? '0.00' : (profit < 0 ? '' : profitSymbol) + (profit < 0 ? Math.abs(profit) : profit).toFixed(2);
+                        const rateStr = isZeroRate ? '0.00%' : (profitRateNum > 0 ? '+' : (profitRateNum < 0 ? '-' : '')) + (profitRateNum < 0 ? Math.abs(profitRateNum) : profitRateNum).toFixed(2) + '%';
+                        const fullTitle = '市值 ' + currentValue.toFixed(2) + ' · 收益 ' + profitAmountStr + '（' + rateStr + '）';
                         nameSubHtml = `<div class="list-name-holding"><a href="javascript:void(0)" class="list-holding-link" onclick="openPositionModal('${code}')" title="${fullTitle}">${valueStr}<span class="list-holding-rate ${profitClass}">${rateStr}</span></a></div>`;
                     } else {
                         nameSubHtml = `<div class="list-name-code">${data.fundcode}</div>`;
@@ -8596,11 +8734,13 @@
                     const yesterdayValue = parseFloat(data.dwjz);
                     const eligibleShares = getSharesEligibleForTodayProfit(code);
                     const dailyProfit = eligibleShares * yesterdayValue * (percentage / 100);
-                    const dailyProfitSymbol = dailyProfit > 0 ? '+' : (dailyProfit < 0 ? '' : '');
-                    const dailyProfitClass = dailyProfit > 0 ? 'positive' : (dailyProfit < 0 ? 'negative' : 'neutral');
+                    const isZeroDaily = Math.abs(dailyProfit) < 0.005;
+                    const dailyProfitSymbol = isZeroDaily ? '' : (dailyProfit > 0 ? '+' : '');
+                    const dailyProfitClass = isZeroDaily ? 'neutral' : (dailyProfit > 0 ? 'positive' : 'negative');
+                    const dailyAmountStr = isZeroDaily ? '0.00' : (dailyProfit < 0 ? '' : dailyProfitSymbol) + (dailyProfit < 0 ? Math.abs(dailyProfit) : dailyProfit).toFixed(2);
                     dailyProfitHtml = `
                         <div class="daily-profit ${dailyProfitClass}">
-                            ${dailyProfitSymbol}¥${dailyProfit.toFixed(2)}
+                            ${dailyAmountStr}
                         </div>
                     `;
                 }
@@ -8610,15 +8750,18 @@
                     const currentNav = display.isActual ? parseFloat(display.value) : parseFloat(data.gsz);
                     const currentValue = posInfo.totalShares * currentNav;
                     const profit = currentValue - posInfo.totalCost;
-                    const profitRate = ((currentNav - posInfo.avgCost) / posInfo.avgCost * 100).toFixed(2);
-                    const profitClass = profit >= 0 ? 'profit' : 'loss';
-                    const profitSymbol = profit >= 0 ? '+' : '';
+                    const profitRateNum = (currentNav - posInfo.avgCost) / posInfo.avgCost * 100;
+                    const isZeroProfit = Math.abs(profit) < 0.005;
+                    const isZeroRate = Math.abs(profitRateNum) < 0.005;
+                    const profitClass = isZeroProfit ? 'neutral' : (profit >= 0 ? 'profit' : 'loss');
+                    const profitAmountStr = isZeroProfit ? '0.00' : (profit >= 0 ? '+' : '') + (profit < 0 ? Math.abs(profit) : profit).toFixed(2);
+                    const profitRateStr = isZeroRate ? '0.00' : (profitRateNum > 0 ? '+' : (profitRateNum < 0 ? '-' : '')) + (profitRateNum < 0 ? Math.abs(profitRateNum) : profitRateNum).toFixed(2);
                     positionHtml = `
                         <div class="position-entry" data-code="${code}">
                             <div class="position-entry-click" onclick="openPositionModal('${code}')">
                                 <span>💼 持仓</span>
-                                <span class="position-entry-mkt">¥${currentValue.toFixed(2)}</span>
-                                <span class="position-entry-tag ${profitClass}">${profitSymbol}¥${profit.toFixed(2)}（${profitRate >= 0 ? '+' : ''}${profitRate}%）</span>
+                                <span class="position-entry-mkt">${currentValue.toFixed(2)}</span>
+                                <span class="position-entry-tag ${profitClass}">${profitAmountStr}（${profitRateStr}%）</span>
                             </div>
                             <div class="position-entry-actions" onclick="event.stopPropagation()">
                                 <button class="btn btn-secondary" onclick="openBuyModal('${code}')">买入</button>
@@ -8840,11 +8983,11 @@
                         </div>
                         <div class="detail-pos-item">
                             <div class="detail-pos-label">持仓市值</div>
-                            <div class="detail-pos-value">¥${mv.toFixed(2)}</div>
+                            <div class="detail-pos-value">${mv.toFixed(2)}</div>
                         </div>
                         <div class="detail-pos-item">
                             <div class="detail-pos-label">浮动盈亏</div>
-                            <div class="detail-pos-value ${cls}">${sym}¥${profit.toFixed(2)} (${sym}${profitRate.toFixed(2)}%)</div>
+                            <div class="detail-pos-value ${cls}">${sym}${profit.toFixed(2)} (${sym}${profitRate.toFixed(2)}%)</div>
                         </div>
                     </div>
                 `;
@@ -8915,7 +9058,7 @@
                         html += `
                             <div class="detail-fee-item">
                                 <div class="detail-fee-label">起购金额</div>
-                                <div class="detail-fee-value">¥${details.minAmount}</div>
+                                <div class="detail-fee-value">${details.minAmount}</div>
                             </div>
                         `;
                     }
@@ -9504,7 +9647,7 @@
                                         if (infos && infos.length > 0) {
                                             return infos.map(t => {
                                                 const dateStr = new Date(t.date).toLocaleDateString('zh-CN');
-                                                return `▲ 买入 ¥${t.amount.toFixed(2)}｜净值 ${t.netValue.toFixed(4)}｜${t.shares.toFixed(2)}份`;
+                                                return `▲ 买入 ${t.amount.toFixed(2)}｜净值 ${t.netValue.toFixed(4)}｜${t.shares.toFixed(2)}份`;
                                             });
                                         }
                                         return '▲ 买入点';
@@ -9910,6 +10053,12 @@
             document.getElementById('historicalProfitModal').addEventListener('click', (e) => {
                 if (e.target.id === 'historicalProfitModal') {
                     closeHistoricalProfitDetail();
+                }
+            });
+
+            document.getElementById('holdingProfitModal').addEventListener('click', (e) => {
+                if (e.target.id === 'holdingProfitModal') {
+                    closeHoldingProfitDetail();
                 }
             });
 
