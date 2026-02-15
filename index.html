@@ -694,6 +694,10 @@
         }
         .fund-list-header .list-col-label { font-weight: 600; }
         .fund-list-header .list-col-date { font-size: 10px; font-weight: 400; opacity: 0.85; }
+        .fund-list-header .list-col-sortable { cursor: pointer; user-select: none; display: inline-flex; align-items: center; gap: 2px; }
+        .fund-list-header .list-col-sortable:hover { opacity: 0.9; }
+        .fund-list-header .list-col-sort-arrow { font-size: 10px; opacity: 0.9; }
+        .fund-list-header .list-col-sort-default { opacity: 0.5; font-weight: 400; }
         .fund-list-header .list-pct { min-width: 72px; width: 72px; flex-shrink: 0; text-align: right; }
         .fund-list-header .list-val { min-width: 56px; width: 56px; flex-shrink: 0; text-align: right; }
         .fund-list-header .list-profit-cell { min-width: 72px; width: 72px; flex-shrink: 0; text-align: right; }
@@ -4558,6 +4562,7 @@
             historyData: {},
             loadingFundCodes: new Set(),
             sortOrder: 'default',
+            listSort: null, // { by: 'pct'|'dailyProfit', dir: 'asc'|'desc' } 列表表头点击排序，null 表示默认顺序
             currentMainView: 'holding',
             fundListViewMode: localStorage.getItem('fundListViewMode') || 'card',
             positions: {},
@@ -7543,7 +7548,28 @@
         // 改变排序方式
         function changeSortOrder() {
             state.sortOrder = document.getElementById('sortSelect').value;
+            state.listSort = state.sortOrder === 'default' ? null : { by: 'pct', dir: state.sortOrder };
             localStorage.setItem('sortOrder', state.sortOrder);
+            try { localStorage.setItem('listSort', state.listSort ? JSON.stringify(state.listSort) : ''); } catch (e) {}
+            renderFunds();
+        }
+
+        // 列表表头点击排序（涨跌幅 / 今日盈亏），三档循环：默认 → 降序 → 升序 → 默认
+        function sortListBy(by) {
+            const cur = state.listSort;
+            if (!cur || cur.by !== by) {
+                state.listSort = { by: by, dir: 'desc' };
+            } else if (cur.dir === 'desc') {
+                state.listSort = { by: by, dir: 'asc' };
+            } else {
+                state.listSort = null; // 恢复默认
+            }
+            // 与顶部下拉框联动
+            state.sortOrder = state.listSort && state.listSort.by === 'pct' ? state.listSort.dir : 'default';
+            localStorage.setItem('sortOrder', state.sortOrder);
+            const sel = document.getElementById('sortSelect');
+            if (sel) sel.value = state.sortOrder;
+            try { localStorage.setItem('listSort', state.listSort ? JSON.stringify(state.listSort) : ''); } catch (e) {}
             renderFunds();
         }
 
@@ -7554,6 +7580,17 @@
                 state.sortOrder = saved;
                 document.getElementById('sortSelect').value = saved;
             }
+            try {
+                const listSaved = localStorage.getItem('listSort');
+                if (listSaved) {
+                    state.listSort = JSON.parse(listSaved);
+                    const sel = document.getElementById('sortSelect');
+                    if (state.listSort) {
+                        state.sortOrder = state.listSort.by === 'pct' ? state.listSort.dir : 'default';
+                        if (sel) sel.value = state.sortOrder;
+                    }
+                }
+            } catch (e) {}
         }
 
         // 更新总览看板
@@ -8694,25 +8731,29 @@
                 return;
             }
 
-            // 根据排序方式对显示的基金代码进行排序
-            if (state.sortOrder !== 'default') {
+            // 根据排序方式对显示的基金代码进行排序（列表表头点击优先 listSort，否则用 sortSelect 的 sortOrder）
+            const listSort = state.listSort;
+            const sortByPct = listSort ? (listSort.by === 'pct') : (state.sortOrder !== 'default');
+            const sortByProfit = listSort && listSort.by === 'dailyProfit';
+            const sortDir = listSort ? listSort.dir : state.sortOrder;
+            if (sortByPct || sortByProfit) {
+                const mult = (sortDir === 'desc') ? 1 : -1;
                 displayCodes = [...displayCodes].sort((a, b) => {
                     const dataA = state.fundsData[a];
                     const dataB = state.fundsData[b];
-                    
-                    // 如果数据还没加载完，保持原顺序
                     if (!dataA || !dataB) return 0;
-                    
-                    const displayA = getDisplayValues(dataA);
-                    const displayB = getDisplayValues(dataB);
-                    const percentageA = displayA.percentage;
-                    const percentageB = displayB.percentage;
-                    
-                    if (state.sortOrder === 'desc') {
-                        return percentageB - percentageA; // 降序：从高到低
-                    } else {
-                        return percentageA - percentageB; // 升序：从低到高
+                    if (sortByProfit) {
+                        const posA = calculatePosition(a);
+                        const posB = calculatePosition(b);
+                        const hasA = posA && posA.totalShares > 0;
+                        const hasB = posB && posB.totalShares > 0;
+                        const profitA = hasA ? getSharesEligibleForTodayProfit(a) * parseFloat(dataA.dwjz) * (getDisplayValues(dataA).percentage / 100) : 0;
+                        const profitB = hasB ? getSharesEligibleForTodayProfit(b) * parseFloat(dataB.dwjz) * (getDisplayValues(dataB).percentage / 100) : 0;
+                        return mult * (profitB - profitA);
                     }
+                    const percentageA = getDisplayValues(dataA).percentage;
+                    const percentageB = getDisplayValues(dataB).percentage;
+                    return mult * (percentageB - percentageA);
                 });
             }
 
@@ -8725,12 +8766,16 @@
                 const dataTradeDateStr = isTradingDay(now) ? todayStr : getPreviousTradingDay(todayStr);
                 const dataTradeDate = new Date(dataTradeDateStr + 'T12:00:00');
                 const headerDateStr = (dataTradeDate.getMonth() + 1) + '/' + dataTradeDate.getDate();
+                const ls = state.listSort;
+                const defaultMark = '<span class="list-col-sort-arrow list-col-sort-default" title="默认顺序">≡</span>';
+                const pctArrow = (ls && ls.by === 'pct') ? (ls.dir === 'desc' ? '<span class="list-col-sort-arrow">↓</span>' : '<span class="list-col-sort-arrow">↑</span>') : defaultMark;
+                const profitArrow = (ls && ls.by === 'dailyProfit') ? (ls.dir === 'desc' ? '<span class="list-col-sort-arrow">↓</span>' : '<span class="list-col-sort-arrow">↑</span>') : defaultMark;
                 const listHeader = `
                     <div class="fund-list-header">
                         <div class="list-name">名称</div>
-                        <div class="list-pct"><span class="list-col-label">涨跌幅</span><span class="list-col-date">${headerDateStr}</span></div>
+                        <div class="list-pct"><span class="list-col-sortable list-col-label" onclick="sortListBy('pct')" title="点击切换：默认顺序 / 涨跌幅降序 / 涨跌幅升序">涨跌幅${pctArrow}</span><span class="list-col-date">${headerDateStr}</span></div>
                         <div class="list-val"><span class="list-col-label">估值</span><span class="list-col-date">${headerDateStr}</span></div>
-                        <div class="list-profit-cell"><span class="list-col-label">今日盈亏</span><span class="list-col-date">${headerDateStr}</span></div>
+                        <div class="list-profit-cell"><span class="list-col-sortable list-col-label" onclick="sortListBy('dailyProfit')" title="点击切换：默认顺序 / 今日盈亏降序 / 今日盈亏升序">今日盈亏${profitArrow}</span><span class="list-col-date">${headerDateStr}</span></div>
                         <div class="list-sparkline"><span class="list-col-label">当日走势</span><span class="list-col-date">${headerDateStr}</span></div>
                         <div class="list-actions">操作</div>
                     </div>`;
