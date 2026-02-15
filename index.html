@@ -1138,8 +1138,6 @@
             justify-content: space-between;
             align-items: center;
             margin-bottom: 0;
-            cursor: pointer;
-            user-select: none;
             transition: margin-bottom 0.25s;
         }
 
@@ -4072,7 +4070,7 @@
         <!-- 总览看板（首屏显示骨架，数据就绪后替换为真实内容或隐藏） -->
         <div id="overviewPanel" class="overview-panel overview-panel-skeleton" aria-busy="true">
             <div class="overview-card">
-                <div class="overview-header" onclick="openOverviewDetailModal()">
+                <div class="overview-header">
                     <h2>📊 投资总览</h2>
                     <div class="overview-date">更新时间: <span id="overviewUpdateTime">--</span></div>
                 </div>
