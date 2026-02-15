@@ -4371,11 +4371,14 @@
                         <div class="profit-trend-chart-container">
                             <div class="trend-chart-toolbar">
                                 <div class="trend-range-selector" id="trendRangeSelector">
-                                    <button class="trend-range-btn" onclick="changeTrendRange(30)">近1月</button>
-                                    <button class="trend-range-btn" onclick="changeTrendRange(90)">近3月</button>
-                                    <button class="trend-range-btn" onclick="changeTrendRange(180)">近半年</button>
-                                    <button class="trend-range-btn" onclick="changeTrendRange(365)">近1年</button>
-                                    <button class="trend-range-btn active" onclick="changeTrendRange(0)">全部</button>
+                                    <button class="trend-range-btn" data-range="week" onclick="changeTrendRange('week')">本周</button>
+                                    <button class="trend-range-btn" data-range="month" onclick="changeTrendRange('month')">本月</button>
+                                    <button class="trend-range-btn" data-range="year" onclick="changeTrendRange('year')">今年</button>
+                                    <button class="trend-range-btn" data-range="30" onclick="changeTrendRange(30)">近1月</button>
+                                    <button class="trend-range-btn" data-range="90" onclick="changeTrendRange(90)">近3月</button>
+                                    <button class="trend-range-btn" data-range="180" onclick="changeTrendRange(180)">近半年</button>
+                                    <button class="trend-range-btn" data-range="365" onclick="changeTrendRange(365)">近1年</button>
+                                    <button class="trend-range-btn active" data-range="0" onclick="changeTrendRange(0)">全部</button>
                                 </div>
                                 <div class="trend-display-selector">
                                     <button class="trend-range-btn active" id="trendDisplayAmount" onclick="changeTrendChartDisplay('amount')">收益金额</button>
@@ -8996,14 +8999,14 @@
         }
 
         // ===== 收益趋势图时间段选择 =====
-        let trendRangeDays = 0; // 0 = 全部
+        // 0=全部, 30/90/180/365=近N天, 'week'/'month'/'year'=当周/当月/当年（自然周/月/年至今）
+        let trendRange = 0;
         let profitTrendChartDisplay = 'amount'; // 'amount' | 'rate'
 
-        function changeTrendRange(days) {
-            trendRangeDays = days;
+        function changeTrendRange(value) {
+            trendRange = value;
             document.querySelectorAll('.trend-range-selector .trend-range-btn').forEach(btn => {
-                const btnDays = parseInt(btn.getAttribute('onclick').match(/\d+/)?.[0] ?? 0);
-                btn.classList.toggle('active', btnDays === days);
+                btn.classList.toggle('active', btn.dataset.range === String(value));
             });
             drawProfitTrendChart();
         }
@@ -9184,15 +9187,30 @@
             let filteredHistorical = fullHistoricalSeries.slice();
             let filteredHolding = fullHoldingSeries.slice();
 
-            if (trendRangeDays > 0) {
-                const cutoff = new Date();
-                cutoff.setDate(cutoff.getDate() - trendRangeDays);
-                const cutoffTime = cutoff.getTime();
+            if (trendRange !== 0) {
+                let startDateStr = null;
+                if (trendRange === 'week' || trendRange === 'month' || trendRange === 'year') {
+                    const now = new Date();
+                    if (trendRange === 'week') {
+                        const day = now.getDay();
+                        const toMonday = day === 0 ? 6 : day - 1;
+                        const mon = new Date(now);
+                        mon.setDate(mon.getDate() - toMonday);
+                        startDateStr = toDateStr(mon);
+                    } else if (trendRange === 'month') {
+                        startDateStr = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0') + '-01';
+                    } else {
+                        startDateStr = now.getFullYear() + '-01-01';
+                    }
+                } else {
+                    const cutoff = new Date();
+                    cutoff.setDate(cutoff.getDate() - trendRange);
+                    startDateStr = toDateStr(cutoff);
+                }
 
                 const indices = [];
                 dates.forEach((d, i) => {
-                    const dt = new Date(d.replace(/\//g, '-')).getTime();
-                    if (dt >= cutoffTime) indices.push(i);
+                    if (d >= startDateStr) indices.push(i);
                 });
 
                 if (indices.length >= 2) {
