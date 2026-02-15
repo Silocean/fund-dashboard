@@ -1528,6 +1528,18 @@
         .pnl-cell.empty {
             visibility: hidden;
         }
+        .pnl-cell.pnl-cell-day {
+            cursor: pointer;
+        }
+        .pnl-cell.pnl-cell-day:not(.empty):hover {
+            filter: brightness(0.96);
+        }
+        .pnl-cell.pnl-cell-clickable {
+            cursor: pointer;
+        }
+        .pnl-cell.pnl-cell-clickable:hover {
+            filter: brightness(0.96);
+        }
         .pnl-cell.positive {
             background: rgba(255, 77, 79, 0.12);
             color: #cf1322;
@@ -4486,6 +4498,19 @@
         </div>
     </div>
 
+    <!-- 某日盈亏明细模态框（日历点击） -->
+    <div id="dailyPnlDetailModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="dailyPnlDetailModalTitle" aria-hidden="true">
+        <div class="modal-content" style="max-width: 520px;" tabindex="-1">
+            <div class="modal-header">
+                <h2 id="dailyPnlDetailModalTitle">📅 某日盈亏明细</h2>
+                <button class="close-btn" onclick="closeDailyPnlDetailModal()">&times;</button>
+            </div>
+            <div id="dailyPnlDetailContent" style="max-height: 400px; overflow-y: auto;">
+                <!-- 某日各基金盈亏列表 -->
+            </div>
+        </div>
+    </div>
+
     <!-- 基金详情模态框 -->
     <div id="fundDetailModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="fundDetailModalTitle" aria-hidden="true">
         <div class="modal-content" style="max-width: 650px;" tabindex="-1">
@@ -4839,6 +4864,89 @@
                 map[cur] = { amount, rate, value: valueCur, prevValue: valuePrev };
             }
             return map;
+        }
+
+        /** 某日各基金的盈亏明细（用于日历点击弹窗），返回 [{ code, name, amount, rate }] */
+        function getDailyPnlByFund(dateStr) {
+            const codes = loadFundCodes();
+            const prev = getPreviousTradingDay(dateStr);
+            const list = [];
+            codes.forEach(code => {
+                const { shares: sharesPrev } = getSharesAndCostAtDate(code, prev);
+                if (sharesPrev <= 0) return;
+                const navPrev = getNavOnOrBefore(code, prev);
+                const navCur = getNavOnOrBefore(code, dateStr);
+                if (navPrev == null || navCur == null) return;
+                const amount = sharesPrev * (navCur - navPrev);
+                const valuePrevForRate = sharesPrev * navPrev;
+                const rate = valuePrevForRate > 0 ? (amount / valuePrevForRate) * 100 : 0;
+                const data = state.fundsData[code];
+                list.push({ code, name: data ? data.name : code, amount, rate });
+            });
+            return list.sort((a, b) => Math.abs(b.amount) - Math.abs(a.amount));
+        }
+
+        /** 某月各基金盈亏汇总（用于日历按月点击），返回 [{ code, name, amount, rate }] */
+        function getMonthlyPnlByFund(year, month) {
+            const monthFirst = year + '-' + String(month).padStart(2, '0') + '-01';
+            const lastDate = new Date(year, month, 0);
+            const monthLast = year + '-' + String(month).padStart(2, '0') + '-' + String(lastDate.getDate()).padStart(2, '0');
+            const dailyMap = getDailyPnlMap();
+            const sumByCode = {};
+            const nameByCode = {};
+            Object.keys(dailyMap).forEach(dateStr => {
+                if (dateStr < monthFirst || dateStr > monthLast) return;
+                getDailyPnlByFund(dateStr).forEach(item => {
+                    sumByCode[item.code] = (sumByCode[item.code] || 0) + item.amount;
+                    nameByCode[item.code] = item.name;
+                });
+            });
+            const codes = Object.keys(sumByCode);
+            if (codes.length === 0) return [];
+            const monthStartValue = {};
+            codes.forEach(code => {
+                const { shares } = getSharesAndCostAtDate(code, monthFirst);
+                const nav = getNavOnOrBefore(code, monthFirst);
+                monthStartValue[code] = shares > 0 && nav != null ? shares * nav : 0;
+            });
+            const list = codes.map(code => ({
+                code,
+                name: nameByCode[code],
+                amount: sumByCode[code],
+                rate: monthStartValue[code] > 0 ? (sumByCode[code] / monthStartValue[code]) * 100 : 0
+            }));
+            return list.sort((a, b) => Math.abs(b.amount) - Math.abs(a.amount));
+        }
+
+        /** 某年各基金盈亏汇总（用于日历按年点击），返回 [{ code, name, amount, rate }] */
+        function getYearlyPnlByFund(year) {
+            const yearFirst = year + '-01-01';
+            const yearLast = year + '-12-31';
+            const dailyMap = getDailyPnlMap();
+            const sumByCode = {};
+            const nameByCode = {};
+            Object.keys(dailyMap).forEach(dateStr => {
+                if (dateStr < yearFirst || dateStr > yearLast) return;
+                getDailyPnlByFund(dateStr).forEach(item => {
+                    sumByCode[item.code] = (sumByCode[item.code] || 0) + item.amount;
+                    nameByCode[item.code] = item.name;
+                });
+            });
+            const codes = Object.keys(sumByCode);
+            if (codes.length === 0) return [];
+            const yearStartValue = {};
+            codes.forEach(code => {
+                const { shares } = getSharesAndCostAtDate(code, yearFirst);
+                const nav = getNavOnOrBefore(code, yearFirst);
+                yearStartValue[code] = shares > 0 && nav != null ? shares * nav : 0;
+            });
+            const list = codes.map(code => ({
+                code,
+                name: nameByCode[code],
+                amount: sumByCode[code],
+                rate: yearStartValue[code] > 0 ? (sumByCode[code] / yearStartValue[code]) * 100 : 0
+            }));
+            return list.sort((a, b) => Math.abs(b.amount) - Math.abs(a.amount));
         }
 
         // 生成可选的交易日列表（最近约一年 + 未来一个月）
@@ -6846,6 +6954,108 @@
             document.getElementById('historicalProfitModal').classList.remove('active');
         }
 
+        // 打开某日盈亏明细弹窗（日历按日视图点击日期时调用）
+        function openDailyPnlDetail(dateStr) {
+            const modal = document.getElementById('dailyPnlDetailModal');
+            const titleEl = document.getElementById('dailyPnlDetailModalTitle');
+            const content = document.getElementById('dailyPnlDetailContent');
+            const dateObj = new Date(dateStr + 'T12:00:00');
+            const dateLabel = `${dateObj.getFullYear()}年${dateObj.getMonth() + 1}月${dateObj.getDate()}日`;
+            titleEl.textContent = '📅 ' + dateLabel + ' 盈亏明细';
+            const list = getDailyPnlByFund(dateStr);
+            const showAmount = state.calendarDisplay === 'amount';
+            let totalAmount = 0;
+            list.forEach(item => { totalAmount += item.amount; });
+            if (list.length === 0) {
+                content.innerHTML = '<div class="no-position" style="padding: 24px; text-align: center; color: var(--text-muted);">该日无组合盈亏数据（非交易日或尚无净值）</div>';
+            } else {
+                renderPnlDetailList(content, list, totalAmount, showAmount, 'day', dateStr);
+            }
+            modal.classList.add('active');
+        }
+
+        function closeDailyPnlDetailModal() {
+            document.getElementById('dailyPnlDetailModal').classList.remove('active');
+        }
+
+        function openMonthlyPnlDetail(year, month) {
+            const modal = document.getElementById('dailyPnlDetailModal');
+            const titleEl = document.getElementById('dailyPnlDetailModalTitle');
+            const content = document.getElementById('dailyPnlDetailContent');
+            titleEl.textContent = '📅 ' + year + '年' + month + '月 盈亏明细';
+            const showAmount = state.calendarDisplay === 'amount';
+            const list = getMonthlyPnlByFund(year, month);
+            const dailyMap = getDailyPnlMap();
+            const monthFirst = year + '-' + String(month).padStart(2, '0') + '-01';
+            let totalAmount = 0;
+            Object.keys(dailyMap).forEach(dateStr => {
+                if (dateStr >= monthFirst && dateStr <= year + '-' + String(month).padStart(2, '0') + '-31') totalAmount += dailyMap[dateStr].amount;
+            });
+            renderPnlDetailList(content, list, totalAmount, showAmount, 'month', { year, month });
+            modal.classList.add('active');
+        }
+
+        function openYearlyPnlDetail(year) {
+            const modal = document.getElementById('dailyPnlDetailModal');
+            const titleEl = document.getElementById('dailyPnlDetailModalTitle');
+            const content = document.getElementById('dailyPnlDetailContent');
+            titleEl.textContent = '📅 ' + year + '年 盈亏明细';
+            const showAmount = state.calendarDisplay === 'amount';
+            const list = getYearlyPnlByFund(year);
+            const dailyMap = getDailyPnlMap();
+            let totalAmount = 0;
+            Object.keys(dailyMap).forEach(dateStr => {
+                if (dateStr.slice(0, 4) === String(year)) totalAmount += dailyMap[dateStr].amount;
+            });
+            renderPnlDetailList(content, list, totalAmount, showAmount, 'year', { year });
+            modal.classList.add('active');
+        }
+
+        function renderPnlDetailList(content, list, totalAmount, showAmount, periodType, periodData) {
+            const isZeroTotal = Math.abs(totalAmount) < 0.005;
+            const totalCls = isZeroTotal ? '' : (totalAmount > 0 ? 'positive' : 'negative');
+            let totalStr;
+            if (showAmount) {
+                totalStr = isZeroTotal ? '0.00' : ((totalAmount >= 0 ? '+' : '-') + (totalAmount >= 0 ? totalAmount : Math.abs(totalAmount)).toFixed(2));
+            } else {
+                let rate = 0;
+                let hasRate = true;
+                if (periodType === 'day') {
+                    const dayInfo = getDailyPnlMap()[periodData];
+                    hasRate = !!dayInfo;
+                    rate = dayInfo ? dayInfo.rate : 0;
+                } else if (periodType === 'month') {
+                    const valueStart = getPortfolioValueAtDate(periodData.year + '-' + String(periodData.month).padStart(2, '0') + '-01');
+                    rate = valueStart > 0 ? (totalAmount / valueStart) * 100 : 0;
+                } else {
+                    const valueStart = getPortfolioValueAtDate(periodData.year + '-01-01');
+                    const valueEnd = getPortfolioValueAtDate(periodData.year + '-12-31');
+                    const denom = valueStart > 0 ? valueStart : valueEnd;
+                    rate = denom > 0 ? (totalAmount / denom) * 100 : 0;
+                }
+                const isZeroRate = Math.abs(rate) < 0.005;
+                totalStr = !hasRate ? '--' : (isZeroRate ? '0.00%' : ((rate >= 0 ? '+' : '-') + (rate >= 0 ? rate : Math.abs(rate)).toFixed(2) + '%'));
+            }
+            const sumLabel = periodType === 'day' ? '当日合计' : (periodType === 'month' ? '当月合计' : '当年合计');
+            if (list.length === 0) {
+                content.innerHTML = '<div class="no-position" style="padding: 24px; text-align: center; color: var(--text-muted);">该时段无组合盈亏数据</div>';
+                return;
+            }
+            let html = `<div class="historical-profit-summary" style="margin-bottom: 12px;"><div class="summary-label">${sumLabel}</div><div class="summary-value ${totalCls}">${totalStr}</div></div>`;
+            html += '<div class="historical-fund-list">';
+            list.forEach(item => {
+                const isZeroAmount = Math.abs(item.amount) < 0.005;
+                const isZeroRate = Math.abs(item.rate) < 0.005;
+                const cls = isZeroAmount ? 'neutral' : (item.amount > 0 ? 'positive' : 'negative');
+                const amountStr = showAmount
+                    ? (isZeroAmount ? '0.00' : (item.amount >= 0 ? '+' : '-') + (item.amount >= 0 ? item.amount : Math.abs(item.amount)).toFixed(2))
+                    : (isZeroRate ? '0.00%' : (item.rate >= 0 ? '+' : '-') + (item.rate >= 0 ? item.rate : Math.abs(item.rate)).toFixed(2) + '%');
+                html += `<div class="historical-fund-item"><div class="historical-fund-info"><div class="historical-fund-name">${item.name}</div><div class="historical-fund-code">${item.code}</div></div><div class="historical-fund-profit"><div class="profit-amount ${cls}">${amountStr}</div></div></div>`;
+            });
+            html += '</div>';
+            content.innerHTML = html;
+        }
+
         // 打开持仓收益明细弹窗
         function openHoldingProfitDetail() {
             const codes = loadFundCodes();
@@ -7814,9 +8024,18 @@
             const nextBtn = document.getElementById('pnlCalendarNext');
             if (!gridEl || !titleEl) return;
 
+            // 同步视图/展示选项的选中状态（解决刷新后 state 从 localStorage 恢复但 tab 仍为默认的问题）
+            document.querySelectorAll('.pnl-tab').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.view === state.calendarView);
+            });
+            document.querySelectorAll('.pnl-display-tab').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.display === state.calendarDisplay);
+            });
+
             const dailyMap = getDailyPnlMap();
             const hasData = Object.keys(dailyMap).length > 0;
-            hintEl.textContent = hasData ? '每日为当日相对前一交易日的组合盈亏（基于历史净值）' : '暂无历史净值数据，请打开基金详情加载净值走势后查看';
+            const clickHint = state.calendarView === 'day' ? '点击日期可查看各基金明细' : (state.calendarView === 'month' ? '点击月份可查看各基金盈亏' : '点击年份可查看各基金盈亏');
+            hintEl.textContent = hasData ? ('每日为当日相对前一交易日的组合盈亏（基于历史净值），' + clickHint) : '暂无历史净值数据，请打开基金详情加载净值走势后查看';
 
             if (state.calendarView === 'day') {
                 titleEl.textContent = state.calendarYear + '年' + state.calendarMonth + '月';
@@ -7843,7 +8062,9 @@
                             : (info.rate >= 0 ? '+' : '') + info.rate.toFixed(2) + '%';
                         valueHtml = `<span class="pnl-value">${value}</span>`;
                     }
-                    html += `<div class="${cls}" title="${dateStr}${info ? ' ' + (showAmount ? info.amount.toFixed(2) : info.rate.toFixed(2) + '%') : ''}"><span class="pnl-label">${d}</span>${valueHtml}</div>`;
+                    cls += ' pnl-cell-day';
+                    const title = info ? (dateStr + ' ' + (showAmount ? info.amount.toFixed(2) : info.rate.toFixed(2) + '%') + '，点击查看各基金明细') : (dateStr + '，点击查看');
+                    html += `<div class="${cls}" data-date="${dateStr}" title="${title}" onclick="openDailyPnlDetail('${dateStr}')"><span class="pnl-label">${d}</span>${valueHtml}</div>`;
                 }
                 gridEl.innerHTML = html;
                 prevBtn.style.visibility = 'visible';
@@ -7870,7 +8091,7 @@
                     const value = showAmount
                         ? (sumAmount >= 0 ? '+' : '') + sumAmount.toFixed(2)
                         : (rate >= 0 ? '+' : '') + rate.toFixed(2) + '%';
-                    html += `<div class="${cls}"><span class="pnl-value">${value}</span><span class="pnl-label">${m}月</span></div>`;
+                    html += `<div class="${cls} pnl-cell-clickable" title="点击查看${state.calendarYear}年${m}月各基金盈亏" onclick="openMonthlyPnlDetail(${state.calendarYear}, ${m})"><span class="pnl-value">${value}</span><span class="pnl-label">${m}月</span></div>`;
                 }
                 gridEl.innerHTML = html;
                 prevBtn.style.visibility = 'visible';
@@ -7899,7 +8120,7 @@
                     const value = showAmount
                         ? (sumAmount >= 0 ? '+' : '') + sumAmount.toFixed(2)
                         : (rate >= 0 ? '+' : '') + rate.toFixed(2) + '%';
-                    html += `<div class="${cls}"><span class="pnl-value">${value}</span><span class="pnl-label">${yr}年</span></div>`;
+                    html += `<div class="${cls} pnl-cell-clickable" title="点击查看${yr}年各基金盈亏" onclick="openYearlyPnlDetail(${yr})"><span class="pnl-value">${value}</span><span class="pnl-label">${yr}年</span></div>`;
                 }
                 gridEl.innerHTML = html;
                 prevBtn.style.visibility = 'visible';
@@ -10267,6 +10488,12 @@
             document.getElementById('holdingProfitModal').addEventListener('click', (e) => {
                 if (e.target.id === 'holdingProfitModal') {
                     closeHoldingProfitDetail();
+                }
+            });
+
+            document.getElementById('dailyPnlDetailModal').addEventListener('click', (e) => {
+                if (e.target.id === 'dailyPnlDetailModal') {
+                    closeDailyPnlDetailModal();
                 }
             });
 
