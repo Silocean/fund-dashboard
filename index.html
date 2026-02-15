@@ -7542,6 +7542,7 @@
         }
 
         function renderPnlDetailList(content, list, totalAmount, showAmount, periodType, periodData) {
+            const sortedList = list.slice().sort((a, b) => (b.amount || 0) - (a.amount || 0));
             const isZeroTotal = Math.abs(totalAmount) < 0.005;
             const totalCls = isZeroTotal ? '' : (totalAmount > 0 ? 'positive' : 'negative');
             let totalStr;
@@ -7567,13 +7568,13 @@
                 totalStr = !hasRate ? '--' : (isZeroRate ? '0.00%' : ((rate >= 0 ? '+' : '-') + (rate >= 0 ? rate : Math.abs(rate)).toFixed(2) + '%'));
             }
             const sumLabel = periodType === 'day' ? '当日合计' : (periodType === 'month' ? '当月合计' : '当年合计');
-            if (list.length === 0) {
+            if (sortedList.length === 0) {
                 content.innerHTML = '<div class="no-position" style="padding: 24px; text-align: center; color: var(--text-muted);">该时段无组合盈亏数据</div>';
                 return;
             }
             let html = `<div class="historical-profit-summary" style="margin-bottom: 12px;"><div class="summary-label">${sumLabel}</div><div class="summary-value ${totalCls}">${totalStr}</div></div>`;
             html += '<div class="historical-fund-list">';
-            list.forEach(item => {
+            sortedList.forEach(item => {
                 const isZeroAmount = Math.abs(item.amount) < 0.005;
                 const isZeroRate = Math.abs(item.rate) < 0.005;
                 const cls = isZeroAmount ? 'neutral' : (item.amount > 0 ? 'positive' : 'negative');
