@@ -1521,6 +1521,18 @@
             justify-content: center;
             gap: 2px;
         }
+        .pnl-calendar-grid button.pnl-cell {
+            appearance: none;
+            background: inherit;
+            font: inherit;
+            cursor: pointer;
+            width: 100%;
+            min-height: 100%;
+        }
+        .pnl-calendar-grid button.pnl-cell:focus-visible {
+            outline: 2px solid var(--primary);
+            outline-offset: 1px;
+        }
         .pnl-cell.head {
             color: var(--text-muted);
             font-weight: 600;
@@ -1540,6 +1552,46 @@
         .pnl-cell.pnl-cell-clickable:hover {
             filter: brightness(0.96);
         }
+        .pnl-cell.pnl-cell-today {
+            box-shadow: 0 0 0 2px var(--primary);
+        }
+        .pnl-cell.pnl-cell-non-trading {
+            background: var(--stat-bg);
+            opacity: 0.85;
+        }
+        .pnl-calendar-legend {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px 20px;
+            font-size: 11px;
+            color: var(--text-muted);
+            margin-top: 6px;
+        }
+        .pnl-calendar-legend span { display: inline-flex; align-items: center; gap: 4px; }
+        .pnl-calendar-legend .leg-dot { width: 8px; height: 8px; border-radius: 50%; }
+        .pnl-calendar-legend .leg-dot.positive { background: #ff4d4f; }
+        .pnl-calendar-legend .leg-dot.negative { background: #00b96b; }
+        .pnl-calendar-legend .leg-dot.zero { background: var(--text-muted); }
+
+        .daily-pnl-modal-toolbar {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 0 12px;
+            border-bottom: 1px solid var(--border-color);
+            margin-bottom: 12px;
+        }
+        .daily-pnl-nav-btn, .daily-pnl-action-btn {
+            padding: 6px 12px;
+            border-radius: 6px;
+            border: 1px solid var(--border-color);
+            background: var(--stat-bg);
+            color: var(--text-primary);
+            font-size: 12px;
+            cursor: pointer;
+        }
+        .daily-pnl-nav-btn:hover, .daily-pnl-action-btn:hover { background: var(--hover-bg); }
+        .daily-pnl-toolbar-spacer { flex: 1; }
         .pnl-cell.positive {
             background: rgba(255, 77, 79, 0.12);
             color: #cf1322;
@@ -1810,6 +1862,9 @@
         .historical-fund-info {
             flex: 1;
             min-width: 0;
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
         }
 
         .historical-fund-name {
@@ -1824,7 +1879,6 @@
         .historical-fund-code {
             font-size: 12px;
             color: var(--text-muted);
-            margin-top: 2px;
         }
 
         .historical-fund-detail {
@@ -1862,6 +1916,15 @@
             font-size: 11px;
             color: var(--text-muted);
             margin-top: 2px;
+        }
+        .historical-fund-name-link, .historical-fund-code-link {
+            color: inherit;
+            text-decoration: none;
+            cursor: pointer;
+        }
+        .historical-fund-name-link:hover, .historical-fund-code-link:hover {
+            color: var(--primary);
+            text-decoration: underline;
         }
 
         .funds-grid {
@@ -4189,6 +4252,7 @@
                             </div>
                         </div>
                         <div class="pnl-calendar-hint" id="pnlCalendarHint"></div>
+                        <div class="pnl-calendar-legend" id="pnlCalendarLegend" aria-hidden="true"></div>
                         <div class="pnl-calendar-grid" id="pnlCalendarGrid"></div>
                     </div>
                     <div class="overview-divider"></div>
@@ -4505,6 +4569,13 @@
                 <h2 id="dailyPnlDetailModalTitle">📅 某日盈亏明细</h2>
                 <button class="close-btn" onclick="closeDailyPnlDetailModal()">&times;</button>
             </div>
+            <div class="daily-pnl-modal-toolbar" id="dailyPnlModalToolbar" style="display: none;">
+                <button type="button" class="daily-pnl-nav-btn" id="dailyPnlModalPrev" onclick="dailyPnlModalPrev()" aria-label="上一项">‹</button>
+                <button type="button" class="daily-pnl-nav-btn" id="dailyPnlModalNext" onclick="dailyPnlModalNext()" aria-label="下一项">›</button>
+                <span class="daily-pnl-toolbar-spacer"></span>
+                <button type="button" class="daily-pnl-action-btn" id="dailyPnlModalCopy" onclick="dailyPnlModalCopy()">复制</button>
+                <button type="button" class="daily-pnl-action-btn" id="dailyPnlModalExport" onclick="dailyPnlModalExport()">导出 CSV</button>
+            </div>
             <div id="dailyPnlDetailContent" style="max-height: 400px; overflow-y: auto;">
                 <!-- 某日各基金盈亏列表 -->
             </div>
@@ -4608,6 +4679,7 @@
             calendarMonth: new Date().getMonth() + 1,
             lastFocusBeforeModal: null,
             activeModalId: null,
+            dailyPnlModalContext: null, // { type:'day'|'month'|'year', dateStr?, year?, month? } 盈亏明细弹窗当前上下文，用于上一项/下一项
             justAddedFundCode: null,
             autocompleteSelectedIndex: -1,
             scrollDeferredForNewFund: false,
@@ -4817,8 +4889,10 @@
             return total;
         }
 
-        /** 生成盈亏日历用的每日数据：dateStr -> { amount, rate, value }，仅包含有净值的交易日 */
+        /** 生成盈亏日历用的每日数据：dateStr -> { amount, rate, value }，仅包含有净值的交易日（带短期缓存减少重复计算） */
         function getDailyPnlMap() {
+            const CACHE_MS = 60000;
+            if (state._dailyPnlMapCache && (Date.now() - state._dailyPnlMapCache.ts < CACHE_MS)) return state._dailyPnlMapCache.data;
             const codes = loadFundCodes();
             const dateSet = new Set();
             codes.forEach(code => {
@@ -4863,6 +4937,7 @@
                 const rate = valuePrevForRate > 0 ? (amount / valuePrevForRate) * 100 : 0;
                 map[cur] = { amount, rate, value: valueCur, prevValue: valuePrev };
             }
+            state._dailyPnlMapCache = { data: map, ts: Date.now() };
             return map;
         }
 
@@ -4886,21 +4961,38 @@
             return list.sort((a, b) => Math.abs(b.amount) - Math.abs(a.amount));
         }
 
+        /** 日期区间内各基金盈亏汇总（单次遍历区间内交易日，按 code 累加，避免重复调用 getDailyPnlByFund） */
+        function getPnlByFundForDateRange(startStr, endStr) {
+            const codes = loadFundCodes();
+            const sumByCode = {};
+            const nameByCode = {};
+            let d = new Date(startStr + 'T12:00:00');
+            const end = new Date(endStr + 'T12:00:00');
+            while (d <= end) {
+                const cur = toDateStr(d);
+                if (!isTradingDay(d)) { d.setDate(d.getDate() + 1); continue; }
+                const prev = getPreviousTradingDay(cur);
+                codes.forEach(code => {
+                    const { shares: sharesPrev } = getSharesAndCostAtDate(code, prev);
+                    if (sharesPrev <= 0) return;
+                    const navPrev = getNavOnOrBefore(code, prev);
+                    const navCur = getNavOnOrBefore(code, cur);
+                    if (navPrev == null || navCur == null) return;
+                    const amount = sharesPrev * (navCur - navPrev);
+                    sumByCode[code] = (sumByCode[code] || 0) + amount;
+                    if (!nameByCode[code]) nameByCode[code] = state.fundsData[code] ? state.fundsData[code].name : code;
+                });
+                d.setDate(d.getDate() + 1);
+            }
+            return { sumByCode, nameByCode };
+        }
+
         /** 某月各基金盈亏汇总（用于日历按月点击），返回 [{ code, name, amount, rate }] */
         function getMonthlyPnlByFund(year, month) {
             const monthFirst = year + '-' + String(month).padStart(2, '0') + '-01';
             const lastDate = new Date(year, month, 0);
             const monthLast = year + '-' + String(month).padStart(2, '0') + '-' + String(lastDate.getDate()).padStart(2, '0');
-            const dailyMap = getDailyPnlMap();
-            const sumByCode = {};
-            const nameByCode = {};
-            Object.keys(dailyMap).forEach(dateStr => {
-                if (dateStr < monthFirst || dateStr > monthLast) return;
-                getDailyPnlByFund(dateStr).forEach(item => {
-                    sumByCode[item.code] = (sumByCode[item.code] || 0) + item.amount;
-                    nameByCode[item.code] = item.name;
-                });
-            });
+            const { sumByCode, nameByCode } = getPnlByFundForDateRange(monthFirst, monthLast);
             const codes = Object.keys(sumByCode);
             if (codes.length === 0) return [];
             const monthStartValue = {};
@@ -4922,16 +5014,7 @@
         function getYearlyPnlByFund(year) {
             const yearFirst = year + '-01-01';
             const yearLast = year + '-12-31';
-            const dailyMap = getDailyPnlMap();
-            const sumByCode = {};
-            const nameByCode = {};
-            Object.keys(dailyMap).forEach(dateStr => {
-                if (dateStr < yearFirst || dateStr > yearLast) return;
-                getDailyPnlByFund(dateStr).forEach(item => {
-                    sumByCode[item.code] = (sumByCode[item.code] || 0) + item.amount;
-                    nameByCode[item.code] = item.name;
-                });
-            });
+            const { sumByCode, nameByCode } = getPnlByFundForDateRange(yearFirst, yearLast);
             const codes = Object.keys(sumByCode);
             if (codes.length === 0) return [];
             const yearStartValue = {};
@@ -5401,6 +5484,7 @@
         function savePositions() {
             localStorage.setItem('state.positions', JSON.stringify(state.positions));
             markDataChanged();
+            if (state._dailyPnlMapCache) state._dailyPnlMapCache = null;
         }
 
         // 加载今日范围数据
@@ -6956,9 +7040,12 @@
 
         // 打开某日盈亏明细弹窗（日历按日视图点击日期时调用）
         function openDailyPnlDetail(dateStr) {
+            state.dailyPnlModalContext = { type: 'day', dateStr };
             const modal = document.getElementById('dailyPnlDetailModal');
             const titleEl = document.getElementById('dailyPnlDetailModalTitle');
             const content = document.getElementById('dailyPnlDetailContent');
+            const toolbar = document.getElementById('dailyPnlModalToolbar');
+            if (toolbar) toolbar.style.display = 'flex';
             const dateObj = new Date(dateStr + 'T12:00:00');
             const dateLabel = `${dateObj.getFullYear()}年${dateObj.getMonth() + 1}月${dateObj.getDate()}日`;
             titleEl.textContent = '📅 ' + dateLabel + ' 盈亏明细';
@@ -6976,12 +7063,96 @@
 
         function closeDailyPnlDetailModal() {
             document.getElementById('dailyPnlDetailModal').classList.remove('active');
+            state.dailyPnlModalContext = null;
+        }
+
+        function dailyPnlModalPrev() {
+            const ctx = state.dailyPnlModalContext;
+            if (!ctx) return;
+            if (ctx.type === 'day') {
+                const prev = getPreviousTradingDay(ctx.dateStr);
+                openDailyPnlDetail(prev);
+            } else if (ctx.type === 'month') {
+                let y = ctx.year, m = ctx.month - 1;
+                if (m < 1) { m = 12; y--; }
+                openMonthlyPnlDetail(y, m);
+            } else {
+                openYearlyPnlDetail(ctx.year - 1);
+            }
+        }
+
+        function dailyPnlModalNext() {
+            const ctx = state.dailyPnlModalContext;
+            if (!ctx) return;
+            if (ctx.type === 'day') {
+                const next = getNextTradingDay(ctx.dateStr);
+                const today = toDateStr(new Date());
+                if (next > today) return;
+                openDailyPnlDetail(next);
+            } else if (ctx.type === 'month') {
+                let y = ctx.year, m = ctx.month + 1;
+                if (m > 12) { m = 1; y++; }
+                openMonthlyPnlDetail(y, m);
+            } else {
+                openYearlyPnlDetail(ctx.year + 1);
+            }
+        }
+
+        function dailyPnlModalCopy() {
+            const titleEl = document.getElementById('dailyPnlDetailModalTitle');
+            const content = document.getElementById('dailyPnlDetailContent');
+            if (!titleEl || !content) return;
+            const lines = [titleEl.textContent];
+            const summary = content.querySelector('.historical-profit-summary');
+            if (summary) {
+                const label = summary.querySelector('.summary-label');
+                const value = summary.querySelector('.summary-value');
+                if (label && value) lines.push((label.textContent || '') + '\t' + (value.textContent || ''));
+            }
+            content.querySelectorAll('.historical-fund-item').forEach(row => {
+                const name = row.querySelector('.historical-fund-name, .historical-fund-name-link');
+                const code = row.querySelector('.historical-fund-code, .historical-fund-code-link');
+                const amount = row.querySelector('.profit-amount');
+                if (name && amount) lines.push((name.textContent || '').trim() + '\t' + (code ? code.textContent.trim() : '') + '\t' + (amount.textContent || ''));
+            });
+            const text = lines.join('\n');
+            navigator.clipboard.writeText(text).then(() => showToast('已复制到剪贴板', 'success')).catch(() => showToast('复制失败', 'error'));
+        }
+
+        function dailyPnlModalExport() {
+            const titleEl = document.getElementById('dailyPnlDetailModalTitle');
+            const content = document.getElementById('dailyPnlDetailContent');
+            if (!titleEl || !content) return;
+            const rows = [['基金名称', '基金代码', '盈亏']];
+            const summary = content.querySelector('.historical-profit-summary');
+            if (summary) {
+                const label = summary.querySelector('.summary-label');
+                const value = summary.querySelector('.summary-value');
+                if (label && value) rows.push([(label.textContent || '').replace(/"/g, '""'), '', (value.textContent || '').replace(/"/g, '""')]);
+            }
+            content.querySelectorAll('.historical-fund-item').forEach(row => {
+                const name = row.querySelector('.historical-fund-name, .historical-fund-name-link');
+                const code = row.querySelector('.historical-fund-code, .historical-fund-code-link');
+                const amount = row.querySelector('.profit-amount');
+                if (name && amount) rows.push([(name.textContent || '').trim().replace(/"/g, '""'), (code ? code.textContent.trim() : ''), (amount.textContent || '').replace(/"/g, '""')]);
+            });
+            const csv = rows.map(r => r.map(c => '"' + c + '"').join(',')).join('\n');
+            const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8' });
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = (titleEl.textContent.replace(/\s+/g, '_') || '盈亏明细') + '.csv';
+            a.click();
+            URL.revokeObjectURL(a.href);
+            showToast('已导出 CSV', 'success');
         }
 
         function openMonthlyPnlDetail(year, month) {
+            state.dailyPnlModalContext = { type: 'month', year, month };
             const modal = document.getElementById('dailyPnlDetailModal');
             const titleEl = document.getElementById('dailyPnlDetailModalTitle');
             const content = document.getElementById('dailyPnlDetailContent');
+            const toolbar = document.getElementById('dailyPnlModalToolbar');
+            if (toolbar) toolbar.style.display = 'flex';
             titleEl.textContent = '📅 ' + year + '年' + month + '月 盈亏明细';
             const showAmount = state.calendarDisplay === 'amount';
             const list = getMonthlyPnlByFund(year, month);
@@ -6996,9 +7167,12 @@
         }
 
         function openYearlyPnlDetail(year) {
+            state.dailyPnlModalContext = { type: 'year', year };
             const modal = document.getElementById('dailyPnlDetailModal');
             const titleEl = document.getElementById('dailyPnlDetailModalTitle');
             const content = document.getElementById('dailyPnlDetailContent');
+            const toolbar = document.getElementById('dailyPnlModalToolbar');
+            if (toolbar) toolbar.style.display = 'flex';
             titleEl.textContent = '📅 ' + year + '年 盈亏明细';
             const showAmount = state.calendarDisplay === 'amount';
             const list = getYearlyPnlByFund(year);
@@ -7050,7 +7224,9 @@
                 const amountStr = showAmount
                     ? (isZeroAmount ? '0.00' : (item.amount >= 0 ? '+' : '-') + (item.amount >= 0 ? item.amount : Math.abs(item.amount)).toFixed(2))
                     : (isZeroRate ? '0.00%' : (item.rate >= 0 ? '+' : '-') + (item.rate >= 0 ? item.rate : Math.abs(item.rate)).toFixed(2) + '%');
-                html += `<div class="historical-fund-item"><div class="historical-fund-info"><div class="historical-fund-name">${item.name}</div><div class="historical-fund-code">${item.code}</div></div><div class="historical-fund-profit"><div class="profit-amount ${cls}">${amountStr}</div></div></div>`;
+                const nameEsc = (item.name || '').replace(/</g, '&lt;').replace(/"/g, '&quot;');
+                const codeEsc = (item.code || '').replace(/</g, '&lt;');
+                html += `<div class="historical-fund-item"><div class="historical-fund-info"><a href="javascript:void(0)" class="historical-fund-name historical-fund-name-link" onclick="closeDailyPnlDetailModal(); openFundDetailModal('${codeEsc}')" title="点击查看基金详情">${nameEsc}</a><span class="historical-fund-code">${codeEsc}</span></div><div class="historical-fund-profit"><div class="profit-amount ${cls}">${amountStr}</div></div></div>`;
             });
             html += '</div>';
             content.innerHTML = html;
@@ -7596,6 +7772,7 @@
                     // 最终验证：确保捕获的数据名称包含预期的基金代码或名称
                     
                     state.fundDetails[code] = capturedData;
+                    if (state._dailyPnlMapCache) state._dailyPnlMapCache = null;
                     tryUpdateActualNav(code);
                     refreshTradeModalNavIfOpen(code);
                     
@@ -8036,14 +8213,20 @@
             const hasData = Object.keys(dailyMap).length > 0;
             const clickHint = state.calendarView === 'day' ? '点击日期可查看各基金明细' : (state.calendarView === 'month' ? '点击月份可查看各基金盈亏' : '点击年份可查看各基金盈亏');
             hintEl.textContent = hasData ? ('每日为当日相对前一交易日的组合盈亏（基于历史净值），' + clickHint) : '暂无历史净值数据，请打开基金详情加载净值走势后查看';
+            const legendEl = document.getElementById('pnlCalendarLegend');
+            if (legendEl) {
+                if (hasData) legendEl.innerHTML = '<span><span class="leg-dot positive"></span>盈利</span><span><span class="leg-dot negative"></span>亏损</span><span><span class="leg-dot zero"></span>持平</span><span>相对前一交易日</span>';
+                legendEl.style.display = hasData ? '' : 'none';
+            }
 
             if (state.calendarView === 'day') {
                 titleEl.textContent = state.calendarYear + '年' + state.calendarMonth + '月';
                 const showAmount = state.calendarDisplay === 'amount';
                 const firstDay = new Date(state.calendarYear, state.calendarMonth - 1, 1);
                 const lastDay = new Date(state.calendarYear, state.calendarMonth, 0);
-                const startPad = firstDay.getDay(); // 0=周日放第一列，前面无需占位；1=周一则占 1 格（周日列空）
+                const startPad = firstDay.getDay();
                 const daysInMonth = lastDay.getDate();
+                const todayStr = toDateStr(new Date());
                 gridEl.className = 'pnl-calendar-grid by-day';
                 const weekHeads = ['日', '一', '二', '三', '四', '五', '六'];
                 let html = weekHeads.map(w => `<div class="pnl-cell head">${w}</div>`).join('');
@@ -8051,6 +8234,9 @@
                 for (let d = 1; d <= daysInMonth; d++) {
                     const dateStr = state.calendarYear + '-' + String(state.calendarMonth).padStart(2, '0') + '-' + String(d).padStart(2, '0');
                     const info = dailyMap[dateStr];
+                    const isToday = dateStr === todayStr;
+                    const dateObj = new Date(dateStr + 'T12:00:00');
+                    const isNonTrading = !isTradingDay(dateObj);
                     let cls = 'pnl-cell';
                     let valueHtml = '';
                     if (info) {
@@ -8061,10 +8247,15 @@
                             ? (info.amount >= 0 ? '+' : '') + info.amount.toFixed(2)
                             : (info.rate >= 0 ? '+' : '') + info.rate.toFixed(2) + '%';
                         valueHtml = `<span class="pnl-value">${value}</span>`;
+                    } else if (isNonTrading) {
+                        cls += ' pnl-cell-non-trading';
                     }
+                    if (isToday) cls += ' pnl-cell-today';
                     cls += ' pnl-cell-day';
-                    const title = info ? (dateStr + ' ' + (showAmount ? info.amount.toFixed(2) : info.rate.toFixed(2) + '%') + '，点击查看各基金明细') : (dateStr + '，点击查看');
-                    html += `<div class="${cls}" data-date="${dateStr}" title="${title}" onclick="openDailyPnlDetail('${dateStr}')"><span class="pnl-label">${d}</span>${valueHtml}</div>`;
+                    let title = dateStr;
+                    if (info) title += ' ' + (showAmount ? info.amount.toFixed(2) : info.rate.toFixed(2) + '%') + '，点击查看各基金明细';
+                    else title += isNonTrading ? ' 非交易日' : ' 暂无净值数据，点击查看';
+                    html += `<button type="button" class="${cls}" data-date="${dateStr}" title="${title}" onclick="openDailyPnlDetail('${dateStr}')" aria-label="${title}"><span class="pnl-label">${d}</span>${valueHtml}</button>`;
                 }
                 gridEl.innerHTML = html;
                 prevBtn.style.visibility = 'visible';
@@ -8091,7 +8282,7 @@
                     const value = showAmount
                         ? (sumAmount >= 0 ? '+' : '') + sumAmount.toFixed(2)
                         : (rate >= 0 ? '+' : '') + rate.toFixed(2) + '%';
-                    html += `<div class="${cls} pnl-cell-clickable" title="点击查看${state.calendarYear}年${m}月各基金盈亏" onclick="openMonthlyPnlDetail(${state.calendarYear}, ${m})"><span class="pnl-value">${value}</span><span class="pnl-label">${m}月</span></div>`;
+                    html += `<button type="button" class="${cls} pnl-cell-clickable" title="点击查看${state.calendarYear}年${m}月各基金盈亏" onclick="openMonthlyPnlDetail(${state.calendarYear}, ${m})" aria-label="${state.calendarYear}年${m}月，点击查看各基金盈亏"><span class="pnl-value">${value}</span><span class="pnl-label">${m}月</span></button>`;
                 }
                 gridEl.innerHTML = html;
                 prevBtn.style.visibility = 'visible';
@@ -8120,7 +8311,7 @@
                     const value = showAmount
                         ? (sumAmount >= 0 ? '+' : '') + sumAmount.toFixed(2)
                         : (rate >= 0 ? '+' : '') + rate.toFixed(2) + '%';
-                    html += `<div class="${cls} pnl-cell-clickable" title="点击查看${yr}年各基金盈亏" onclick="openYearlyPnlDetail(${yr})"><span class="pnl-value">${value}</span><span class="pnl-label">${yr}年</span></div>`;
+                    html += `<button type="button" class="${cls} pnl-cell-clickable" title="点击查看${yr}年各基金盈亏" onclick="openYearlyPnlDetail(${yr})" aria-label="${yr}年，点击查看各基金盈亏"><span class="pnl-value">${value}</span><span class="pnl-label">${yr}年</span></button>`;
                 }
                 gridEl.innerHTML = html;
                 prevBtn.style.visibility = 'visible';
