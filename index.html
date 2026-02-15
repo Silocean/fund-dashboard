@@ -5398,6 +5398,7 @@
         function openOverviewDetailModal() {
             const modal = document.getElementById('overviewDetailModal');
             if (!modal) return;
+            if (state._dailyPnlMapCache) state._dailyPnlMapCache = null;
             modal.classList.add('active');
             requestAnimationFrame(function () {
                 requestAnimationFrame(function () {
@@ -6132,6 +6133,7 @@
                     saveFundSectors(importedData.fundSectors);
                 }
                 state.positions = importedData.positions || {};
+                if (state._dailyPnlMapCache) state._dailyPnlMapCache = null;
                 savePositions();
                 state.historyData = importedData.historyData || {};
                 saveHistoryData();
@@ -6163,6 +6165,10 @@
                 codes.forEach(code => {
                     fetchFundData(code);
                 });
+                setTimeout(function () {
+                    if (state._dailyPnlMapCache) state._dailyPnlMapCache = null;
+                    if (typeof updateOverviewPanel === 'function') updateOverviewPanel();
+                }, 0);
 
                 const dateStr = importedData.exportDate || importedData.syncDate;
                 const dateDisplay = dateStr ? (() => { const d = new Date(dateStr); return isNaN(d.getTime()) ? '' : d.toLocaleString('zh-CN'); })() : '';
@@ -6189,12 +6195,13 @@
                     saveFundSectors(currentSectors);
                 }
 
-                // 合并持仓数据（导入的数据优先）
+                // 合并持仓数据（导入的数据优先，含已删除基金的持仓）
                 Object.keys(importedData.positions || {}).forEach(code => {
                     if (!state.positions[code] || confirm(`基金 ${code} 已有持仓数据，是否覆盖？`)) {
                         state.positions[code] = importedData.positions[code];
                     }
                 });
+                if (state._dailyPnlMapCache) state._dailyPnlMapCache = null;
                 savePositions();
 
                 // 合并历史数据
@@ -6214,6 +6221,7 @@
                     }
                 });
 
+                if (typeof updateOverviewPanel === 'function') updateOverviewPanel();
                 const addedCount = mergedCodes.length - currentCodes.length;
                 showToast(`✅ 数据合并成功！新增 ${addedCount} 只基金，总计 ${mergedCodes.length} 只基金`, 'success');
             } catch (error) {
@@ -6296,14 +6304,23 @@
             input.type = input.type === 'password' ? 'text' : 'password';
         }
 
-        // 收集所有需要同步的数据
+        // 收集所有需要同步的数据（positions 含已删除基金；仅同步已删除基金的 fundDetails 以控制体积并供日历计算盈亏）
         function collectSyncData() {
+            const codes = loadFundCodes();
+            const details = state.fundDetails || {};
+            const deletedDetails = {};
+            Object.keys(state.positions || {}).forEach(code => {
+                if (!codes.includes(code) && details[code] && details[code].netWorthData && details[code].netWorthData.length > 0) {
+                    deletedDetails[code] = { netWorthData: details[code].netWorthData, name: details[code].name };
+                }
+            });
             return {
                 version: '1.1',
                 syncDate: new Date().toISOString(),
-                fundCodes: loadFundCodes(),
+                fundCodes: codes,
                 fundSectors: loadFundSectors(),
-                positions: state.positions,
+                positions: Object.assign({}, state.positions),
+                fundDetails: deletedDetails,
                 historyData: state.historyData,
                 dailyRanges: {
                     date: new Date().toDateString(),
@@ -6430,6 +6447,7 @@
             
             try {
                 const response = await fetch(`https://api.github.com/gists/${settings.gistId}`, {
+                    cache: 'no-store',
                     headers: {
                         'Authorization': `token ${settings.token}`
                     }
@@ -6447,7 +6465,12 @@
                     throw new Error('Gist 中未找到同步数据文件');
                 }
                 
-                const importedData = JSON.parse(file.content);
+                let importedData;
+                try {
+                    importedData = JSON.parse(file.content);
+                } catch (e) {
+                    throw new Error('云端数据解析失败，可能因文件过大被截断。请在原设备重新上传（当前仅同步已删除基金的净值数据以减小体积）');
+                }
                 
                 // 验证数据格式
                 if (!importedData.version || !importedData.fundCodes) {
@@ -6482,7 +6505,9 @@
                 }
                 
                 clearSyncReminder();
-                showToast(`✅ 云端数据下载成功！已导入 ${importedData.fundCodes.length} 只基金的数据`, 'success');
+                const posCount = Object.keys(importedData.positions || {}).length;
+                const posHint = posCount > 0 ? `、${posCount} 条持仓记录` : '';
+                showToast(`✅ 云端数据下载成功！已导入 ${importedData.fundCodes.length} 只基金${posHint}`, 'success');
                 
             } catch (error) {
                 console.error('从云端下载失败：', error);
