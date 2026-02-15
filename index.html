@@ -7802,10 +7802,10 @@
                 const showAmount = state.calendarDisplay === 'amount';
                 const firstDay = new Date(state.calendarYear, state.calendarMonth - 1, 1);
                 const lastDay = new Date(state.calendarYear, state.calendarMonth, 0);
-                const startPad = (firstDay.getDay() + 6) % 7;
+                const startPad = firstDay.getDay(); // 0=周日放第一列，前面无需占位；1=周一则占 1 格（周日列空）
                 const daysInMonth = lastDay.getDate();
                 gridEl.className = 'pnl-calendar-grid by-day';
-                const weekHeads = ['一', '二', '三', '四', '五', '六', '日'];
+                const weekHeads = ['日', '一', '二', '三', '四', '五', '六'];
                 let html = weekHeads.map(w => `<div class="pnl-cell head">${w}</div>`).join('');
                 for (let i = 0; i < startPad; i++) html += '<div class="pnl-cell empty"></div>';
                 for (let d = 1; d <= daysInMonth; d++) {
@@ -7868,7 +7868,9 @@
                         if (dateYear === yr) sumAmount += dailyMap[dateStr].amount;
                     });
                     const valueStart = getPortfolioValueAtDate(yr + '-01-01');
-                    const rate = valueStart > 0 ? (sumAmount / valueStart) * 100 : 0;
+                    const valueEnd = getPortfolioValueAtDate(yr + '-12-31');
+                    const denom = valueStart > 0 ? valueStart : valueEnd;
+                    const rate = denom > 0 ? (sumAmount / denom) * 100 : 0;
                     let cls = 'pnl-cell';
                     if (sumAmount > 0) cls += ' positive';
                     else if (sumAmount < 0) cls += ' negative';
