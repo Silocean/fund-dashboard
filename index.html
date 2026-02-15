@@ -684,7 +684,6 @@
 
         .fund-list-header .list-name { flex: 1; min-width: 0; }
         .fund-list-header .list-pct,
-        .fund-list-header .list-val,
         .fund-list-header .list-profit-cell {
             display: flex;
             flex-direction: column;
@@ -699,7 +698,6 @@
         .fund-list-header .list-col-sort-arrow { font-size: 10px; opacity: 0.9; }
         .fund-list-header .list-col-sort-default { opacity: 0.5; font-weight: 400; }
         .fund-list-header .list-pct { min-width: 72px; width: 72px; flex-shrink: 0; text-align: right; }
-        .fund-list-header .list-val { min-width: 56px; width: 56px; flex-shrink: 0; text-align: right; }
         .fund-list-header .list-profit-cell { min-width: 72px; width: 72px; flex-shrink: 0; text-align: right; }
         .fund-list-header .list-sparkline {
             min-width: 88px; width: 88px; flex-shrink: 0;
@@ -814,15 +812,6 @@
 
         .fund-list-item .list-pct.positive { color: #ff4d4f; }
         .fund-list-item .list-pct.negative { color: #00b96b; }
-
-        .fund-list-item .list-val {
-            font-size: 13px;
-            color: var(--text-secondary);
-            min-width: 56px;
-            width: 56px;
-            flex-shrink: 0;
-            text-align: right;
-        }
 
         .fund-list-item .list-profit {
             font-size: 13px;
@@ -2796,6 +2785,24 @@
             color: var(--text-primary);
             margin-top: 2px;
         }
+        .detail-pos-value.positive { color: #ff4d4f; }
+        .detail-pos-value.negative { color: #00b96b; }
+        [data-theme="dark"] .detail-pos-value.positive { color: #ff7875; }
+        [data-theme="dark"] .detail-pos-value.negative { color: #36cfc9; }
+
+        .detail-profit-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 12px;
+            background: var(--stat-bg);
+            border-radius: 10px;
+            margin-bottom: 16px;
+        }
+        .detail-profit-label { font-size: 12px; color: var(--text-muted); }
+        .detail-profit-value { font-size: 14px; font-weight: 600; color: var(--text-primary); }
+        .detail-profit-value.positive { color: #ff4d4f; }
+        .detail-profit-value.negative { color: #00b96b; }
 
         /* 快捷操作 */
         .detail-actions {
@@ -3694,8 +3701,7 @@
 
             .fund-list-header .list-name { grid-column: 1; grid-row: 1; text-align: left; }
             .fund-list-header .list-pct { grid-column: 2; grid-row: 1; min-width: 56px; }
-            .fund-list-header .list-val { grid-column: 1; grid-row: 2; text-align: left; }
-            .fund-list-header .list-profit-cell { grid-column: 2; grid-row: 2; min-width: 56px; }
+            .fund-list-header .list-profit-cell { grid-column: 1; grid-row: 2; min-width: 56px; }
             .fund-list-header .list-sparkline { grid-column: 1; grid-row: 3; text-align: left; max-width: 120px; }
             .fund-list-header .list-actions { grid-column: 2; grid-row: 3; min-width: 0; justify-content: flex-end; }
 
@@ -3723,16 +3729,8 @@
                 font-size: 15px;
             }
 
-            .fund-list-item .list-val {
-                grid-column: 1;
-                grid-row: 2;
-                min-width: 0;
-                font-size: 12px;
-                text-align: left;
-            }
-
             .fund-list-item .list-profit-cell {
-                grid-column: 2;
+                grid-column: 1;
                 grid-row: 2;
                 min-width: 56px;
                 width: auto;
@@ -5098,7 +5096,7 @@
             localStorage.setItem('colorTheme', valid);
             const sel = document.getElementById('colorThemeSelect');
             if (sel) sel.value = valid;
-            if (typeof renderFunds === 'function') renderFunds();
+            // 主题色仅影响 CSS 变量，列表无需重绘；仅重绘使用 --primary 的图表
             if (typeof drawProfitTrendChart === 'function') drawProfitTrendChart();
             if (typeof drawAllocationChart === 'function') drawAllocationChart();
         }
@@ -6298,6 +6296,27 @@
                 }
             });
             return Math.max(0, posInfo.totalShares - excludeShares + soldShares);
+        }
+
+        /** 单只基金历史已实现收益（卖出所得 - 对应成本），无卖出记录返回 0 */
+        function getHistoricalProfitForFund(code) {
+            const position = state.positions[code];
+            if (!position || !position.transactions) return 0;
+            let runningShares = 0, runningCost = 0, fundProfit = 0;
+            const sorted = position.transactions.slice().sort((a, b) => getTransEffectiveDate(a).localeCompare(getTransEffectiveDate(b)));
+            sorted.forEach(trans => {
+                if (trans.type === 'buy') {
+                    runningShares += trans.shares;
+                    runningCost += trans.amount;
+                } else if (trans.type === 'sell') {
+                    const sellRatio = runningShares > 0 ? trans.shares / runningShares : 0;
+                    const costBasis = runningCost * sellRatio;
+                    fundProfit += trans.amount - costBasis;
+                    runningShares -= trans.shares;
+                    runningCost -= costBasis;
+                }
+            });
+            return fundProfit;
         }
 
         // 计算持仓信息（按有效净值日期排序后回放，保证成本分摊正确）
@@ -7515,7 +7534,7 @@
             }
         };
 
-        // 切换主视图（持有/自选）
+        // 切换主视图（持有/自选）：先更新 tab 状态让用户立即看到反馈，再下一帧渲染列表避免卡顿
         function switchMainView(view) {
             state.currentMainView = view;
             document.querySelectorAll('.main-view-tab').forEach(tab => {
@@ -7523,7 +7542,7 @@
                 tab.classList.toggle('active', isSelected);
                 tab.setAttribute('aria-selected', isSelected);
             });
-            renderFunds();
+            requestAnimationFrame(function () { renderFunds(); });
         }
 
         // 切换展示方式（卡片 / 列表）
@@ -8774,7 +8793,6 @@
                     <div class="fund-list-header">
                         <div class="list-name">名称</div>
                         <div class="list-pct"><span class="list-col-sortable list-col-label" onclick="sortListBy('pct')" title="点击切换：默认顺序 / 涨跌幅降序 / 涨跌幅升序">涨跌幅${pctArrow}</span><span class="list-col-date">${headerDateStr}</span></div>
-                        <div class="list-val"><span class="list-col-label">估值</span><span class="list-col-date">${headerDateStr}</span></div>
                         <div class="list-profit-cell"><span class="list-col-sortable list-col-label" onclick="sortListBy('dailyProfit')" title="点击切换：默认顺序 / 今日盈亏降序 / 今日盈亏升序">今日盈亏${profitArrow}</span><span class="list-col-date">${headerDateStr}</span></div>
                         <div class="list-sparkline"><span class="list-col-label">当日走势</span><span class="list-col-date">${headerDateStr}</span></div>
                         <div class="list-actions">操作</div>
@@ -8784,10 +8802,10 @@
                     const posInfo = calculatePosition(code);
                     const hasPosition = posInfo && posInfo.totalShares > 0;
                     if (!data) {
-                        return `<div class="fund-list-item" data-code="${code}"><div class="list-name"><div class="list-name-main">加载中…</div><div class="list-name-code">${code}</div></div><div class="list-pct">--</div><div class="list-val">--</div><div class="list-profit-cell">--</div><div class="list-sparkline"></div><div class="list-actions"><button class="btn-del" onclick="removeFund('${code}')">删除</button></div></div>`;
+                        return `<div class="fund-list-item" data-code="${code}"><div class="list-name"><div class="list-name-main">加载中…</div><div class="list-name-code">${code}</div></div><div class="list-pct">--</div><div class="list-profit-cell">--</div><div class="list-sparkline"></div><div class="list-actions"><button class="btn-del" onclick="removeFund('${code}')">删除</button></div></div>`;
                     }
                     if (data._loadFailed) {
-                        return `<div class="fund-list-item fund-card-failed" data-code="${code}"><div class="list-name"><div class="list-name-main">加载失败</div><div class="list-name-code">${code}</div></div><div class="list-pct">--</div><div class="list-val">--</div><div class="list-profit-cell">--</div><div class="list-sparkline"></div><div class="list-actions"><button onclick="retryFundLoad('${code}')">重试</button><button class="btn-del" onclick="removeFund('${code}')">删除</button></div></div>`;
+                        return `<div class="fund-list-item fund-card-failed" data-code="${code}"><div class="list-name"><div class="list-name-main">加载失败</div><div class="list-name-code">${code}</div></div><div class="list-pct">--</div><div class="list-profit-cell">--</div><div class="list-sparkline"></div><div class="list-actions"><button onclick="retryFundLoad('${code}')">重试</button><button class="btn-del" onclick="removeFund('${code}')">删除</button></div></div>`;
                     }
                     const display = getDisplayValues(data);
                     const percentage = display.percentage;
@@ -8834,7 +8852,6 @@
                                 ${nameSubHtml}
                             </div>
                             <div class="list-pct ${pctClass}">${pctStr}</div>
-                            <div class="list-val">${display.label}: ${display.value}</div>
                             <div class="list-profit-cell">${dailyProfitStr}</div>
                             <div class="list-sparkline">${sparklineSvg}</div>
                             <div class="list-actions">
@@ -9129,8 +9146,13 @@
                 const mv = posInfo.totalShares * currentNav;
                 const profit = mv - posInfo.totalCost;
                 const profitRate = posInfo.avgCost > 0 ? ((currentNav - posInfo.avgCost) / posInfo.avgCost * 100) : 0;
-                const cls = profit >= 0 ? 'positive' : 'negative';
-                const sym = profit >= 0 ? '+' : '';
+                const isZeroProfit = Math.abs(profit) < 0.005;
+                const isZeroRate = Math.abs(profitRate) < 0.005;
+                const cls = isZeroProfit ? '' : (profit >= 0 ? 'positive' : 'negative');
+                const profitSym = isZeroProfit ? '' : (profit >= 0 ? '+' : '-');
+                const rateSym = isZeroRate ? '' : (profitRate >= 0 ? '+' : '-');
+                const profitStr = isZeroProfit ? '0.00' : (profitSym + (profit < 0 ? Math.abs(profit) : profit).toFixed(2));
+                const rateStr = isZeroRate ? '0.00%' : (rateSym + (profitRate < 0 ? Math.abs(profitRate) : profitRate).toFixed(2) + '%');
                 html += `
                     <div class="detail-position-summary">
                         <div class="detail-pos-item">
@@ -9142,12 +9164,25 @@
                             <div class="detail-pos-value">${mv.toFixed(2)}</div>
                         </div>
                         <div class="detail-pos-item">
-                            <div class="detail-pos-label">浮动盈亏</div>
-                            <div class="detail-pos-value ${cls}">${sym}${profit.toFixed(2)} (${sym}${profitRate.toFixed(2)}%)</div>
+                            <div class="detail-pos-label">持仓收益</div>
+                            <div class="detail-pos-value ${cls}">${profitStr} (${rateStr})</div>
                         </div>
                     </div>
                 `;
             }
+
+            // === 2.1 历史收益（已实现）：有交易记录即展示 ===
+            const histProfit = getHistoricalProfitForFund(code);
+            const hasHistProfit = Math.abs(histProfit) >= 0.005;
+            const histCls = hasHistProfit ? (histProfit > 0 ? 'positive' : 'negative') : '';
+            const histSym = hasHistProfit ? (histProfit > 0 ? '+' : '-') : '';
+            const histStr = hasHistProfit ? (histSym + (histProfit < 0 ? Math.abs(histProfit) : histProfit).toFixed(2)) : '0.00';
+            html += `
+                <div class="detail-profit-row">
+                    <span class="detail-profit-label">历史收益（已实现）</span>
+                    <span class="detail-profit-value ${histCls}">${histStr}</span>
+                </div>
+            `;
 
             // === 3. 收益率柱状可视化 ===
             const rateFields = [
@@ -9654,51 +9689,60 @@
             const isPositive = lastValue >= firstValue;
             const lineColor = isPositive ? '#ff4d4f' : '#00b96b';
 
-            // 获取该基金的买入交易记录，用于在图表上标注买入点
+            // 获取该基金的买卖交易记录，用于在图表上标注买入点、卖出点
             const fundPosition = state.positions[code];
-            const buyTransactions = (fundPosition && fundPosition.transactions) ? 
+            const buyTransactions = (fundPosition && fundPosition.transactions) ?
                 fundPosition.transactions.filter(t => t.type === 'buy') : [];
+            const sellTransactions = (fundPosition && fundPosition.transactions) ?
+                fundPosition.transactions.filter(t => t.type === 'sell') : [];
             const buyPointData = new Array(recentData.length).fill(null);
+            const sellPointData = new Array(recentData.length).fill(null);
             const buyTooltipInfo = {};
-            
-            if (buyTransactions.length > 0) {
-                // 将 recentData 的日期建立索引映射（YYYY-MM-DD -> index）
-                const dateIndexMap = {};
-                recentData.forEach((item, index) => {
-                    const d = new Date(item.x);
-                    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-                    dateIndexMap[key] = index;
-                });
-                
-                buyTransactions.forEach(trans => {
-                    const d = new Date(trans.date);
-                    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-                    
-                    // 精确匹配日期
-                    let matchIdx = dateIndexMap[key];
-                    
-                    // 如果精确匹配失败，尝试查找最近的交易日（前后3天内）
-                    if (matchIdx === undefined) {
-                        const transTime = d.getTime();
-                        let minDiff = Infinity;
-                        recentData.forEach((item, index) => {
-                            const diff = Math.abs(new Date(item.x).getTime() - transTime);
-                            if (diff < minDiff && diff <= 3 * 24 * 60 * 60 * 1000) {
-                                minDiff = diff;
-                                matchIdx = index;
-                            }
-                        });
-                    }
-                    
-                    if (matchIdx !== undefined) {
-                        buyPointData[matchIdx] = percentageValues[matchIdx];
-                        if (!buyTooltipInfo[matchIdx]) buyTooltipInfo[matchIdx] = [];
-                        buyTooltipInfo[matchIdx].push(trans);
-                    }
-                });
-                
+            const sellTooltipInfo = {};
+
+            const dateIndexMap = {};
+            recentData.forEach((item, index) => {
+                const d = new Date(item.x);
+                const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+                dateIndexMap[key] = index;
+            });
+
+            function matchTransToIndex(trans) {
+                const effectiveStr = getTransEffectiveDate(trans);
+                let matchIdx = dateIndexMap[effectiveStr];
+                if (matchIdx === undefined) {
+                    const transTime = new Date(trans.tradeDate || trans.date).getTime();
+                    let minDiff = Infinity;
+                    recentData.forEach((item, index) => {
+                        const diff = Math.abs(new Date(item.x).getTime() - transTime);
+                        if (diff < minDiff && diff <= 3 * 24 * 60 * 60 * 1000) {
+                            minDiff = diff;
+                            matchIdx = index;
+                        }
+                    });
+                }
+                return matchIdx;
             }
+
+            buyTransactions.forEach(trans => {
+                const matchIdx = matchTransToIndex(trans);
+                if (matchIdx !== undefined) {
+                    buyPointData[matchIdx] = percentageValues[matchIdx];
+                    if (!buyTooltipInfo[matchIdx]) buyTooltipInfo[matchIdx] = [];
+                    buyTooltipInfo[matchIdx].push(trans);
+                }
+            });
+            sellTransactions.forEach(trans => {
+                const matchIdx = matchTransToIndex(trans);
+                if (matchIdx !== undefined) {
+                    sellPointData[matchIdx] = percentageValues[matchIdx];
+                    if (!sellTooltipInfo[matchIdx]) sellTooltipInfo[matchIdx] = [];
+                    sellTooltipInfo[matchIdx].push(trans);
+                }
+            });
+
             const hasBuyPoints = buyPointData.some(v => v !== null);
+            const hasSellPoints = sellPointData.some(v => v !== null);
 
             // 调试：记录百分比数据的范围，以便排查刻度问题
             try {
@@ -9762,6 +9806,20 @@
                         showLine: false,
                         fill: false,
                         order: -1
+                    }] : []).concat(hasSellPoints ? [{
+                        label: '卖出点',
+                        data: sellPointData,
+                        borderColor: 'transparent',
+                        backgroundColor: '#f97316',
+                        pointRadius: sellPointData.map(v => v !== null ? 8 : 0),
+                        pointHoverRadius: sellPointData.map(v => v !== null ? 10 : 0),
+                        pointStyle: 'circle',
+                        pointBackgroundColor: '#f97316',
+                        pointBorderColor: '#fff',
+                        pointBorderWidth: 2,
+                        showLine: false,
+                        fill: false,
+                        order: -1
                     }] : [])
                 },
                 options: {
@@ -9769,16 +9827,13 @@
                     maintainAspectRatio: false,
                     plugins: {
                         legend: {
-                            display: hasBuyPoints,
+                            display: hasBuyPoints || hasSellPoints,
                             labels: {
                                 filter: function(item) {
-                                    // 只显示买入点的图例
-                                    return item.text === '买入点';
+                                    return item.text === '买入点' || item.text === '卖出点';
                                 },
                                 usePointStyle: true,
-                                pointStyle: 'triangle',
                                 font: { size: 11 },
-                                color: getPrimaryColor(),
                                 padding: 10
                             },
                             position: 'top',
@@ -9788,8 +9843,7 @@
                             mode: 'index',
                             intersect: false,
                             filter: function(tooltipItem) {
-                                // 隐藏买入点数据集中值为 null 的 tooltip 项
-                                if (tooltipItem.dataset.label === '买入点' && tooltipItem.parsed.y === null) {
+                                if ((tooltipItem.dataset.label === '买入点' || tooltipItem.dataset.label === '卖出点') && tooltipItem.parsed.y === null) {
                                     return false;
                                 }
                                 return true;
@@ -9801,12 +9855,18 @@
                                         const idx = context.dataIndex;
                                         const infos = buyTooltipInfo[idx];
                                         if (infos && infos.length > 0) {
-                                            return infos.map(t => {
-                                                const dateStr = new Date(t.date).toLocaleDateString('zh-CN');
-                                                return `▲ 买入 ${t.amount.toFixed(2)}｜净值 ${t.netValue.toFixed(4)}｜${t.shares.toFixed(2)}份`;
-                                            });
+                                            return infos.map(t => `▲ 买入 ${t.amount.toFixed(2)}｜净值 ${(t.netValue || 0).toFixed(4)}｜${t.shares.toFixed(2)}份`);
                                         }
                                         return '▲ 买入点';
+                                    }
+                                    if (context.dataset.label === '卖出点') {
+                                        if (context.parsed.y === null) return null;
+                                        const idx = context.dataIndex;
+                                        const infos = sellTooltipInfo[idx];
+                                        if (infos && infos.length > 0) {
+                                            return infos.map(t => `● 卖出 ${(t.amount || 0).toFixed(2)}｜净值 ${(t.netValue || 0).toFixed(4)}｜${t.shares.toFixed(2)}份`);
+                                        }
+                                        return '● 卖出点';
                                     }
                                     return '涨跌幅：' + context.parsed.y.toFixed(2) + '%';
                                 }
@@ -10092,19 +10152,13 @@
 
             const codes = loadFundCodes();
 
-            // 渲染空状态或加载基金
-            renderFunds();
-
-            // 初始化拖拽排序
-            initDragSort();
-
-            // 加载基金数据
-            codes.forEach(code => {
-                fetchFundData(code);
+            // 延后首屏渲染到下一帧，让骨架/布局先绘制，减少白屏与卡顿感
+            requestAnimationFrame(function () {
+                renderFunds();
+                initDragSort();
+                codes.forEach(code => { fetchFundData(code); });
+                scheduleRefresh();
             });
-
-            // 智能轮询：交易时段30秒，非交易时段5分钟
-            scheduleRefresh();
             
             // 每天凌晨2点自动更新基金列表
             setInterval(() => {
