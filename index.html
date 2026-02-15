@@ -1653,11 +1653,23 @@
         }
 
         /* 趋势图时间选择器 */
+        .trend-chart-toolbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 4px;
+        }
+
         .trend-range-selector {
             display: flex;
-            justify-content: flex-end;
             gap: 4px;
-            margin-bottom: 4px;
+        }
+
+        .trend-display-selector {
+            display: flex;
+            gap: 4px;
         }
 
         .trend-range-btn {
@@ -4176,11 +4188,17 @@
                             <div class="allocation-legend" id="allocationLegend"></div>
                         </div>
                         <div class="profit-trend-chart-container">
-                            <div class="trend-range-selector" id="trendRangeSelector">
-                                <button class="trend-range-btn" onclick="changeTrendRange(30)">近1月</button>
-                                <button class="trend-range-btn" onclick="changeTrendRange(90)">近3月</button>
-                                <button class="trend-range-btn" onclick="changeTrendRange(180)">近半年</button>
-                                <button class="trend-range-btn active" onclick="changeTrendRange(0)">全部</button>
+                            <div class="trend-chart-toolbar">
+                                <div class="trend-range-selector" id="trendRangeSelector">
+                                    <button class="trend-range-btn" onclick="changeTrendRange(30)">近1月</button>
+                                    <button class="trend-range-btn" onclick="changeTrendRange(90)">近3月</button>
+                                    <button class="trend-range-btn" onclick="changeTrendRange(180)">近半年</button>
+                                    <button class="trend-range-btn active" onclick="changeTrendRange(0)">全部</button>
+                                </div>
+                                <div class="trend-display-selector">
+                                    <button class="trend-range-btn active" id="trendDisplayAmount" onclick="changeTrendChartDisplay('amount')">收益金额</button>
+                                    <button class="trend-range-btn" id="trendDisplayRate" onclick="changeTrendChartDisplay('rate')" title="收益率 = 累计收益 ÷ 累计投入。新增买入会使分母变大，可能出现收益率下降而收益金额上升。">收益率</button>
+                                </div>
                             </div>
                             <div class="profit-trend-chart-wrapper">
                                 <canvas id="profitTrendChart"></canvas>
@@ -4933,6 +4951,13 @@
         function loadFundCodes() {
             const saved = localStorage.getItem('fundCodes');
             return saved ? JSON.parse(saved) : [];
+        }
+
+        // 总览统计用：当前列表 + 已从列表移除但仍有交易记录的基金（清仓后删除的仍计入历史收益）
+        function getOverviewFundCodes() {
+            const list = loadFundCodes();
+            const withPositions = Object.keys(state.positions || {});
+            return [...new Set([...list, ...withPositions])];
         }
 
         // ===== 数据同步提醒 =====
@@ -6164,10 +6189,10 @@
                 // 警告信息
                 messageHtml += '<div class="confirm-warning">';
                 messageHtml += '<div class="confirm-warning-title">⚠️ 重要提醒</div>';
-                messageHtml += '<div class="confirm-warning-text">删除后将永久清除该基金的所有数据，包括：<br>';
-                messageHtml += '• 持仓信息和交易记录<br>';
-                messageHtml += '• 历史涨跌数据<br><br>';
-                messageHtml += '此操作无法撤销！建议删除前先导出数据备份。</div>';
+                messageHtml += '<div class="confirm-warning-text">删除后该基金将从列表中移除，并清除行情等缓存。<br>';
+                messageHtml += '• 交易记录会保留，用于投资总览中的历史收益统计<br>';
+                messageHtml += '• 历史涨跌数据将清除<br><br>';
+                messageHtml += '建议删除前先导出数据备份。</div>';
                 messageHtml += '</div>';
                 
                 const confirmed = await showCustomConfirm('删除基金', messageHtml, '确定删除', true);
@@ -6206,7 +6231,7 @@
             delete state.charts[code];
             delete state.charts[`net-worth-${code}`]; // 清理净值图表
             delete state.historyData[code];
-            delete state.positions[code];
+            // 保留 state.positions[code]，供总览历史收益统计（清仓后删除的基金仍计入已实现收益）
             delete state.dailyRanges[code];
             delete state.fundDetails[code];
             const sectors = loadFundSectors();
@@ -6692,7 +6717,7 @@
 
         // 打开历史收益明细弹窗
         function openHistoricalProfitDetail() {
-            const codes = loadFundCodes();
+            const codes = getOverviewFundCodes();
             const modal = document.getElementById('historicalProfitModal');
             const title = modal.querySelector('h2');
             const content = document.getElementById('historicalProfitContent');
@@ -7534,8 +7559,8 @@
 
         // 更新总览看板
         function updateOverviewPanel() {
-            const codes = loadFundCodes();
-            
+            const codes = getOverviewFundCodes();
+
             const overviewEl = document.getElementById('overviewPanel');
             // 如果没有基金，隐藏总览
             if (codes.length === 0) {
@@ -7998,6 +8023,9 @@
         }
 
         // ===== 最大回撤计算 =====
+        // 定义：沿时间轴维护「至今最高点」peak，每点的回撤 = (peak - 当前值) / peak；
+        // 最大回撤 = 所有点回撤的最大值。即：从曲线前期高点到后续最低点的跌幅（相对该高点）。
+        // 例：累计收益从 1000 跌到 84，回撤 = (1000-84)/1000 = 91.6%。收益率模式下同理，为「收益率曲线」的回撤。
         function calculateMaxDrawdown(dataPoints) {
             if (dataPoints.length < 2) return 0;
             let peak = dataPoints[0];
@@ -8143,13 +8171,23 @@
 
         // ===== 收益趋势图时间段选择 =====
         let trendRangeDays = 0; // 0 = 全部
+        let profitTrendChartDisplay = 'amount'; // 'amount' | 'rate'
 
         function changeTrendRange(days) {
             trendRangeDays = days;
-            document.querySelectorAll('.trend-range-btn').forEach(btn => {
-                const btnDays = parseInt(btn.getAttribute('onclick').match(/\d+/)?.[0] || '0');
+            document.querySelectorAll('.trend-range-selector .trend-range-btn').forEach(btn => {
+                const btnDays = parseInt(btn.getAttribute('onclick').match(/\d+/)?.[0] ?? 0);
                 btn.classList.toggle('active', btnDays === days);
             });
+            drawProfitTrendChart();
+        }
+
+        function changeTrendChartDisplay(mode) {
+            profitTrendChartDisplay = mode;
+            const amountBtn = document.getElementById('trendDisplayAmount');
+            const rateBtn = document.getElementById('trendDisplayRate');
+            if (amountBtn) amountBtn.classList.toggle('active', mode === 'amount');
+            if (rateBtn) rateBtn.classList.toggle('active', mode === 'rate');
             drawProfitTrendChart();
         }
 
@@ -8170,16 +8208,15 @@
         // 收益趋势图实例
         let profitTrendChartInstance = null;
 
-        // 收益趋势图 Y 轴范围：数据少或数值区间小时让折线更饱满，避免显得空
-        function makeProfitTrendYAxisLimits(filteredData) {
+        // 收益趋势图 Y 轴范围：数据少或数值区间小时让折线更饱满，避免显得空；rate 模式用百分比区间
+        function makeProfitTrendYAxisLimits(filteredData, isRate) {
             return function(axis) {
                 if (axis.max < 0) axis.max = 0;
                 else if (axis.min > 0) axis.min = 0;
                 let range = axis.max - axis.min;
                 const center = (axis.max + axis.min) / 2;
                 const absCenter = Math.abs(center);
-                // 数值区间过小时设定最小显示范围，避免折线几乎成一条直线
-                const minRange = Math.max(30, absCenter * 0.12);
+                const minRange = isRate ? Math.max(5, absCenter * 0.12) : Math.max(30, absCenter * 0.12);
                 if (range < minRange && range > 0) {
                     axis.min = center - minRange / 2;
                     axis.max = center + minRange / 2;
@@ -8198,7 +8235,7 @@
             const ctx = document.getElementById('profitTrendChart');
             if (!ctx) return;
 
-            const codes = loadFundCodes();
+            const codes = getOverviewFundCodes();
 
             // 收集所有交易，按日期排序
             const allTransactions = [];
@@ -8238,15 +8275,17 @@
                 d.setDate(d.getDate() + 1);
             }
 
-            // 每个时间点：按当日历史净值算持仓市值，按有效日回放算已实现收益
+            // 每个时间点：按当日历史净值算持仓市值，按有效日回放算已实现收益；并算当日累计投入成本（用于收益率）
             const todayStr = toDateStr(new Date());
             const dataPoints = [];
             const holdingProfitPoints = [];
             const historicalProfitPoints = [];
+            const totalCostAtDate = [];
 
             dates.forEach(dateStr => {
                 let totalHoldingProfit = 0;
                 let totalHistoricalProfit = 0;
+                let costAtDate = 0;
                 const isToday = dateStr === todayStr;
 
                 codes.forEach(code => {
@@ -8291,26 +8330,46 @@
                         if (nav == null) nav = getNavOnOrBefore(code, dateStr);
                         if (nav != null) totalHoldingProfit += shares * nav - cost;
                     }
+
+                    // 累计投入成本（该日及之前所有买入金额之和）
+                    const upToForCost = position.transactions.filter(trans => getTransEffectiveDate(trans) <= dateStr);
+                    upToForCost.forEach(trans => { if (trans.type === 'buy') costAtDate += trans.amount; });
                 });
 
                 holdingProfitPoints.push(totalHoldingProfit);
                 historicalProfitPoints.push(totalHistoricalProfit);
                 dataPoints.push(totalHoldingProfit + totalHistoricalProfit);
+                totalCostAtDate.push(costAtDate);
             });
 
-            // 更新最大回撤
-            const maxDd = calculateMaxDrawdown(dataPoints);
+            // 收益率序列：累计收益/累计成本*100，成本为0时取0
+            const dataPointsRate = dataPoints.map((v, i) => totalCostAtDate[i] > 0 ? (v / totalCostAtDate[i]) * 100 : 0);
+            const holdingProfitPointsRate = holdingProfitPoints.map((v, i) => totalCostAtDate[i] > 0 ? (v / totalCostAtDate[i]) * 100 : 0);
+            const historicalProfitPointsRate = historicalProfitPoints.map((v, i) => totalCostAtDate[i] > 0 ? (v / totalCostAtDate[i]) * 100 : 0);
+
+            const isRateMode = profitTrendChartDisplay === 'rate';
+            const mainSeries = isRateMode ? dataPointsRate : dataPoints;
+            const historicalSeries = isRateMode ? historicalProfitPointsRate : historicalProfitPoints;
+            const holdingSeries = isRateMode ? holdingProfitPointsRate : holdingProfitPoints;
+
+            // 更新最大回撤（按当前展示序列计算）
+            const maxDd = calculateMaxDrawdown(mainSeries);
             const maxDdEl = document.getElementById('maxDrawdown');
-            if (maxDdEl) maxDdEl.textContent = `回撤: -${(maxDd * 100).toFixed(2)}%`;
+            if (maxDdEl) {
+                maxDdEl.textContent = `回撤: -${(maxDd * 100).toFixed(2)}%`;
+                maxDdEl.title = profitTrendChartDisplay === 'rate'
+                    ? '最大回撤：收益率曲线从前期高点到最低点的跌幅（相对该高点）。选「收益率」时新增投入会拉低收益率，回撤可能较大。'
+                    : '最大回撤：累计收益曲线从前期高点到最低点的跌幅（相对该高点）。例：收益从 1000 跌到 84 则回撤 91.6%。';
+            }
 
             // 更新紧凑模式迷你趋势线
             drawCompactSparkline(dataPoints);
 
-            // 时间范围过滤
+            // 时间范围过滤（使用当前展示模式对应的序列）
             let filteredDates = dates;
-            let filteredData = dataPoints;
-            let filteredHistorical = historicalProfitPoints;
-            let filteredHolding = holdingProfitPoints;
+            let filteredData = mainSeries.slice();
+            let filteredHistorical = historicalSeries.slice();
+            let filteredHolding = holdingSeries.slice();
 
             if (trendRangeDays > 0) {
                 const cutoff = new Date();
@@ -8325,9 +8384,9 @@
 
                 if (indices.length >= 2) {
                     filteredDates = indices.map(i => dates[i]);
-                    filteredData = indices.map(i => dataPoints[i]);
-                    filteredHistorical = indices.map(i => historicalProfitPoints[i]);
-                    filteredHolding = indices.map(i => holdingProfitPoints[i]);
+                    filteredData = indices.map(i => mainSeries[i]);
+                    filteredHistorical = indices.map(i => historicalSeries[i]);
+                    filteredHolding = indices.map(i => holdingSeries[i]);
                 }
             }
 
@@ -8362,7 +8421,19 @@
                 chart.data.datasets[0].borderWidth = borderWidth;
                 chart.data.datasets[1].data = filteredHistorical;
                 chart.data.datasets[2].data = filteredHolding;
-                chart.options.scales.y.afterDataLimits = makeProfitTrendYAxisLimits(filteredData);
+                chart.options.scales.y.afterDataLimits = makeProfitTrendYAxisLimits(filteredData, profitTrendChartDisplay === 'rate');
+                chart.options.scales.y.ticks.callback = function(value) {
+                    return profitTrendChartDisplay === 'rate'
+                        ? (value >= 0 ? '+' : '') + value.toFixed(2) + '%'
+                        : (value >= 0 ? '+' : '') + value.toFixed(0);
+                };
+                chart.options.plugins.tooltip.callbacks.label = function(context) {
+                    const val = context.parsed.y;
+                    const symbol = val >= 0 ? '+' : '';
+                    return profitTrendChartDisplay === 'rate'
+                        ? `${context.dataset.label}: ${symbol}${val.toFixed(2)}%`
+                        : `${context.dataset.label}: ${symbol}${val.toFixed(2)}`;
+                };
                 chart.update('none');
                 return;
             }
@@ -8437,7 +8508,9 @@
                                 label: function(context) {
                                     const val = context.parsed.y;
                                     const symbol = val >= 0 ? '+' : '';
-                                    return `${context.dataset.label}: ${symbol}${val.toFixed(2)}`;
+                                    return profitTrendChartDisplay === 'rate'
+                                        ? `${context.dataset.label}: ${symbol}${val.toFixed(2)}%`
+                                        : `${context.dataset.label}: ${symbol}${val.toFixed(2)}`;
                                 }
                             }
                         }
@@ -8457,7 +8530,9 @@
                             display: true,
                             ticks: {
                                 callback: function(value) {
-                                    return (value >= 0 ? '+' : '') + value.toFixed(0);
+                                    return profitTrendChartDisplay === 'rate'
+                                        ? (value >= 0 ? '+' : '') + value.toFixed(2) + '%'
+                                        : (value >= 0 ? '+' : '') + value.toFixed(0);
                                 },
                                 font: { size: 10 }
                             },
@@ -8470,7 +8545,7 @@
                                     return context.tick.value === 0 ? 1.5 : 1;
                                 }
                             },
-                            afterDataLimits: makeProfitTrendYAxisLimits(filteredData)
+                            afterDataLimits: makeProfitTrendYAxisLimits(filteredData, profitTrendChartDisplay === 'rate')
                         }
                     },
                     interaction: {
