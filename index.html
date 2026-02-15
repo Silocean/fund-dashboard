@@ -1914,6 +1914,12 @@
             background: var(--hover-bg);
         }
 
+        .fund-deleted-tag {
+            font-size: 12px;
+            color: var(--text-muted);
+            margin-left: 4px;
+        }
+
         .historical-fund-info {
             flex: 1;
             min-width: 0;
@@ -1934,6 +1940,19 @@
         .historical-fund-code {
             font-size: 12px;
             color: var(--text-muted);
+        }
+
+        .historical-fund-name-deleted {
+            cursor: default;
+        }
+        .deleted-tag {
+            font-size: 11px;
+            font-weight: 500;
+            color: var(--text-muted);
+            background: var(--border-color);
+            padding: 1px 6px;
+            border-radius: 4px;
+            margin-left: 4px;
         }
 
         .historical-fund-detail {
@@ -3104,6 +3123,10 @@
 
         .nw-history-table .nw-change.zero {
             color: var(--text-muted);
+        }
+
+        .nw-history-table .nw-row-hidden {
+            display: none;
         }
 
         /* 骨架屏 */
@@ -4323,7 +4346,7 @@
                             <div class="stat-value" id="todayProfit">0.00</div>
                         </div>
                         <div class="stat-item stat-clickable" onclick="openHistoricalProfitDetail()" title="点击查看历史收益明细">
-                            <div class="stat-label">历史收益（已实现） <span class="stat-detail-hint">▶ 明细</span></div>
+                            <div class="stat-label">历史收益 <span class="stat-detail-hint">▶ 明细</span></div>
                             <div class="stat-value" id="historicalProfit">0.00</div>
                         </div>
                         <div class="stat-item stat-cumulative">
@@ -5049,9 +5072,9 @@
             return { shares, cost };
         }
 
-        /** 计算某日收盘时组合总市值（使用该日或之前最近净值，避免缺数据日导致相邻日盈亏跳变） */
+        /** 计算某日收盘时组合总市值（使用该日或之前最近净值，避免缺数据日导致相邻日盈亏跳变）；含已删除基金以与盈亏合计一致） */
         function getPortfolioValueAtDate(dateStr) {
-            const codes = loadFundCodes();
+            const codes = getOverviewFundCodes();
             let total = 0;
             for (const code of codes) {
                 const { shares } = getSharesAndCostAtDate(code, dateStr);
@@ -5063,9 +5086,9 @@
             return total;
         }
 
-        /** 与 getDailyPnlMap 中当日 rate 分母一致：prev 日市值，仅统计 prev 与 cur 均有净值的持仓（用于月/年百分比） */
+        /** 与 getDailyPnlMap 中当日 rate 分母一致：prev 日市值，仅统计 prev 与 cur 均有净值的持仓（用于月/年百分比）；含已删除基金） */
         function getPortfolioValueForRateBetween(prevDateStr, curDateStr) {
-            const codes = loadFundCodes();
+            const codes = getOverviewFundCodes();
             let total = 0;
             codes.forEach(code => {
                 const { shares: sharesPrev } = getSharesAndCostAtDate(code, prevDateStr);
@@ -5078,11 +5101,11 @@
             return total;
         }
 
-        /** 生成盈亏日历用的每日数据：dateStr -> { amount, rate, value }，仅包含有净值的交易日（带短期缓存减少重复计算） */
+        /** 生成盈亏日历用的每日数据：dateStr -> { amount, rate, value }，仅包含有净值的交易日（带短期缓存减少重复计算）；含已删除基金以与明细合计一致） */
         function getDailyPnlMap() {
             const CACHE_MS = 60000;
             if (state._dailyPnlMapCache && (Date.now() - state._dailyPnlMapCache.ts < CACHE_MS)) return state._dailyPnlMapCache.data;
-            const codes = loadFundCodes();
+            const codes = getOverviewFundCodes();
             const dateSet = new Set();
             codes.forEach(code => {
                 const position = state.positions[code];
@@ -5130,9 +5153,9 @@
             return map;
         }
 
-        /** 某日各基金的盈亏明细（用于日历点击弹窗），返回 [{ code, name, amount, rate }] */
+        /** 某日各基金的盈亏明细（用于日历点击弹窗），返回 [{ code, name, amount, rate }]；含已删除基金，名称取 fundsData/fundDetails/code */
         function getDailyPnlByFund(dateStr) {
-            const codes = loadFundCodes();
+            const codes = getOverviewFundCodes();
             const prev = getPreviousTradingDay(dateStr);
             const list = [];
             codes.forEach(code => {
@@ -5144,15 +5167,15 @@
                 const amount = sharesPrev * (navCur - navPrev);
                 const valuePrevForRate = sharesPrev * navPrev;
                 const rate = valuePrevForRate > 0 ? (amount / valuePrevForRate) * 100 : 0;
-                const data = state.fundsData[code];
-                list.push({ code, name: data ? data.name : code, amount, rate });
+                const name = (state.fundsData[code] && state.fundsData[code].name) || (state.fundDetails[code] && state.fundDetails[code].name) || code;
+                list.push({ code, name, amount, rate });
             });
             return list.sort((a, b) => Math.abs(b.amount) - Math.abs(a.amount));
         }
 
-        /** 日期区间内各基金盈亏汇总（单次遍历区间内交易日，按 code 累加，避免重复调用 getDailyPnlByFund） */
+        /** 日期区间内各基金盈亏汇总（单次遍历区间内交易日，按 code 累加）；含已删除基金 */
         function getPnlByFundForDateRange(startStr, endStr) {
-            const codes = loadFundCodes();
+            const codes = getOverviewFundCodes();
             const sumByCode = {};
             const nameByCode = {};
             let d = new Date(startStr + 'T12:00:00');
@@ -5169,7 +5192,7 @@
                     if (navPrev == null || navCur == null) return;
                     const amount = sharesPrev * (navCur - navPrev);
                     sumByCode[code] = (sumByCode[code] || 0) + amount;
-                    if (!nameByCode[code]) nameByCode[code] = state.fundsData[code] ? state.fundsData[code].name : code;
+                    if (!nameByCode[code]) nameByCode[code] = (state.fundsData[code] && state.fundsData[code].name) || (state.fundDetails[code] && state.fundDetails[code].name) || code;
                 });
                 d.setDate(d.getDate() + 1);
             }
@@ -5226,7 +5249,7 @@
             const opts = [];
             const end = new Date();
             const start = new Date();
-            start.setFullYear(start.getFullYear() - 1);
+            start.setFullYear(start.getFullYear() - 5);  // 5 年前起，提供更多历史候选日期
             let d = new Date(end);
             d.setDate(d.getDate() + 31);
             const futureEnd = d;
@@ -5342,6 +5365,11 @@
             const list = loadFundCodes();
             const withPositions = Object.keys(state.positions || {});
             return [...new Set([...list, ...withPositions])];
+        }
+
+        /** 是否已从当前基金列表删除（仅保留在持仓/交易记录中，用于明细弹窗标识） */
+        function isFundDeleted(code) {
+            return !loadFundCodes().includes(code);
         }
 
         // ===== 数据同步提醒 =====
@@ -7331,9 +7359,10 @@
 
                 if (sellCount > 0) {
                     const data = state.fundsData[code];
+                    const name = (data && data.name) || (state.fundDetails[code] && state.fundDetails[code].name) || code;
                     fundProfits.push({
                         code: code,
-                        name: data ? data.name : code,
+                        name: name,
                         profit: fundProfit,
                         sellCount: sellCount,
                         totalSellAmount: totalSellAmount,
@@ -7367,10 +7396,16 @@
                     const isZeroRate = Math.abs(profitRateNum) < 0.005;
                     const profitRateStr = isZeroRate ? '0.00' : (profitRateNum > 0 ? '+' : (profitRateNum < 0 ? '-' : '')) + (profitRateNum < 0 ? Math.abs(profitRateNum) : profitRateNum).toFixed(2);
 
+                    const nameEsc = (fp.name || '').replace(/</g, '&lt;').replace(/"/g, '&quot;');
+                    const codeEsc = (fp.code || '').replace(/</g, '&lt;');
+                    const deleted = isFundDeleted(fp.code);
+                    const namePart = deleted
+                        ? `<span class="historical-fund-name historical-fund-name-deleted" title="该基金已从列表删除">${nameEsc} <span class="deleted-tag">已删除</span></span>`
+                        : `<a href="javascript:void(0)" class="historical-fund-name historical-fund-name-link" onclick="closeHistoricalProfitDetail(); openFundDetailModal('${codeEsc}')" title="点击查看基金详情">${nameEsc}</a>`;
                     return `
                         <div class="historical-fund-item">
                             <div class="historical-fund-info">
-                                <div class="historical-fund-name">${fp.name}</div>
+                                ${namePart}
                                 <div class="historical-fund-code">${fp.code}</div>
                                 <div class="historical-fund-detail">
                                     卖出 ${fp.sellCount} 笔 · 收回 ${fp.totalSellAmount.toFixed(2)} · 成本 ${fp.totalCostBasis.toFixed(2)} · 收益率 ${profitRateStr}%
@@ -7584,7 +7619,11 @@
                     : (isZeroRate ? '0.00%' : (item.rate >= 0 ? '+' : '-') + (item.rate >= 0 ? item.rate : Math.abs(item.rate)).toFixed(2) + '%');
                 const nameEsc = (item.name || '').replace(/</g, '&lt;').replace(/"/g, '&quot;');
                 const codeEsc = (item.code || '').replace(/</g, '&lt;');
-                html += `<div class="historical-fund-item"><div class="historical-fund-info"><a href="javascript:void(0)" class="historical-fund-name historical-fund-name-link" onclick="closeDailyPnlDetailModal(); openFundDetailModal('${codeEsc}')" title="点击查看基金详情">${nameEsc}</a><span class="historical-fund-code">${codeEsc}</span></div><div class="historical-fund-profit"><div class="profit-amount ${cls}">${amountStr}</div></div></div>`;
+                const deleted = isFundDeleted(item.code);
+                const namePart = deleted
+                    ? `<span class="historical-fund-name historical-fund-name-deleted" title="该基金已从列表删除">${nameEsc} <span class="deleted-tag">已删除</span></span>`
+                    : `<a href="javascript:void(0)" class="historical-fund-name historical-fund-name-link" onclick="closeDailyPnlDetailModal(); openFundDetailModal('${codeEsc}')" title="点击查看基金详情">${nameEsc}</a>`;
+                html += `<div class="historical-fund-item"><div class="historical-fund-info">${namePart}<span class="historical-fund-code">${codeEsc}</span></div><div class="historical-fund-profit"><div class="profit-amount ${cls}">${amountStr}</div></div></div>`;
             });
             html += '</div>';
             content.innerHTML = html;
@@ -7643,10 +7682,12 @@
                     const profitAmountStr = isZeroProfit ? '0.00' : (item.profit > 0 ? '+' : (item.profit < 0 ? '-' : '')) + (item.profit < 0 ? Math.abs(item.profit) : item.profit).toFixed(2);
                     const isZeroRate = Math.abs(item.rate) < 0.005;
                     const rateStr = isZeroRate ? '0.00' : (item.rate > 0 ? '+' : (item.rate < 0 ? '-' : '')) + (item.rate < 0 ? Math.abs(item.rate) : item.rate).toFixed(2);
+                    const nameEsc = (item.name || '').replace(/</g, '&lt;').replace(/"/g, '&quot;');
+                    const codeEsc = (item.code || '').replace(/</g, '&lt;');
                     html += `
                         <div class="historical-fund-item">
                             <div class="historical-fund-info">
-                                <div class="historical-fund-name">${item.name}</div>
+                                <a href="javascript:void(0)" class="historical-fund-name historical-fund-name-link" onclick="closeHoldingProfitDetail(); openFundDetailModal('${codeEsc}')" title="点击查看基金详情">${nameEsc}</a>
                                 <div class="historical-fund-code">${item.code}</div>
                                 <div class="historical-fund-detail">
                                     市值 ${item.currentValue.toFixed(2)} · 成本 ${item.cost.toFixed(2)} · 收益率 ${rateStr}%
@@ -8734,10 +8775,12 @@
                     const profitAmountStr = isZeroProfit ? '0.00' : (item.profit > 0 ? '+' : (item.profit < 0 ? '-' : '')) + (item.profit < 0 ? Math.abs(item.profit) : item.profit).toFixed(2);
                     const isZeroPct = Math.abs(item.percentage) < 0.005;
                     const pctStr = isZeroPct ? '0.00' : (item.percentage > 0 ? '+' : (item.percentage < 0 ? '-' : '')) + (item.percentage < 0 ? Math.abs(item.percentage) : item.percentage).toFixed(2);
+                    const nameEsc = (item.name || '').replace(/</g, '&lt;').replace(/"/g, '&quot;');
+                    const codeEsc = (item.code || '').replace(/</g, '&lt;');
                     html += `
                         <div class="historical-fund-item">
                             <div class="historical-fund-info">
-                                <div class="historical-fund-name">${item.name}</div>
+                                <a href="javascript:void(0)" class="historical-fund-name historical-fund-name-link" onclick="closeHistoricalProfitDetail(); openFundDetailModal('${codeEsc}')" title="点击查看基金详情">${nameEsc}</a>
                                 <div class="historical-fund-code">${item.code}</div>
                             </div>
                             <div class="historical-fund-profit">
@@ -10008,7 +10051,7 @@
             const histStr = hasHistProfit ? (histSym + (histProfit < 0 ? Math.abs(histProfit) : histProfit).toFixed(2)) : '0.00';
             html += `
                 <div class="detail-profit-row">
-                    <span class="detail-profit-label">历史收益（已实现）</span>
+                    <span class="detail-profit-label">历史收益</span>
                     <span class="detail-profit-value ${histCls}">${histStr}</span>
                 </div>
             `;
@@ -10098,6 +10141,8 @@
                             <button class="chart-range-btn ${selectedRange === 90 ? 'active' : ''}" onclick="changeChartRange('${code}', 90)">近3月</button>
                             <button class="chart-range-btn ${selectedRange === 180 ? 'active' : ''}" onclick="changeChartRange('${code}', 180)">近半年</button>
                             <button class="chart-range-btn ${selectedRange === 365 ? 'active' : ''}" onclick="changeChartRange('${code}', 365)">近1年</button>
+                            <button class="chart-range-btn ${selectedRange === 1095 ? 'active' : ''}" onclick="changeChartRange('${code}', 1095)">近三年</button>
+                            <button class="chart-range-btn ${selectedRange === 0 ? 'active' : ''}" onclick="changeChartRange('${code}', 0)">成立以来</button>
                         </div>
                         <div class="net-worth-chart-wrapper">
                             <canvas id="net-worth-chart-${code}"></canvas>
@@ -10136,8 +10181,8 @@
                         changeHtml = `<span class="nw-change ${cls}">${sym}${change.toFixed(2)}%</span>`;
                     }
 
-                    const hiddenClass = i >= defaultShow ? ' style="display:none"' : '';
-                    tableRows += `<tr class="nw-row"${hiddenClass}><td class="nw-date">${dateStr}</td><td>${nwValue}</td><td>${changeHtml}</td></tr>`;
+                    const rowClass = i >= defaultShow ? 'nw-row nw-row-hidden' : 'nw-row';
+                    tableRows += `<tr class="${rowClass}"><td class="nw-date">${dateStr}</td><td>${nwValue}</td><td>${changeHtml}</td></tr>`;
                 });
 
                 html += `
@@ -10180,13 +10225,13 @@
 
         function toggleNwHistory(btn) {
             const section = btn.closest('.nw-history-section');
-            const hiddenRows = section.querySelectorAll('.nw-row[style*="display:none"]');
+            const hiddenRows = section.querySelectorAll('.nw-row-hidden');
             if (hiddenRows.length > 0) {
-                hiddenRows.forEach(r => r.style.display = '');
+                hiddenRows.forEach(r => r.classList.remove('nw-row-hidden'));
                 btn.textContent = '收起 ▲';
             } else {
                 const rows = section.querySelectorAll('.nw-row');
-                rows.forEach((r, i) => { if (i >= 10) r.style.display = 'none'; });
+                rows.forEach((r, i) => { if (i >= 10) r.classList.add('nw-row-hidden'); });
                 btn.textContent = '展开更多 ▼';
             }
         }
@@ -10478,15 +10523,18 @@
             }
 
             // 根据选择的时间范围筛选数据（按日历天数过滤）
-            const rangeDays = state.chartRangeSelection[code] || 180;
-            const rangeLabels = { 30: '近1月', 90: '近3月', 180: '近半年', 365: '近1年' };
-            const cutoffDate = Date.now() - rangeDays * 24 * 60 * 60 * 1000;
-            let recentData = details.netWorthData.filter(item => item.x >= cutoffDate);
-            
-            // 如果按日历过滤后数据太少（<5个点），回退到取最后N个数据点
-            if (recentData.length < 5) {
-                const fallbackCount = { 30: 22, 90: 66, 180: 132, 365: 252 }[rangeDays] || 132;
-                recentData = details.netWorthData.slice(-fallbackCount);
+            const rangeDays = state.chartRangeSelection[code] ?? 180;
+            const rangeLabels = { 30: '近1月', 90: '近3月', 180: '近半年', 365: '近1年', 1095: '近三年', 0: '成立以来' };
+            let recentData;
+            if (rangeDays === 0) {
+                recentData = details.netWorthData.slice();
+            } else {
+                const cutoffDate = Date.now() - rangeDays * 24 * 60 * 60 * 1000;
+                recentData = details.netWorthData.filter(item => item.x >= cutoffDate);
+                if (recentData.length < 5) {
+                    const fallbackCount = { 30: 22, 90: 66, 180: 132, 365: 252, 1095: 756 }[rangeDays] || 132;
+                    recentData = details.netWorthData.slice(-fallbackCount);
+                }
             }
             
             
@@ -10626,13 +10674,13 @@
                         label: '买入点',
                         data: buyPointData,
                         borderColor: 'transparent',
-                        backgroundColor: getPrimaryColor(),
-                        pointRadius: buyPointData.map(v => v !== null ? 8 : 0),
-                        pointHoverRadius: buyPointData.map(v => v !== null ? 10 : 0),
-                        pointStyle: 'triangle',
-                        pointBackgroundColor: getPrimaryColor(),
+                        backgroundColor: '#ef4444',
+                        pointRadius: buyPointData.map(v => v !== null ? 5 : 0),
+                        pointHoverRadius: buyPointData.map(v => v !== null ? 7 : 0),
+                        pointStyle: 'circle',
+                        pointBackgroundColor: '#ef4444',
                         pointBorderColor: '#fff',
-                        pointBorderWidth: 2,
+                        pointBorderWidth: 1.5,
                         showLine: false,
                         fill: false,
                         order: -1
@@ -10640,13 +10688,13 @@
                         label: '卖出点',
                         data: sellPointData,
                         borderColor: 'transparent',
-                        backgroundColor: '#f97316',
-                        pointRadius: sellPointData.map(v => v !== null ? 8 : 0),
-                        pointHoverRadius: sellPointData.map(v => v !== null ? 10 : 0),
+                        backgroundColor: '#3b82f6',
+                        pointRadius: sellPointData.map(v => v !== null ? 5 : 0),
+                        pointHoverRadius: sellPointData.map(v => v !== null ? 7 : 0),
                         pointStyle: 'circle',
-                        pointBackgroundColor: '#f97316',
+                        pointBackgroundColor: '#3b82f6',
                         pointBorderColor: '#fff',
-                        pointBorderWidth: 2,
+                        pointBorderWidth: 1.5,
                         showLine: false,
                         fill: false,
                         order: -1
@@ -10713,7 +10761,7 @@
                         x: {
                             display: true,
                             grid: { display: false },
-                            ticks: { maxRotation: 45, minRotation: 45, font: { size: 10 }, maxTicksLimit: rangeDays <= 30 ? 8 : rangeDays <= 90 ? 10 : 12 }
+                            ticks: { maxRotation: 45, minRotation: 45, font: { size: 10 }, maxTicksLimit: rangeDays === 0 ? 14 : rangeDays <= 30 ? 8 : rangeDays <= 90 ? 10 : rangeDays <= 365 ? 12 : 14 }
                         },
                         y: {
                             display: true,
@@ -10752,7 +10800,7 @@
                     btn.classList.remove('active');
                 });
                 // 根据 days 值找到对应按钮并激活
-                const daysList = [30, 90, 180, 365];
+                const daysList = [30, 90, 180, 365, 1095, 0];
                 const idx = daysList.indexOf(days);
                 if (idx >= 0 && selector.children[idx]) {
                     selector.children[idx].classList.add('active');
