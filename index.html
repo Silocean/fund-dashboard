@@ -4193,11 +4193,12 @@
                                     <button class="trend-range-btn" onclick="changeTrendRange(30)">近1月</button>
                                     <button class="trend-range-btn" onclick="changeTrendRange(90)">近3月</button>
                                     <button class="trend-range-btn" onclick="changeTrendRange(180)">近半年</button>
+                                    <button class="trend-range-btn" onclick="changeTrendRange(365)">近1年</button>
                                     <button class="trend-range-btn active" onclick="changeTrendRange(0)">全部</button>
                                 </div>
                                 <div class="trend-display-selector">
                                     <button class="trend-range-btn active" id="trendDisplayAmount" onclick="changeTrendChartDisplay('amount')">收益金额</button>
-                                    <button class="trend-range-btn" id="trendDisplayRate" onclick="changeTrendChartDisplay('rate')" title="收益率 = 累计收益 ÷ 累计投入。新增买入会使分母变大，可能出现收益率下降而收益金额上升。">收益率</button>
+                                    <button class="trend-range-btn" id="trendDisplayRate" onclick="changeTrendChartDisplay('rate')" title="收益率 = 累计收益 ÷ 净投入（总买入 − 总卖出收回）。买入增加分母、卖出减少分母，避免只增不减。">收益率</button>
                                 </div>
                             </div>
                             <div class="profit-trend-chart-wrapper">
@@ -6231,16 +6232,14 @@
             delete state.charts[code];
             delete state.charts[`net-worth-${code}`]; // 清理净值图表
             delete state.historyData[code];
-            // 保留 state.positions[code]，供总览历史收益统计（清仓后删除的基金仍计入已实现收益）
+            // 保留 state.positions[code]、state.fundDetails[code] 及本地 fundDetail 缓存，供总览折线图用历史净值回放
             delete state.dailyRanges[code];
-            delete state.fundDetails[code];
             const sectors = loadFundSectors();
             delete sectors[code];
             saveFundSectors(sectors);
             saveHistoryData();
             savePositions();
             saveDailyRanges();
-            localStorage.removeItem(`fundDetail_${code}`); // 清理详细信息缓存
             
             renderFunds();
             
@@ -8280,12 +8279,13 @@
             const dataPoints = [];
             const holdingProfitPoints = [];
             const historicalProfitPoints = [];
-            const totalCostAtDate = [];
+            const totalCostAtDate = [];   // 净投入（总买入 - 总卖出收回），用于收益率分母
 
             dates.forEach(dateStr => {
                 let totalHoldingProfit = 0;
                 let totalHistoricalProfit = 0;
-                let costAtDate = 0;
+                let buyAtDate = 0;
+                let sellAtDate = 0;
                 const isToday = dateStr === todayStr;
 
                 codes.forEach(code => {
@@ -8304,12 +8304,14 @@
                         if (trans.type === 'buy') {
                             runningShares += trans.shares;
                             runningCost += trans.amount;
+                            buyAtDate += trans.amount;
                         } else if (trans.type === 'sell') {
                             const sellRatio = runningShares > 0 ? trans.shares / runningShares : 0;
                             const costBasis = runningCost * sellRatio;
                             realizedProfit += trans.amount - costBasis;
                             runningShares -= trans.shares;
                             runningCost -= costBasis;
+                            sellAtDate += trans.amount;
                         }
                     });
 
@@ -8330,19 +8332,16 @@
                         if (nav == null) nav = getNavOnOrBefore(code, dateStr);
                         if (nav != null) totalHoldingProfit += shares * nav - cost;
                     }
-
-                    // 累计投入成本（该日及之前所有买入金额之和）
-                    const upToForCost = position.transactions.filter(trans => getTransEffectiveDate(trans) <= dateStr);
-                    upToForCost.forEach(trans => { if (trans.type === 'buy') costAtDate += trans.amount; });
                 });
 
                 holdingProfitPoints.push(totalHoldingProfit);
                 historicalProfitPoints.push(totalHistoricalProfit);
                 dataPoints.push(totalHoldingProfit + totalHistoricalProfit);
-                totalCostAtDate.push(costAtDate);
+                // 净投入 = 总买入 - 总卖出收回；卖出后分母减小，收益率不会只被买入摊薄
+                totalCostAtDate.push(Math.max(0, buyAtDate - sellAtDate));
             });
 
-            // 收益率序列：累计收益/累计成本*100，成本为0时取0
+            // 收益率序列：累计收益/净投入*100；净投入为0时取0（避免除零；已全部赎回时不再显示收益率）
             const dataPointsRate = dataPoints.map((v, i) => totalCostAtDate[i] > 0 ? (v / totalCostAtDate[i]) * 100 : 0);
             const holdingProfitPointsRate = holdingProfitPoints.map((v, i) => totalCostAtDate[i] > 0 ? (v / totalCostAtDate[i]) * 100 : 0);
             const historicalProfitPointsRate = historicalProfitPoints.map((v, i) => totalCostAtDate[i] > 0 ? (v / totalCostAtDate[i]) * 100 : 0);
@@ -10028,36 +10027,32 @@
                 }, 5000); // 延迟5秒后检查
             }
             
-            // 加载已有基金的详细信息缓存
-            const codes = loadFundCodes();
-            codes.forEach(code => {
+            // 加载已有基金的详细信息缓存（含已从列表删除但仍有持仓/交易记录的基金，供总览折线图回放）
+            const codesForDetail = getOverviewFundCodes();
+            codesForDetail.forEach(code => {
                 const cached = localStorage.getItem(`fundDetail_${code}`);
                 if (cached) {
                     try {
                         const cacheData = JSON.parse(cached);
                         const now = Date.now();
                         const oneDay = 24 * 60 * 60 * 1000;
-                        
-                        
-                        // 如果缓存未过期，加载到内存
                         if (now - cacheData.timestamp < oneDay) {
                             state.fundDetails[code] = cacheData.data;
-                        } else {
                         }
                     } catch (e) {
                         console.error(`[init] 加载基金 ${code} 详细信息缓存失败`, e);
                     }
-                } else {
                 }
             });
-            
-            
+
+            const codes = loadFundCodes();
+
             // 渲染空状态或加载基金
             renderFunds();
 
             // 初始化拖拽排序
             initDragSort();
-            
+
             // 加载基金数据
             codes.forEach(code => {
                 fetchFundData(code);
