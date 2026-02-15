@@ -3503,6 +3503,7 @@
                 display: inline-flex;
                 align-items: center;
                 justify-content: center;
+                white-space: nowrap;
             }
 
             /* 总览面板 */
@@ -3708,6 +3709,34 @@
             .fund-list-item .list-name-holding {
                 font-size: 11px;
             }
+
+            /* 总览详情弹窗内盈亏日历：小屏可横向滚动并缩小格子，避免显示不全 */
+            .pnl-calendar-wrap {
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
+            }
+            .pnl-calendar-grid.by-day {
+                min-width: 280px;
+            }
+            .pnl-calendar-grid.by-month,
+            .pnl-calendar-grid.by-year {
+                min-width: 200px;
+            }
+            .pnl-cell {
+                padding: 4px 2px;
+                font-size: 10px;
+            }
+            .pnl-cell .pnl-value {
+                font-size: 10px;
+            }
+            .pnl-calendar-toolbar {
+                gap: 8px;
+            }
+            .pnl-tab,
+            .pnl-display-tab {
+                padding: 5px 10px;
+                font-size: 11px;
+            }
         }
 
         @media (max-width: 480px) {
@@ -3750,6 +3779,7 @@
             .main-view-tab {
                 font-size: 14px;
                 padding: 12px 16px;
+                white-space: nowrap;
             }
 
             .overview-stats {
