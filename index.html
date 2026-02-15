@@ -2476,6 +2476,31 @@
             100% { background-position: -200% 0; }
         }
 
+        /* 投资总览骨架屏 */
+        .overview-panel-skeleton .overview-compact-value,
+        .overview-panel-skeleton .overview-compact-sub {
+            min-width: 48px;
+            height: 18px;
+            border-radius: 6px;
+            background: linear-gradient(90deg, var(--stat-bg) 25%, var(--border-color) 50%, var(--stat-bg) 75%);
+            background-size: 200% 100%;
+            animation: skeleton-shimmer 1.2s ease-in-out infinite;
+            color: transparent !important;
+        }
+        .overview-panel-skeleton .overview-compact-sparkline-item .compact-sparkline {
+            opacity: 0.4;
+        }
+        .overview-panel-skeleton .overview-date span {
+            display: inline-block;
+            min-width: 80px;
+            height: 14px;
+            border-radius: 4px;
+            background: linear-gradient(90deg, var(--stat-bg) 25%, var(--border-color) 50%, var(--stat-bg) 75%);
+            background-size: 200% 100%;
+            animation: skeleton-shimmer 1.2s ease-in-out infinite;
+            vertical-align: middle;
+        }
+
         .fund-card-failed .load-failed {
             color: var(--text-secondary);
         }
@@ -4028,8 +4053,8 @@
             </div>
         </div>
 
-        <!-- 总览看板 -->
-        <div id="overviewPanel" class="overview-panel" style="display: none;">
+        <!-- 总览看板（首屏显示骨架，数据就绪后替换为真实内容或隐藏） -->
+        <div id="overviewPanel" class="overview-panel overview-panel-skeleton" aria-busy="true">
             <div class="overview-card">
                 <div class="overview-header" onclick="openOverviewDetailModal()">
                     <h2>📊 投资总览</h2>
@@ -4182,7 +4207,15 @@
             </div>
         </div>
 
-        <div id="fundsContainer" class="funds-grid"></div>
+        <div id="fundsContainer" class="funds-grid" aria-busy="true">
+            <!-- 首屏骨架：JS 渲染前显示，renderFunds() 会替换为真实内容或空状态 -->
+            <div class="fund-card fund-card-skeleton"><div class="skeleton-block skeleton-title"></div><div class="skeleton-block skeleton-code"></div><div class="skeleton-block skeleton-bar"></div><div class="skeleton-block skeleton-chart"></div><div class="skeleton-row"><div class="skeleton-block"></div><div class="skeleton-block"></div></div></div>
+            <div class="fund-card fund-card-skeleton"><div class="skeleton-block skeleton-title"></div><div class="skeleton-block skeleton-code"></div><div class="skeleton-block skeleton-bar"></div><div class="skeleton-block skeleton-chart"></div><div class="skeleton-row"><div class="skeleton-block"></div><div class="skeleton-block"></div></div></div>
+            <div class="fund-card fund-card-skeleton"><div class="skeleton-block skeleton-title"></div><div class="skeleton-block skeleton-code"></div><div class="skeleton-block skeleton-bar"></div><div class="skeleton-block skeleton-chart"></div><div class="skeleton-row"><div class="skeleton-block"></div><div class="skeleton-block"></div></div></div>
+            <div class="fund-card fund-card-skeleton"><div class="skeleton-block skeleton-title"></div><div class="skeleton-block skeleton-code"></div><div class="skeleton-block skeleton-bar"></div><div class="skeleton-block skeleton-chart"></div><div class="skeleton-row"><div class="skeleton-block"></div><div class="skeleton-block"></div></div></div>
+            <div class="fund-card fund-card-skeleton"><div class="skeleton-block skeleton-title"></div><div class="skeleton-block skeleton-code"></div><div class="skeleton-block skeleton-bar"></div><div class="skeleton-block skeleton-chart"></div><div class="skeleton-row"><div class="skeleton-block"></div><div class="skeleton-block"></div></div></div>
+            <div class="fund-card fund-card-skeleton"><div class="skeleton-block skeleton-title"></div><div class="skeleton-block skeleton-code"></div><div class="skeleton-block skeleton-bar"></div><div class="skeleton-block skeleton-chart"></div><div class="skeleton-row"><div class="skeleton-block"></div><div class="skeleton-block"></div></div></div>
+        </div>
 
         <div class="page-footer">
             <span>基金实时估值看板</span>
@@ -7503,9 +7536,10 @@
         function updateOverviewPanel() {
             const codes = loadFundCodes();
             
+            const overviewEl = document.getElementById('overviewPanel');
             // 如果没有基金，隐藏总览
             if (codes.length === 0) {
-                document.getElementById('overviewPanel').style.display = 'none';
+                overviewEl.style.display = 'none';
                 return;
             }
 
@@ -7564,12 +7598,14 @@
 
             // 如果既没有持仓也没有历史交易，隐藏总览
             if (!hasPosition && !hasHistory) {
-                document.getElementById('overviewPanel').style.display = 'none';
+                overviewEl.style.display = 'none';
                 return;
             }
 
-            // 显示总览
-            document.getElementById('overviewPanel').style.display = 'block';
+            // 显示总览并移除骨架态（首屏骨架在数据就绪后替换为真实内容）
+            overviewEl.style.display = 'block';
+            overviewEl.classList.remove('overview-panel-skeleton');
+            overviewEl.setAttribute('aria-busy', 'false');
 
             // === 持仓收益 ===
             const holdingProfit = totalMarketValue - totalCost;
@@ -8530,6 +8566,7 @@
         // ========== 列表与总览渲染 ==========
         function renderFunds() {
             const container = document.getElementById('fundsContainer');
+            container.setAttribute('aria-busy', 'false'); // 首屏骨架由 JS 替换后标记为就绪
             let codes = loadFundCodes();
 
             // 将基金分为持有和自选两组
