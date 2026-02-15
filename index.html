@@ -1484,6 +1484,13 @@
         .pnl-nav-btn:hover {
             background: var(--hover-bg);
         }
+        .pnl-nav-btn.pnl-nav-btn-today {
+            width: auto;
+            min-width: 28px;
+            padding-left: 8px;
+            padding-right: 8px;
+            font-size: 12px;
+        }
         .pnl-calendar-title {
             font-size: 13px;
             font-weight: 600;
@@ -1512,7 +1519,7 @@
         }
         .pnl-cell {
             padding: 6px 4px;
-            border-radius: 6px;
+            border-radius: 10px;
             text-align: center;
             border: 1px solid transparent;
             display: flex;
@@ -1523,11 +1530,13 @@
         }
         .pnl-calendar-grid button.pnl-cell {
             appearance: none;
-            background: inherit;
             font: inherit;
             cursor: pointer;
             width: 100%;
             min-height: 100%;
+        }
+        .pnl-calendar-grid button.pnl-cell:not(.positive):not(.negative):not(.zero) {
+            background: inherit;
         }
         .pnl-calendar-grid button.pnl-cell:focus-visible {
             outline: 2px solid var(--primary);
@@ -1593,24 +1602,27 @@
         .daily-pnl-nav-btn:hover, .daily-pnl-action-btn:hover { background: var(--hover-bg); }
         .daily-pnl-toolbar-spacer { flex: 1; }
         .pnl-cell.positive {
-            background: rgba(255, 77, 79, 0.12);
+            background: rgba(255, 77, 79, 0.18);
             color: #cf1322;
         }
         [data-theme="dark"] .pnl-cell.positive {
-            background: rgba(255, 77, 79, 0.2);
+            background: rgba(255, 77, 79, 0.28);
             color: #ff7875;
         }
         .pnl-cell.negative {
-            background: rgba(0, 185, 107, 0.12);
+            background: rgba(0, 185, 107, 0.18);
             color: #00965e;
         }
         [data-theme="dark"] .pnl-cell.negative {
-            background: rgba(0, 185, 107, 0.2);
-            color: #36cfc9;
+            background: rgba(0, 185, 107, 0.28);
+            color: #34d399;
         }
         .pnl-cell.zero {
-            background: var(--data-bar-bg);
+            background: rgba(128, 128, 128, 0.12);
             color: var(--text-muted);
+        }
+        [data-theme="dark"] .pnl-cell.zero {
+            background: rgba(128, 128, 128, 0.2);
         }
         .pnl-cell .pnl-value {
             font-weight: 600;
@@ -1750,6 +1762,35 @@
             box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
         }
 
+        .profit-trend-chart-summary {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px 20px;
+            font-size: 13px;
+            margin-bottom: 6px;
+            color: var(--text-secondary);
+        }
+        .profit-trend-chart-summary .summary-item {
+            display: inline-flex;
+            align-items: baseline;
+            gap: 4px;
+        }
+        .profit-trend-chart-summary .summary-item .label {
+            color: var(--text-muted);
+        }
+        .profit-trend-chart-summary .summary-item .value {
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+        .profit-trend-chart-summary .summary-item .value.positive {
+            color: #ff4d4f;
+        }
+        .profit-trend-chart-summary .summary-item .value.negative {
+            color: #00b96b;
+        }
+        [data-theme="dark"] .profit-trend-chart-summary .summary-item .value.positive { color: #f87171; }
+        [data-theme="dark"] .profit-trend-chart-summary .summary-item .value.negative { color: #34d399; }
+
         /* 紧凑模式迷你趋势线（与今日金额分开展示） */
         .overview-compact-sparkline-item {
             display: flex;
@@ -1812,6 +1853,19 @@
         .stat-item.stat-clickable:hover {
             box-shadow: 0 4px 16px rgb(var(--primary-rgb) / 0.25);
             border: 1px solid var(--primary);
+        }
+
+        /* 投资总览明细弹窗滚动区：GPU 加速 + contain 减少重绘，减轻下滑卡顿 */
+        .modal-detail-scroll {
+            max-height: 500px;
+            overflow-y: auto;
+            overflow-x: hidden;
+            -webkit-overflow-scrolling: touch;
+            transform: translateZ(0);
+            contain: paint;
+        }
+        .modal-detail-scroll.modal-detail-scroll-sm {
+            max-height: 400px;
         }
 
         /* 历史收益明细样式 */
@@ -2453,6 +2507,52 @@
             opacity: 0.85;
         }
 
+        /* 转换弹窗 */
+        .convert-modal-content {
+            max-width: 480px;
+            max-height: 90vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        .convert-modal-content .modal-header { flex-shrink: 0; }
+        .convert-modal-content .form-actions { flex-shrink: 0; }
+        .convert-modal-body {
+            overflow-y: auto;
+            flex: 1;
+            min-height: 0;
+        }
+        .convert-fund-display {
+            padding: 8px 12px;
+            border-radius: 8px;
+            background: var(--data-bar-bg);
+            font-size: 14px;
+            color: var(--text-primary);
+        }
+        .convert-section-label {
+            text-align: center;
+            font-size: 15px;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin: 20px 0 12px;
+            padding-top: 16px;
+            border-top: 1px solid var(--border-color);
+        }
+        .convert-section-label:first-of-type {
+            margin-top: 8px;
+            padding-top: 12px;
+        }
+        .convert-calc-row {
+            font-size: 14px;
+            color: var(--text-secondary);
+        }
+        .convert-calc-row span + span { margin-left: 12px; }
+        input.readonly-hint {
+            background: var(--data-bar-bg);
+            color: var(--text-secondary);
+            cursor: default;
+        }
+
         /* 持仓弹窗 - 暂无持仓/已清仓 空状态 */
         .position-modal-empty {
             text-align: center;
@@ -2910,7 +3010,10 @@
             background: linear-gradient(135deg, #00b96b, #52c41a);
             color: white;
         }
-
+        .detail-action-btn.convert {
+            background: var(--stat-bg);
+            color: var(--text-primary);
+        }
         .detail-action-btn.history {
             background: var(--stat-bg);
             color: var(--text-primary);
@@ -4227,9 +4330,8 @@
                             <div class="stat-value" id="cumulativeProfit">0.00</div>
                         </div>
                         <div class="stat-item">
-                            <div class="stat-label">累计收益率 / 最大回撤</div>
+                            <div class="stat-label">累计收益率</div>
                             <div class="stat-value" id="cumulativeProfitRate">0.00%</div>
-                            <div class="stat-sub-line" id="maxDrawdown">回撤: --</div>
                         </div>
                     </div>
                     <div class="overview-divider"></div>
@@ -4249,6 +4351,7 @@
                                 <button type="button" class="pnl-nav-btn" id="pnlCalendarPrev" onclick="pnlCalendarPrev()" aria-label="上一页">‹</button>
                                 <span class="pnl-calendar-title" id="pnlCalendarTitle">--年--月</span>
                                 <button type="button" class="pnl-nav-btn" id="pnlCalendarNext" onclick="pnlCalendarNext()" aria-label="下一页">›</button>
+                                <button type="button" class="pnl-nav-btn pnl-nav-btn-today" id="pnlCalendarToday" onclick="pnlCalendarGoToday()" aria-label="定位到今天">今天</button>
                             </div>
                         </div>
                         <div class="pnl-calendar-hint" id="pnlCalendarHint"></div>
@@ -4276,9 +4379,10 @@
                                 </div>
                                 <div class="trend-display-selector">
                                     <button class="trend-range-btn active" id="trendDisplayAmount" onclick="changeTrendChartDisplay('amount')">收益金额</button>
-                                    <button class="trend-range-btn" id="trendDisplayRate" onclick="changeTrendChartDisplay('rate')" title="收益率 = 累计收益 ÷ 净投入（总买入 − 总卖出收回）。买入增加分母、卖出减少分母，避免只增不减。">收益率</button>
+                                    <button class="trend-range-btn" id="trendDisplayRate" onclick="changeTrendChartDisplay('rate')" title="收益率 = 累计收益 ÷ 总投入（总买入），与上方「累计收益率」一致。">收益率</button>
                                 </div>
                             </div>
+                            <div class="profit-trend-chart-summary" id="profitTrendChartSummary" aria-live="polite"></div>
                             <div class="profit-trend-chart-wrapper">
                                 <canvas id="profitTrendChart"></canvas>
                             </div>
@@ -4476,6 +4580,72 @@
         </div>
     </div>
 
+    <!-- 转换模态框 -->
+    <div id="convertModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="convertModalTitle" aria-hidden="true">
+        <div class="modal-content convert-modal-content" tabindex="-1">
+            <div class="modal-header">
+                <h2 id="convertModalTitle">🔄 基金转换</h2>
+                <button class="close-btn" onclick="closeConvertModal()">&times;</button>
+            </div>
+            <div class="convert-modal-body">
+            <div class="form-group">
+                <label>转出基金</label>
+                <div id="convertOutFundDisplay" class="convert-fund-display">--</div>
+            </div>
+            <div class="form-group">
+                <label>交易日期</label>
+                <select id="convertTradeDate">
+                    <!-- 由 JS 填充 -->
+                </select>
+            </div>
+            <div class="convert-section-label">转出</div>
+            <div class="form-group">
+                <label for="convertOutNetValue">转出净值</label>
+                <input type="number" id="convertOutNetValue" step="0.0001" placeholder="如：1.6000">
+            </div>
+            <div class="form-group">
+                <label for="convertOutShares">转出份额</label>
+                <input type="number" id="convertOutShares" step="0.01" placeholder="如：6250.00">
+            </div>
+            <div class="form-group">
+                <label for="convertOutFee">转出手续费（元）</label>
+                <input type="number" id="convertOutFee" step="0.01" value="0">
+            </div>
+            <div class="form-group">
+                <label>转出金额 / 转出到账（自动计算）</label>
+                <div class="convert-calc-row"><span id="convertOutAmountHint">--</span><span id="convertOutProceedsHint">到账 --</span></div>
+            </div>
+            <div class="convert-section-label">转入</div>
+            <div class="form-group">
+                <label for="convertToCodeInput">转入基金</label>
+                <input type="text" id="convertToCodeInput" list="convertToCodeList" placeholder="输入基金代码或从列表选择" autocomplete="off">
+                <datalist id="convertToCodeList"></datalist>
+                <small>可输入新代码，确认后将自动加入列表</small>
+            </div>
+            <div class="form-group">
+                <label for="convertInNetValue">转入净值</label>
+                <input type="number" id="convertInNetValue" step="0.0001" placeholder="如：1.2000">
+            </div>
+            <div class="form-group">
+                <label for="convertInShares">转入份额</label>
+                <input type="number" id="convertInShares" step="0.01" placeholder="如：8291.67">
+            </div>
+            <div class="form-group">
+                <label for="convertInFee">转入手续费（元）</label>
+                <input type="number" id="convertInFee" step="0.01" value="0">
+            </div>
+            <div class="form-group">
+                <label>转入金额（自动计算）</label>
+                <input type="text" id="convertInAmountHint" readonly class="readonly-hint">
+            </div>
+            </div>
+            <div class="form-actions">
+                <button class="btn btn-secondary" onclick="closeConvertModal()">取消</button>
+                <button class="btn btn-primary" onclick="saveConvert()">确认转换</button>
+            </div>
+        </div>
+    </div>
+
     <!-- 云同步设置模态框 -->
     <div id="cloudSettingsModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="cloudSettingsModalTitle" aria-hidden="true">
         <div class="modal-content" tabindex="-1">
@@ -4543,7 +4713,7 @@
                 <h2 id="historicalProfitModalTitle">📜 历史收益明细</h2>
                 <button class="close-btn" onclick="closeHistoricalProfitDetail()">&times;</button>
             </div>
-            <div id="historicalProfitContent" style="max-height: 500px; overflow-y: auto;">
+            <div id="historicalProfitContent" class="modal-detail-scroll">
                 <!-- 历史收益明细内容 -->
             </div>
         </div>
@@ -4556,7 +4726,7 @@
                 <h2 id="holdingProfitModalTitle">💼 持仓收益明细</h2>
                 <button class="close-btn" onclick="closeHoldingProfitDetail()">&times;</button>
             </div>
-            <div id="holdingProfitContent" style="max-height: 500px; overflow-y: auto;">
+            <div id="holdingProfitContent" class="modal-detail-scroll">
                 <!-- 持仓收益明细内容 -->
             </div>
         </div>
@@ -4576,7 +4746,7 @@
                 <button type="button" class="daily-pnl-action-btn" id="dailyPnlModalCopy" onclick="dailyPnlModalCopy()">复制</button>
                 <button type="button" class="daily-pnl-action-btn" id="dailyPnlModalExport" onclick="dailyPnlModalExport()">导出 CSV</button>
             </div>
-            <div id="dailyPnlDetailContent" style="max-height: 400px; overflow-y: auto;">
+            <div id="dailyPnlDetailContent" class="modal-detail-scroll modal-detail-scroll-sm">
                 <!-- 某日各基金盈亏列表 -->
             </div>
         </div>
@@ -4889,6 +5059,21 @@
             return total;
         }
 
+        /** 与 getDailyPnlMap 中当日 rate 分母一致：prev 日市值，仅统计 prev 与 cur 均有净值的持仓（用于月/年百分比） */
+        function getPortfolioValueForRateBetween(prevDateStr, curDateStr) {
+            const codes = loadFundCodes();
+            let total = 0;
+            codes.forEach(code => {
+                const { shares: sharesPrev } = getSharesAndCostAtDate(code, prevDateStr);
+                if (sharesPrev <= 0) return;
+                const navPrev = getNavOnOrBefore(code, prevDateStr);
+                const navCur = getNavOnOrBefore(code, curDateStr);
+                if (navPrev == null || navCur == null) return;
+                total += sharesPrev * navPrev;
+            });
+            return total;
+        }
+
         /** 生成盈亏日历用的每日数据：dateStr -> { amount, rate, value }，仅包含有净值的交易日（带短期缓存减少重复计算） */
         function getDailyPnlMap() {
             const CACHE_MS = 60000;
@@ -4935,7 +5120,7 @@
                 const valueCur = getPortfolioValueAtDate(cur);
                 const valuePrev = getPortfolioValueAtDate(prev);
                 const rate = valuePrevForRate > 0 ? (amount / valuePrevForRate) * 100 : 0;
-                map[cur] = { amount, rate, value: valueCur, prevValue: valuePrev };
+                map[cur] = { amount, rate, value: valueCur, prevValue: valuePrev, prevValueForRate: valuePrevForRate };
             }
             state._dailyPnlMapCache = { data: map, ts: Date.now() };
             return map;
@@ -5234,6 +5419,7 @@
                     <div class="position-modal-actions">
                         <button class="btn btn-primary" onclick="closePositionModal(); openBuyModal('${code}')">买入</button>
                         <button class="btn btn-warning" onclick="closePositionModal(); openSellModal('${code}')">卖出</button>
+                        <button class="btn btn-secondary" onclick="closePositionModal(); openConvertModal('${code}')">转换</button>
                     </div>
                 `;
             } else {
@@ -6930,6 +7116,173 @@
             renderFunds();
         }
 
+        // ----- 转换 -----
+        function calcConvertOut() {
+            const netValue = parseFloat(document.getElementById('convertOutNetValue').value);
+            const shares = parseFloat(document.getElementById('convertOutShares').value);
+            const fee = parseFloat(document.getElementById('convertOutFee').value) || 0;
+            const amountEl = document.getElementById('convertOutAmountHint');
+            const proceedsEl = document.getElementById('convertOutProceedsHint');
+            if (netValue && shares != null && !isNaN(shares) && netValue > 0 && shares > 0) {
+                const amount = shares * netValue;
+                const proceeds = amount - fee;
+                amountEl.textContent = '金额 ' + amount.toFixed(2);
+                proceedsEl.textContent = '到账 ' + proceeds.toFixed(2);
+            } else {
+                amountEl.textContent = '--';
+                proceedsEl.textContent = '到账 --';
+            }
+        }
+        function calcConvertIn() {
+            const netValue = parseFloat(document.getElementById('convertInNetValue').value);
+            const shares = parseFloat(document.getElementById('convertInShares').value);
+            const fee = parseFloat(document.getElementById('convertInFee').value) || 0;
+            const el = document.getElementById('convertInAmountHint');
+            if (netValue && shares != null && !isNaN(shares) && netValue > 0 && shares > 0) {
+                const amount = shares * netValue + fee;
+                el.value = amount.toFixed(2);
+            } else {
+                el.value = '';
+            }
+        }
+
+        function openConvertModal(code) {
+            const posInfo = calculatePosition(code);
+            if (!posInfo || posInfo.totalShares <= 0) {
+                showToast('当前没有可转出的份额', 'warning');
+                return;
+            }
+            state.currentModalFundCode = code;
+            const data = state.fundsData[code];
+            const name = (data && data.name) ? data.name : code;
+            document.getElementById('convertOutFundDisplay').textContent = name + '（' + code + '）';
+            const latest = getLatestTradingDateStr();
+            populateTradeDateSelect('convertTradeDate', latest);
+
+            const codes = loadFundCodes().filter(c => c !== code);
+            const list = document.getElementById('convertToCodeList');
+            list.innerHTML = codes.map(c => {
+                const d = state.fundsData[c];
+                const label = (d && d.name) ? d.name + ' ' + c : c;
+                return '<option value="' + c + '" label="' + escapeHtml(label) + '">';
+            }).join('');
+
+            document.getElementById('convertToCodeInput').value = '';
+            document.getElementById('convertOutNetValue').value = '';
+            document.getElementById('convertOutShares').value = '';
+            document.getElementById('convertOutFee').value = '0';
+            document.getElementById('convertInNetValue').value = '';
+            document.getElementById('convertInShares').value = '';
+            document.getElementById('convertInFee').value = '0';
+            calcConvertOut();
+            calcConvertIn();
+
+            ['convertOutNetValue', 'convertOutShares', 'convertOutFee', 'convertInNetValue', 'convertInShares', 'convertInFee'].forEach(id => {
+                const el = document.getElementById(id);
+                el.removeEventListener('input', _convertInputHandler);
+                el.addEventListener('input', _convertInputHandler);
+            });
+            document.getElementById('convertModal').classList.add('active');
+        }
+        function _convertInputHandler() {
+            calcConvertOut();
+            calcConvertIn();
+        }
+
+        function closeConvertModal() {
+            document.getElementById('convertModal').classList.remove('active');
+            state.currentModalFundCode = null;
+        }
+
+        function saveConvert() {
+            const outCode = state.currentModalFundCode;
+            if (!outCode) return;
+
+            const outNetValue = parseFloat(document.getElementById('convertOutNetValue').value);
+            const outShares = parseFloat(document.getElementById('convertOutShares').value);
+            const outFee = parseFloat(document.getElementById('convertOutFee').value) || 0;
+            const inCodeRaw = (document.getElementById('convertToCodeInput').value || '').trim();
+            const inNetValue = parseFloat(document.getElementById('convertInNetValue').value);
+            const inShares = parseFloat(document.getElementById('convertInShares').value);
+            const inFee = parseFloat(document.getElementById('convertInFee').value) || 0;
+            const tradeDate = document.getElementById('convertTradeDate').value;
+
+            if (!outNetValue || outShares == null || isNaN(outShares) || outNetValue <= 0 || outShares <= 0) {
+                showToast('请填写有效的转出净值和转出份额', 'warning');
+                return;
+            }
+            if (!inCodeRaw || !/^\d{6}$/.test(inCodeRaw)) {
+                showToast('请输入有效的转入基金代码（6位数字）', 'warning');
+                return;
+            }
+            if (outCode === inCodeRaw) {
+                showToast('转入基金不能与转出基金相同', 'warning');
+                return;
+            }
+            if (!inNetValue || inShares == null || isNaN(inShares) || inNetValue <= 0 || inShares <= 0) {
+                showToast('请填写有效的转入净值和转入份额', 'warning');
+                return;
+            }
+
+            const outAmount = outShares * outNetValue;
+            const outProceeds = outAmount - outFee;
+            const inAmount = inShares * inNetValue + inFee;
+
+            const posInfo = calculatePosition(outCode);
+            const holdRounded = posInfo ? parseFloat(posInfo.totalShares.toFixed(2)) : 0;
+            const sellRounded = parseFloat(outShares.toFixed(2));
+            if (sellRounded > holdRounded) {
+                showToast('转出份额不能超过持有份额 ' + holdRounded, 'error');
+                return;
+            }
+
+            let codes = loadFundCodes();
+            if (codes.indexOf(inCodeRaw) === -1) {
+                codes = [...codes, inCodeRaw];
+                saveFundCodes(codes);
+                if (!state.positions[inCodeRaw]) state.positions[inCodeRaw] = { transactions: [] };
+                fetchFundData(inCodeRaw);
+            }
+
+            const beforeCutoff = true;
+            const { date, effectiveNavDate } = buildTransactionDateFields(tradeDate, beforeCutoff);
+
+            state.positions[outCode].transactions.push({
+                type: 'sell',
+                date,
+                tradeDate,
+                beforeCutoff,
+                effectiveNavDate,
+                navSource: 'manual',
+                netValue: outNetValue,
+                amount: outProceeds,
+                fee: outFee,
+                shares: outShares
+            });
+
+            if (!state.positions[inCodeRaw] || !state.positions[inCodeRaw].transactions) {
+                state.positions[inCodeRaw] = { transactions: [] };
+            }
+            state.positions[inCodeRaw].transactions.push({
+                type: 'buy',
+                date,
+                tradeDate,
+                beforeCutoff,
+                effectiveNavDate,
+                navSource: 'manual',
+                netValue: inNetValue,
+                amount: inAmount,
+                fee: inFee,
+                shares: inShares
+            });
+
+            savePositions();
+            markDataChanged();
+            closeConvertModal();
+            renderFunds();
+            showToast('转换已记录');
+        }
+
         // 打开历史收益明细弹窗
         function openHistoricalProfitDetail() {
             const codes = getOverviewFundCodes();
@@ -8193,6 +8546,21 @@
             }
             renderPnlCalendar();
         }
+        function pnlCalendarGoToday() {
+            const now = new Date();
+            state.calendarYear = now.getFullYear();
+            state.calendarMonth = now.getMonth() + 1;
+            renderPnlCalendar();
+            if (state.calendarView === 'day') {
+                const todayStr = toDateStr(now);
+                const gridEl = document.getElementById('pnlCalendarGrid');
+                const todayBtn = gridEl && gridEl.querySelector('button.pnl-cell[data-date="' + todayStr + '"]');
+                if (todayBtn) {
+                    todayBtn.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+                    todayBtn.focus({ preventScroll: true });
+                }
+            }
+        }
         function renderPnlCalendar() {
             const gridEl = document.getElementById('pnlCalendarGrid');
             const titleEl = document.getElementById('pnlCalendarTitle');
@@ -8205,6 +8573,8 @@
             document.querySelectorAll('.pnl-tab').forEach(btn => {
                 btn.classList.toggle('active', btn.dataset.view === state.calendarView);
             });
+            const displayTabsWrap = document.querySelector('.pnl-calendar-display-tabs');
+            if (displayTabsWrap) displayTabsWrap.style.display = state.calendarView === 'day' ? '' : 'none';
             document.querySelectorAll('.pnl-display-tab').forEach(btn => {
                 btn.classList.toggle('active', btn.dataset.display === state.calendarDisplay);
             });
@@ -8262,26 +8632,20 @@
                 nextBtn.style.visibility = 'visible';
             } else if (state.calendarView === 'month') {
                 titleEl.textContent = state.calendarYear + '年';
-                const showAmount = state.calendarDisplay === 'amount';
                 gridEl.className = 'pnl-calendar-grid by-month';
                 let html = '';
                 for (let m = 1; m <= 12; m++) {
                     let sumAmount = 0;
-                    const firstDayStr = state.calendarYear + '-' + String(m).padStart(2, '0') + '-01';
-                    const valueStart = getPortfolioValueAtDate(firstDayStr);
                     Object.keys(dailyMap).forEach(dateStr => {
                         const y = parseInt(dateStr.slice(0, 4), 10);
                         const mo = parseInt(dateStr.slice(5, 7), 10);
                         if (y === state.calendarYear && mo === m) sumAmount += dailyMap[dateStr].amount;
                     });
-                    const rate = valueStart > 0 ? (sumAmount / valueStart) * 100 : 0;
                     let cls = 'pnl-cell';
                     if (sumAmount > 0) cls += ' positive';
                     else if (sumAmount < 0) cls += ' negative';
                     else cls += ' zero';
-                    const value = showAmount
-                        ? (sumAmount >= 0 ? '+' : '') + sumAmount.toFixed(2)
-                        : (rate >= 0 ? '+' : '') + rate.toFixed(2) + '%';
+                    const value = (sumAmount >= 0 ? '+' : '') + sumAmount.toFixed(2);
                     html += `<button type="button" class="${cls} pnl-cell-clickable" title="点击查看${state.calendarYear}年${m}月各基金盈亏" onclick="openMonthlyPnlDetail(${state.calendarYear}, ${m})" aria-label="${state.calendarYear}年${m}月，点击查看各基金盈亏"><span class="pnl-value">${value}</span><span class="pnl-label">${m}月</span></button>`;
                 }
                 gridEl.innerHTML = html;
@@ -8290,7 +8654,6 @@
             } else {
                 const startYear = Math.floor(state.calendarYear / 4) * 4;
                 titleEl.textContent = startYear + '–' + (startYear + 3) + '年';
-                const showAmount = state.calendarDisplay === 'amount';
                 gridEl.className = 'pnl-calendar-grid by-year';
                 let html = '';
                 for (let y = 0; y < 4; y++) {
@@ -8300,17 +8663,11 @@
                         const dateYear = parseInt(dateStr.slice(0, 4), 10);
                         if (dateYear === yr) sumAmount += dailyMap[dateStr].amount;
                     });
-                    const valueStart = getPortfolioValueAtDate(yr + '-01-01');
-                    const valueEnd = getPortfolioValueAtDate(yr + '-12-31');
-                    const denom = valueStart > 0 ? valueStart : valueEnd;
-                    const rate = denom > 0 ? (sumAmount / denom) * 100 : 0;
                     let cls = 'pnl-cell';
                     if (sumAmount > 0) cls += ' positive';
                     else if (sumAmount < 0) cls += ' negative';
                     else cls += ' zero';
-                    const value = showAmount
-                        ? (sumAmount >= 0 ? '+' : '') + sumAmount.toFixed(2)
-                        : (rate >= 0 ? '+' : '') + rate.toFixed(2) + '%';
+                    const value = (sumAmount >= 0 ? '+' : '') + sumAmount.toFixed(2);
                     html += `<button type="button" class="${cls} pnl-cell-clickable" title="点击查看${yr}年各基金盈亏" onclick="openYearlyPnlDetail(${yr})" aria-label="${yr}年，点击查看各基金盈亏"><span class="pnl-value">${value}</span><span class="pnl-label">${yr}年</span></button>`;
                 }
                 gridEl.innerHTML = html;
@@ -8721,6 +9078,8 @@
                     profitTrendChartInstance.destroy();
                     profitTrendChartInstance = null;
                 }
+                const summaryEl = document.getElementById('profitTrendChartSummary');
+                if (summaryEl) summaryEl.innerHTML = '';
                 return;
             }
 
@@ -8749,13 +9108,12 @@
             const dataPoints = [];
             const holdingProfitPoints = [];
             const historicalProfitPoints = [];
-            const totalCostAtDate = [];   // 净投入（总买入 - 总卖出收回），用于收益率分母
+            const totalCostAtDate = [];   // 总投入（总买入），与总览「累计收益率」一致，用于收益率分母
 
             dates.forEach(dateStr => {
                 let totalHoldingProfit = 0;
                 let totalHistoricalProfit = 0;
                 let buyAtDate = 0;
-                let sellAtDate = 0;
                 const isToday = dateStr === todayStr;
 
                 codes.forEach(code => {
@@ -8781,7 +9139,6 @@
                             realizedProfit += trans.amount - costBasis;
                             runningShares -= trans.shares;
                             runningCost -= costBasis;
-                            sellAtDate += trans.amount;
                         }
                     });
 
@@ -8807,38 +9164,25 @@
                 holdingProfitPoints.push(totalHoldingProfit);
                 historicalProfitPoints.push(totalHistoricalProfit);
                 dataPoints.push(totalHoldingProfit + totalHistoricalProfit);
-                // 净投入 = 总买入 - 总卖出收回；卖出后分母减小，收益率不会只被买入摊薄
-                totalCostAtDate.push(Math.max(0, buyAtDate - sellAtDate));
+                // 总投入 = 总买入（与总览「累计收益率」一致，分母不减去卖出收回）
+                totalCostAtDate.push(buyAtDate);
             });
 
-            // 收益率序列：累计收益/净投入*100；净投入为0时取0（避免除零；已全部赎回时不再显示收益率）
+            // 收益率序列：累计收益/总投入*100；总投入为0时取0（与总览累计收益率一致）
             const dataPointsRate = dataPoints.map((v, i) => totalCostAtDate[i] > 0 ? (v / totalCostAtDate[i]) * 100 : 0);
             const holdingProfitPointsRate = holdingProfitPoints.map((v, i) => totalCostAtDate[i] > 0 ? (v / totalCostAtDate[i]) * 100 : 0);
             const historicalProfitPointsRate = historicalProfitPoints.map((v, i) => totalCostAtDate[i] > 0 ? (v / totalCostAtDate[i]) * 100 : 0);
 
             const isRateMode = profitTrendChartDisplay === 'rate';
-            const mainSeries = isRateMode ? dataPointsRate : dataPoints;
-            const historicalSeries = isRateMode ? historicalProfitPointsRate : historicalProfitPoints;
-            const holdingSeries = isRateMode ? holdingProfitPointsRate : holdingProfitPoints;
+            const fullCumulativeSeries = isRateMode ? dataPointsRate.slice() : dataPoints.slice();
+            const fullHistoricalSeries = isRateMode ? historicalProfitPointsRate.slice() : historicalProfitPoints.slice();
+            const fullHoldingSeries = isRateMode ? holdingProfitPointsRate.slice() : holdingProfitPoints.slice();
 
-            // 更新最大回撤（按当前展示序列计算）
-            const maxDd = calculateMaxDrawdown(mainSeries);
-            const maxDdEl = document.getElementById('maxDrawdown');
-            if (maxDdEl) {
-                maxDdEl.textContent = `回撤: -${(maxDd * 100).toFixed(2)}%`;
-                maxDdEl.title = profitTrendChartDisplay === 'rate'
-                    ? '最大回撤：收益率曲线从前期高点到最低点的跌幅（相对该高点）。选「收益率」时新增投入会拉低收益率，回撤可能较大。'
-                    : '最大回撤：累计收益曲线从前期高点到最低点的跌幅（相对该高点）。例：收益从 1000 跌到 84 则回撤 91.6%。';
-            }
-
-            // 更新紧凑模式迷你趋势线
-            drawCompactSparkline(dataPoints);
-
-            // 时间范围过滤（使用当前展示模式对应的序列）
+            // 时间范围过滤：仅当选定区间严格小于全量（真的裁掉了一段）时才按区间重算、起始为 0；否则与「全部」一致，只做切片
             let filteredDates = dates;
-            let filteredData = mainSeries.slice();
-            let filteredHistorical = historicalSeries.slice();
-            let filteredHolding = holdingSeries.slice();
+            let filteredData = fullCumulativeSeries.slice();
+            let filteredHistorical = fullHistoricalSeries.slice();
+            let filteredHolding = fullHoldingSeries.slice();
 
             if (trendRangeDays > 0) {
                 const cutoff = new Date();
@@ -8852,12 +9196,40 @@
                 });
 
                 if (indices.length >= 2) {
-                    filteredDates = indices.map(i => dates[i]);
-                    filteredData = indices.map(i => mainSeries[i]);
-                    filteredHistorical = indices.map(i => historicalSeries[i]);
-                    filteredHolding = indices.map(i => holdingSeries[i]);
+                    const startIdx = indices[0];
+                    const isPartialRange = startIdx > 0 || indices.length < dates.length;
+
+                    if (isPartialRange) {
+                        // 区间确实比全量短：用区间数据重算，期初为 0
+                        filteredDates = indices.map(i => dates[i]);
+                        if (isRateMode) {
+                            const baseCost = totalCostAtDate[startIdx] || 0;
+                            const baseCumulative = dataPoints[startIdx] || 0;
+                            const baseHolding = holdingProfitPoints[startIdx] || 0;
+                            const baseHistorical = historicalProfitPoints[startIdx] || 0;
+                            filteredData = indices.map(i => baseCost > 0 ? (dataPoints[i] - baseCumulative) / baseCost * 100 : 0);
+                            filteredHistorical = indices.map(i => baseCost > 0 ? (historicalProfitPoints[i] - baseHistorical) / baseCost * 100 : 0);
+                            filteredHolding = indices.map(i => baseCost > 0 ? (holdingProfitPoints[i] - baseHolding) / baseCost * 100 : 0);
+                        } else {
+                            const baseCumulative = dataPoints[startIdx] || 0;
+                            const baseHolding = holdingProfitPoints[startIdx] || 0;
+                            const baseHistorical = historicalProfitPoints[startIdx] || 0;
+                            filteredData = indices.map(i => dataPoints[i] - baseCumulative);
+                            filteredHistorical = indices.map(i => historicalProfitPoints[i] - baseHistorical);
+                            filteredHolding = indices.map(i => holdingProfitPoints[i] - baseHolding);
+                        }
+                    } else {
+                        // 选定区间等于全量（如数据不足一年时选「近一年」）：与「全部」一致，只切片，数值不变
+                        filteredDates = indices.map(i => dates[i]);
+                        filteredData = indices.map(i => fullCumulativeSeries[i]);
+                        filteredHistorical = indices.map(i => fullHistoricalSeries[i]);
+                        filteredHolding = indices.map(i => fullHoldingSeries[i]);
+                    }
                 }
             }
+
+            // 更新紧凑模式迷你趋势线（用全量 dataPoints）
+            drawCompactSparkline(dataPoints);
 
             // 格式化日期标签：跨年时显示年份（如 24/12/31），否则只显示月/日
             const yearsInRange = new Set(filteredDates.map(d => (d.split('-')[0] || '')));
@@ -8872,6 +9244,28 @@
             // 累计收益线颜色：正红负绿
             const lastValue = filteredData[filteredData.length - 1] || 0;
             const mainColor = lastValue >= 0 ? '#ff4d4f' : '#00b96b';
+
+            // 图表上方显示当前区间末端的具体数字
+            const summaryEl = document.getElementById('profitTrendChartSummary');
+            if (summaryEl) {
+                const lastCumulative = filteredData[filteredData.length - 1];
+                const lastHistorical = filteredHistorical[filteredHistorical.length - 1];
+                const lastHolding = filteredHolding[filteredHolding.length - 1];
+                const fmt = (v, isRate) => {
+                    if (v == null || isNaN(v)) return '--';
+                    const cls = v >= 0 ? 'positive' : 'negative';
+                    const sym = v >= 0 ? '+' : '';
+                    return isRate ? { text: sym + v.toFixed(2) + '%', cls } : { text: sym + (typeof v === 'number' ? v.toFixed(2) : v), cls };
+                };
+                const isRate = profitTrendChartDisplay === 'rate';
+                const c = fmt(lastCumulative, isRate);
+                const h = fmt(lastHistorical, isRate);
+                const p = fmt(lastHolding, isRate);
+                summaryEl.innerHTML = ''
+                    + '<span class="summary-item"><span class="label">累计</span><span class="value ' + c.cls + '">' + c.text + '</span></span>'
+                    + '<span class="summary-item"><span class="label">历史</span><span class="value ' + h.cls + '">' + h.text + '</span></span>'
+                    + '<span class="summary-item"><span class="label">持仓</span><span class="value ' + p.cls + '">' + p.text + '</span></span>';
+            }
 
             // 数据量少时放大数据点、加粗线条，让折线更醒目
             const pointCount = filteredData.length;
@@ -9353,6 +9747,7 @@
                             <div class="position-entry-actions" onclick="event.stopPropagation()">
                                 <button class="btn btn-secondary" onclick="openBuyModal('${code}')">买入</button>
                                 <button class="btn btn-warning" onclick="openSellModal('${code}')">卖出</button>
+                                <button class="btn btn-secondary" onclick="openConvertModal('${code}')">转换</button>
                             </div>
                         </div>
                     `;
@@ -9745,6 +10140,7 @@
                 <div class="detail-actions">
                     <button class="detail-action-btn buy" onclick="closeFundDetailModal(); openBuyModal('${code}')">买入</button>
                     ${hasPos ? `<button class="detail-action-btn sell" onclick="closeFundDetailModal(); openSellModal('${code}')">卖出</button>` : ''}
+                    ${hasPos ? `<button class="detail-action-btn convert" onclick="closeFundDetailModal(); openConvertModal('${code}')">转换</button>` : ''}
                     <button class="detail-action-btn history" onclick="closeFundDetailModal(); openTransactionHistoryModal('${code}')">交易记录</button>
                 </div>
             `;
