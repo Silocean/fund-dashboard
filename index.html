@@ -8953,6 +8953,8 @@
                 allocationChartInstance.data.labels = labels;
                 allocationChartInstance.data.datasets[0].data = data;
                 allocationChartInstance.data.datasets[0].backgroundColor = colors;
+                allocationChartInstance._allocationItems = items;
+                allocationChartInstance._allocationTotal = total;
                 allocationChartInstance.update('none');
             } else {
                 if (allocationChartInstance) allocationChartInstance.destroy();
@@ -8965,30 +8967,41 @@
                             backgroundColor: colors,
                             borderWidth: 2,
                             borderColor: 'transparent',
-                            hoverBorderColor: '#fff'
+                            hoverBorderColor: '#fff',
+                            borderRadius: 3,
+                            spacing: 2
                         }]
                     },
                     options: {
                         responsive: true,
                         maintainAspectRatio: false,
                         cutout: '60%',
+                        hoverOffset: 4,
                         plugins: {
                             legend: { display: false },
                             tooltip: {
                                 callbacks: {
-                                    label: function(ctx) {
-                                        const pct = total > 0 ? (ctx.parsed / total * 100).toFixed(1) : 0;
-                                        const funds = items[ctx.dataIndex].funds;
+                                    label: function(context) {
+                                        const chart = context.chart;
+                                        const items = chart._allocationItems || [];
+                                        const total = chart._allocationTotal || 0;
+                                        const item = items.find(function(i) { return i.sector === context.label; })
+                                            || items[context.dataIndex];
+                                        if (!item) return [context.label, ''];
+                                        const pct = total > 0 ? (item.value / total * 100).toFixed(1) : 0;
+                                        const funds = item.funds;
                                         const fundList = funds.length <= 3
-                                            ? funds.map(f => f.name).join('、')
-                                            : funds.slice(0, 2).map(f => f.name).join('、') + ' 等' + funds.length + '只';
-                                        return [`${ctx.label}: ${ctx.parsed.toFixed(0)} (${pct}%)`, fundList];
+                                            ? funds.map(function(f) { return f.name; }).join('、')
+                                            : funds.slice(0, 2).map(function(f) { return f.name; }).join('、') + ' 等' + funds.length + '只';
+                                        return [context.label + ': ' + item.value.toFixed(0) + ' (' + pct + '%)', fundList];
                                     }
                                 }
                             }
                         }
                     }
                 });
+                allocationChartInstance._allocationItems = items;
+                allocationChartInstance._allocationTotal = total;
             }
 
             const legendEl = document.getElementById('allocationLegend');
