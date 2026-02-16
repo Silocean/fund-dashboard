@@ -726,6 +726,13 @@
             height: 100%;
             display: block;
         }
+        .fund-list-item .list-sparkline-updated svg {
+            animation: list-sparkline-fade 0.25s ease-out;
+        }
+        @keyframes list-sparkline-fade {
+            from { opacity: 0.6; }
+            to { opacity: 1; }
+        }
 
         .fund-list-item {
             display: flex;
@@ -1270,14 +1277,15 @@
         .overview-compact-item {
             display: flex;
             align-items: center;
-            gap: 6px;
+            gap: 4px;
             white-space: nowrap;
         }
 
         .overview-compact-label {
-            font-size: 12px;
+            font-size: 14px;
             color: var(--text-muted);
-            font-weight: 500;
+            font-weight: 600;
+            flex-shrink: 0;
         }
 
         .overview-compact-value {
@@ -1285,6 +1293,10 @@
             font-weight: 700;
             color: var(--text-primary);
             font-family: var(--font-display);
+            min-width: 5em;
+            text-align: left;
+            font-variant-numeric: tabular-nums;
+            display: inline-block;
         }
 
         .overview-compact-value.positive {
@@ -3840,6 +3852,7 @@
 
             .overview-compact-value {
                 font-size: 16px;
+                min-width: 4.5em;
             }
 
             .overview-compact-item {
@@ -4088,10 +4101,11 @@
 
             .overview-compact-value {
                 font-size: 15px;
+                min-width: 4em;
             }
 
             .overview-compact-label {
-                font-size: 12px;
+                font-size: 13px;
             }
 
             .main-view-tab {
@@ -8018,7 +8032,8 @@
             data.actualNavDate = lastDateStr;
             data.actualNavPercentage = actualPercentage;
             data.actualNavJzrq = lastDateStr;
-            if (!updateFundCardInPlace(code)) scheduleRender();
+            const updated = updateFundCardInPlace(code) || (state.fundListViewMode === 'list' && updateFundListItemInPlace(code));
+            if (!updated) scheduleRender();
             else updateOverviewPanel();
         }
 
@@ -8404,12 +8419,11 @@
             
             saveHistoryData();
 
-            // 尝试原地更新卡片，避免整体innerHTML重建导致的闪烁
-            if (!updateFundCardInPlace(data.fundcode)) {
-                // 卡片不存在（首次加载），需要完整渲染
+            // 尝试原地更新卡片或列表行，避免整体 innerHTML 重建导致的闪烁
+            const updated = updateFundCardInPlace(data.fundcode) || (state.fundListViewMode === 'list' && updateFundListItemInPlace(data.fundcode));
+            if (!updated) {
                 scheduleRender();
             } else {
-                // 原地更新成功，单独更新总览面板和标签计数；若为刚添加的基金则定位并高亮
                 updateOverviewPanel();
                 scrollToAndHighlightAddedFund();
             }
@@ -8570,8 +8584,10 @@
             const holdingProfit = totalMarketValue - totalCost;
             const holdingProfitRate = totalCost > 0 ? (holdingProfit / totalCost * 100) : 0;
 
-            document.getElementById('totalMarketValue').textContent = `${totalMarketValue.toFixed(2)}`;
-            document.getElementById('totalCost').textContent = `${totalCost.toFixed(2)}`;
+            const totalMarketValueEl = document.getElementById('totalMarketValue');
+            const totalCostEl = document.getElementById('totalCost');
+            if (totalMarketValueEl) animateValue(totalMarketValueEl, totalMarketValue.toFixed(2), '', '', 400, true);
+            if (totalCostEl) animateValue(totalCostEl, totalCost.toFixed(2), '', '', 400, true);
             
             const totalProfitEl = document.getElementById('totalProfit');
             animateValue(totalProfitEl, holdingProfit.toFixed(2), '', '', 400);
@@ -8579,7 +8595,7 @@
             
             const totalProfitRateEl = document.getElementById('totalProfitRate');
             const rateSymbol = holdingProfitRate >= 0 ? '+' : '';
-            totalProfitRateEl.textContent = `${rateSymbol}${holdingProfitRate.toFixed(2)}%`;
+            animateValue(totalProfitRateEl, holdingProfitRate.toFixed(2), rateSymbol, '%', 400);
             totalProfitRateEl.className = 'stat-value ' + (holdingProfit >= 0 ? 'positive' : 'negative');
             
             const todayProfitEl = document.getElementById('todayProfit');
@@ -8603,27 +8619,26 @@
 
             const cumulativeProfitRateEl = document.getElementById('cumulativeProfitRate');
             const crSymbol = cumulativeProfitRate >= 0 ? '+' : '';
-            cumulativeProfitRateEl.textContent = `${crSymbol}${cumulativeProfitRate.toFixed(2)}%`;
+            animateValue(cumulativeProfitRateEl, cumulativeProfitRate.toFixed(2), crSymbol, '%', 400);
             cumulativeProfitRateEl.className = 'stat-value ' + (cumulativeProfitRate >= 0 ? 'positive' : 'negative');
             
-            // === 更新紧凑模式指标 ===
+            // === 更新紧凑模式指标（带动效）===
             const compactMV = document.getElementById('compactMarketValue');
-            if (compactMV) compactMV.textContent = `${totalMarketValue.toFixed(2)}`;
+            if (compactMV) animateValue(compactMV, totalMarketValue.toFixed(2), '', '', 400, true);
 
             const todayProfitSymbol = todayProfit >= 0 ? '+' : '';
             const compactToday = document.getElementById('compactTodayProfit');
             if (compactToday) {
-                compactToday.textContent = `${todayProfitSymbol}${todayProfit.toFixed(2)}`;
+                animateValue(compactToday, todayProfit.toFixed(2), todayProfitSymbol, '', 400);
                 compactToday.className = 'overview-compact-value ' + (todayProfit >= 0 ? 'positive' : 'negative');
             }
 
-            // 缓存数据用于金额/收益率切换
-            const profitSymbol = holdingProfit >= 0 ? '+' : '';
+            // 缓存数据用于金额/收益率切换（紧凑区持仓/累计用动效更新）
             _compactData = {
                 holdingProfit, holdingProfitRate,
                 cumulativeProfit, cumulativeProfitRate
             };
-            applyCompactDisplay();
+            applyCompactDisplay(true);
 
             // 更新时间
             const now = new Date().toLocaleString('zh-CN', { 
@@ -9053,17 +9068,17 @@
         }
 
         // ===== 数字动画过渡 =====
-        function animateValue(el, endValue, prefix, suffix, duration) {
+        // noPlus: 为 true 时正数不加 '+'（用于总市值、总成本等）
+        function animateValue(el, endValue, prefix, suffix, duration, noPlus) {
             if (!el) return;
             const text = el.textContent;
-            // 尝试解析当前值
-            const currentMatch = text.replace(/[¥,+%]/g, '').trim();
+            const currentMatch = text.replace(/[¥,+%()（）]/g, '').trim();
             const startVal = parseFloat(currentMatch) || 0;
-            const endVal = parseFloat(endValue) || 0;
+            const endVal = parseFloat(String(endValue).replace(/[%]/g, '')) || 0;
 
             if (Math.abs(startVal - endVal) < 0.005) {
-                const amountPrefix = (suffix !== '%') ? (endVal > 0 ? '+' : '') : prefix;
-                el.textContent = `${amountPrefix}${endValue}${suffix}`;
+                const symbol = (suffix === '%') ? (prefix || (endVal >= 0 ? '+' : '')) : (noPlus ? '' : (endVal >= 0 ? '+' : ''));
+                el.textContent = `${symbol}${endValue}${suffix}`;
                 return;
             }
 
@@ -9072,14 +9087,13 @@
 
             function step(now) {
                 const progress = Math.min((now - startTime) / dur, 1);
-                // easeOutCubic
                 const ease = 1 - Math.pow(1 - progress, 3);
                 const current = startVal + (endVal - startVal) * ease;
-                const symbol = current >= 0 ? '+' : '';
+                const symbol = (suffix === '%') ? (prefix || (current >= 0 ? '+' : '')) : (noPlus ? '' : (current >= 0 ? '+' : ''));
                 if (suffix === '%') {
-                    el.textContent = `${prefix}${symbol}${current.toFixed(2)}${suffix}`;
+                    el.textContent = `${symbol}${current.toFixed(2)}${suffix}`;
                 } else {
-                    el.textContent = `${prefix}${symbol}${current.toFixed(2)}`;
+                    el.textContent = `${symbol}${current.toFixed(2)}`;
                 }
                 if (progress < 1) requestAnimationFrame(step);
             }
@@ -9095,44 +9109,34 @@
             applyCompactDisplay();
         }
 
-        function applyCompactDisplay() {
+        function applyCompactDisplay(animate) {
             const d = _compactData;
             if (!d.holdingProfit && d.holdingProfit !== 0) return;
 
             const compactHP = document.getElementById('compactHoldingProfit');
             const compactHR = document.getElementById('compactHoldingRate');
             const compactCP = document.getElementById('compactCumulativeProfit');
+            const duration = 400;
+
+            if (compactHP) compactHP.className = 'overview-compact-value ' + (d.holdingProfit >= 0 ? 'positive' : 'negative');
+            if (compactCP) compactCP.className = 'overview-compact-value ' + (d.cumulativeProfit >= 0 ? 'positive' : 'negative');
 
             if (compactShowRate) {
-                // 显示收益率
-                if (compactHP) {
-                    const s = d.holdingProfitRate >= 0 ? '+' : '';
-                    compactHP.textContent = `${s}${d.holdingProfitRate.toFixed(2)}%`;
-                    compactHP.className = 'overview-compact-value ' + (d.holdingProfit >= 0 ? 'positive' : 'negative');
-                }
+                if (compactHP && animate) animateValue(compactHP, d.holdingProfitRate.toFixed(2), (d.holdingProfitRate >= 0 ? '+' : ''), '%', duration);
+                else if (compactHP) compactHP.textContent = `${d.holdingProfitRate >= 0 ? '+' : ''}${d.holdingProfitRate.toFixed(2)}%`;
                 if (compactHR) compactHR.textContent = '';
-                if (compactCP) {
-                    const s = d.cumulativeProfitRate >= 0 ? '+' : '';
-                    compactCP.textContent = `${s}${d.cumulativeProfitRate.toFixed(2)}%`;
-                    compactCP.className = 'overview-compact-value ' + (d.cumulativeProfit >= 0 ? 'positive' : 'negative');
-                }
+                if (compactCP && animate) animateValue(compactCP, d.cumulativeProfitRate.toFixed(2), (d.cumulativeProfitRate >= 0 ? '+' : ''), '%', duration);
+                else if (compactCP) compactCP.textContent = `${d.cumulativeProfitRate >= 0 ? '+' : ''}${d.cumulativeProfitRate.toFixed(2)}%`;
             } else {
-                // 显示金额
-                if (compactHP) {
-                    const s = d.holdingProfit >= 0 ? '+' : '';
-                    compactHP.textContent = `${s}${d.holdingProfit.toFixed(2)}`;
-                    compactHP.className = 'overview-compact-value ' + (d.holdingProfit >= 0 ? 'positive' : 'negative');
-                }
+                if (compactHP && animate) animateValue(compactHP, d.holdingProfit.toFixed(2), (d.holdingProfit >= 0 ? '+' : ''), '', duration);
+                else if (compactHP) compactHP.textContent = `${d.holdingProfit >= 0 ? '+' : ''}${d.holdingProfit.toFixed(2)}`;
                 if (compactHR) {
                     const s = d.holdingProfitRate >= 0 ? '+' : '';
                     compactHR.textContent = `(${s}${d.holdingProfitRate.toFixed(2)}%)`;
                     compactHR.className = 'overview-compact-sub ' + (d.holdingProfit >= 0 ? 'positive' : 'negative');
                 }
-                if (compactCP) {
-                    const s = d.cumulativeProfit >= 0 ? '+' : '';
-                    compactCP.textContent = `${s}${d.cumulativeProfit.toFixed(2)}`;
-                    compactCP.className = 'overview-compact-value ' + (d.cumulativeProfit >= 0 ? 'positive' : 'negative');
-                }
+                if (compactCP && animate) animateValue(compactCP, d.cumulativeProfit.toFixed(2), (d.cumulativeProfit >= 0 ? '+' : ''), '', duration);
+                else if (compactCP) compactCP.textContent = `${d.cumulativeProfit >= 0 ? '+' : ''}${d.cumulativeProfit.toFixed(2)}`;
             }
         }
 
@@ -9602,15 +9606,16 @@
             const percentageClass = isPositive ? 'positive' : 'negative';
             const percentageSymbol = isPositive ? '+' : '';
 
-            // 1. 更新涨跌幅百分比
+            // 1. 更新涨跌幅百分比（动效）
             const percentageEl = card.querySelector('.percentage');
             if (percentageEl) {
                 percentageEl.className = 'percentage ' + percentageClass;
-                percentageEl.textContent = percentageSymbol + percentage.toFixed(2) + '%';
+                animateValue(percentageEl, percentage.toFixed(2), percentageSymbol, '%', 400);
             }
 
-            // 2. 更新当日盈亏（持有基金，排除今日买入份额）
             const posInfo = calculatePosition(code);
+
+            // 2. 更新当日盈亏（动效）
             const dailyProfitEl = card.querySelector('.daily-profit');
             if (dailyProfitEl && posInfo && posInfo.totalShares > 0) {
                 const yesterdayValue = parseFloat(data.dwjz);
@@ -9620,15 +9625,23 @@
                 const dailyProfitSymbol = isZeroDaily ? '' : (dailyProfit > 0 ? '+' : '');
                 const dailyProfitClass = isZeroDaily ? 'neutral' : (dailyProfit > 0 ? 'positive' : 'negative');
                 dailyProfitEl.className = 'daily-profit ' + dailyProfitClass;
-                dailyProfitEl.textContent = dailyProfitSymbol + (isZeroDaily ? '0.00' : dailyProfit.toFixed(2));
+                animateValue(dailyProfitEl, isZeroDaily ? '0.00' : dailyProfit.toFixed(2), dailyProfitSymbol, '', 400);
             }
 
-            // 3. 更新净值和估算/实际值（新布局：.data-val-num）
+            // 3. 更新净值和估算/实际值（动效）
             const dataValNums = card.querySelectorAll('.data-val-num');
             const dataValLabels = card.querySelectorAll('.data-val-label');
             if (dataValNums.length >= 2) {
-                dataValNums[0].textContent = data.dwjz;
-                dataValNums[1].textContent = display.value;
+                const navNum = parseFloat(data.dwjz);
+                if (!isNaN(navNum)) animateValue(dataValNums[0], data.dwjz, '', '', 400, true);
+                else dataValNums[0].textContent = data.dwjz;
+                const isRate = display.value.indexOf('%') !== -1;
+                const valNum = parseFloat(String(display.value).replace(/%/g, ''));
+                if (!isNaN(valNum)) {
+                    animateValue(dataValNums[1], isRate ? valNum.toFixed(2) : display.value, isRate ? (valNum >= 0 ? '+' : '') : '', isRate ? '%' : '', 400, !isRate);
+                } else {
+                    dataValNums[1].textContent = display.value;
+                }
                 dataValNums[1].className = 'data-val-num ' + percentageClass;
                 if (dataValLabels.length >= 2) dataValLabels[1].textContent = display.label;
             }
@@ -9652,7 +9665,7 @@
                 const profitRateStr = isZeroRate ? '0.00' : (profitRateNum >= 0 ? '+' : '') + (profitRateNum < 0 ? Math.abs(profitRateNum) : profitRateNum).toFixed(2);
                 const mktEl = realtimeTab.querySelector('.position-entry-mkt');
                 const tagEl = realtimeTab.querySelector('.position-entry-tag');
-                if (mktEl) mktEl.textContent = currentValue.toFixed(2);
+                if (mktEl) animateValue(mktEl, currentValue.toFixed(2), '', '', 400, true);
                 if (tagEl) {
                     tagEl.className = 'position-entry-tag ' + profitClass;
                     tagEl.textContent = profitAmountStr + '（' + profitRateStr + '%）';
@@ -9662,6 +9675,59 @@
             // 6. 重绘日内涨跌幅图表（canvas保留，只更新数据）
             drawChart(code);
 
+            return true;
+        }
+
+        // 列表视图下原地更新单行数字（涨跌幅、今日盈亏），带动效
+        function updateFundListItemInPlace(code) {
+            const data = state.fundsData[code];
+            if (!data) return false;
+            const container = document.getElementById('fundsContainer');
+            if (!container || !container.classList.contains('fund-list')) return false;
+            const row = container.querySelector('.fund-list-item[data-code="' + code + '"]');
+            if (!row) return false;
+
+            const display = getDisplayValues(data);
+            const percentage = display.percentage;
+            const isPositive = percentage >= 0;
+            const pctClass = isPositive ? 'positive' : 'negative';
+            const pctSymbol = isPositive ? '+' : '';
+
+            const pctEl = row.querySelector('.list-pct');
+            if (pctEl) {
+                pctEl.className = 'list-pct ' + pctClass;
+                animateValue(pctEl, percentage.toFixed(2), pctSymbol, '%', 400);
+            }
+
+            const posInfo = calculatePosition(code);
+            const hasPosition = posInfo && posInfo.totalShares > 0;
+            const profitCell = row.querySelector('.list-profit-cell');
+            const profitSpan = row.querySelector('.list-profit');
+            if (profitCell && profitSpan && hasPosition) {
+                const yesterdayValue = parseFloat(data.dwjz);
+                const eligibleShares = getSharesEligibleForTodayProfit(code);
+                const dailyProfit = eligibleShares * yesterdayValue * (percentage / 100);
+                const isZeroDaily = Math.abs(dailyProfit) < 0.005;
+                const dpClass = isZeroDaily ? 'neutral' : (dailyProfit > 0 ? 'positive' : 'negative');
+                const dpSymbol = isZeroDaily ? '' : (dailyProfit > 0 ? '+' : '');
+                profitSpan.className = 'list-profit ' + dpClass;
+                animateValue(profitSpan, isZeroDaily ? '0.00' : dailyProfit.toFixed(2), dpSymbol, '', 400);
+            }
+
+            // 缩略折线图随估值实时更新（含当日新数据点）+ 轻微淡入动效
+            const sparklineEl = row.querySelector('.list-sparkline');
+            if (sparklineEl) {
+                const dayHistory = state.historyData[code];
+                const newSvg = renderListSparklineSvg(dayHistory, percentage);
+                if (newSvg) {
+                    sparklineEl.innerHTML = newSvg;
+                    sparklineEl.classList.add('list-sparkline-updated');
+                    clearTimeout(sparklineEl._sparklineAnimTimer);
+                    sparklineEl._sparklineAnimTimer = setTimeout(function() {
+                        sparklineEl.classList.remove('list-sparkline-updated');
+                    }, 280);
+                }
+            }
             return true;
         }
 
