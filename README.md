@@ -53,14 +53,33 @@
 
 ## 使用方式
 
-- **本地**：用浏览器直接打开 `index.html`，或放到任意静态站点（如 GitHub Pages）访问。
+- **本地**：用浏览器直接打开根目录下的 `index.html` 即可（需保持与 `css/`、`js/` 同级，以便正确加载样式与脚本）。
+- **部署**：可部署到任意静态站点（如 GitHub Pages），将整个仓库推上去即可访问。
 - **依赖**：仅通过 CDN 引入 Chart.js，无需安装或构建。
 
 数据保存在浏览器 `localStorage`，换设备或清缓存会丢失，建议定期用「更多 → 导出 JSON」备份，或配置云同步。
 
+## 项目结构
+
+```
+├── index.html          # 入口页面
+├── css/
+│   └── styles.css      # 样式
+├── js/
+│   └── app.js          # 主逻辑
+├── data/
+│   └── sector-candidates.json   # 板块候选数据（由 scripts 生成）
+├── scripts/
+│   ├── extract_sector_candidates.py   # 从基金列表提取板块候选（Python）
+│   └── extract-sector-candidates.js  # 同上（Node）
+└── README.md
+```
+
+- `fundcode_search.js`（东方财富基金列表，约 3MB）在 `.gitignore` 中，需自行从 [fund.eastmoney.com/js/fundcode_search.js](https://fund.eastmoney.com/js/fundcode_search.js) 下载后放入 `js/`，再运行上述脚本可重新生成 `data/sector-candidates.json`。
+
 ## 技术说明
 
-- 单文件应用：所有 HTML、CSS、JavaScript 均在 `index.html` 内
-- 图表：Chart.js 4.4.0（cdn.jsdelivr.net）
-- 数据源：基金列表与估值等通过前端请求公开接口获取（见代码内 `fetch` 逻辑）
-- 云同步：使用 GitHub Gist API，需在「云同步设置」中填写 Gist ID 与 PAT
+- **前端**：纯静态 HTML + CSS + JS，无构建步骤；样式与脚本已拆分为 `css/styles.css`、`js/app.js`，便于维护与缓存。
+- **图表**：Chart.js 4.4.0（cdn.jsdelivr.net）。
+- **数据源**：基金列表与估值等通过前端请求公开接口获取（见 `js/app.js` 内 `fetch` 逻辑）；基金类型/板块候选依赖 `fundcode_search.js` 或本地生成的 `sector-candidates.json`。
+- **云同步**：使用 GitHub Gist API，需在「云同步设置」中填写 Gist ID 与 PAT。
