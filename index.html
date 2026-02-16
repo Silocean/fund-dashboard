@@ -567,12 +567,16 @@
             background: var(--stat-bg);
             border-radius: 8px;
             width: fit-content;
+            max-width: 100%;
             margin-left: auto;
             margin-right: auto;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
         }
 
         .chart-range-btn {
             padding: 5px 14px;
+            flex-shrink: 0;
             border: none;
             border-radius: 6px;
             font-size: 12px;
@@ -4153,6 +4157,20 @@
 
             .data-val-num {
                 font-size: 13px;
+            }
+
+            /* 基金详情：净值走势图上方区间选择不超出屏幕，可横向滑动 */
+            .net-worth-chart-container {
+                padding-left: 10px;
+                padding-right: 10px;
+            }
+            .chart-range-selector {
+                width: 100%;
+                justify-content: flex-start;
+            }
+            .chart-range-btn {
+                padding: 5px 10px;
+                font-size: 11px;
             }
 
             /* 列表模式：超小屏进一步收紧，当日走势缩小以留出空间 */
