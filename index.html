@@ -822,6 +822,8 @@
 
         .fund-list-item .list-pct.positive { color: #ff4d4f; }
         .fund-list-item .list-pct.negative { color: #00b96b; }
+        .fund-list-item .list-pct.neutral { color: #6b7280; }
+        [data-theme="dark"] .fund-list-item .list-pct.neutral { color: #9ca3af; }
 
         .fund-list-item .list-profit {
             font-size: 13px;
@@ -9702,14 +9704,15 @@
 
             const display = getDisplayValues(data);
             const percentage = display.percentage;
+            const isZeroPct = Math.abs(percentage) < 0.005;
             const isPositive = percentage >= 0;
-            const pctClass = isPositive ? 'positive' : 'negative';
-            const pctSymbol = isPositive ? '+' : '';
+            const pctClass = isZeroPct ? 'neutral' : (isPositive ? 'positive' : 'negative');
+            const pctSymbol = isZeroPct ? '' : (isPositive ? '+' : '');
 
             const pctEl = row.querySelector('.list-pct');
             if (pctEl) {
                 pctEl.className = 'list-pct ' + pctClass;
-                animateValue(pctEl, percentage.toFixed(2), pctSymbol, '%', 400);
+                animateValue(pctEl, (isZeroPct ? '0.00' : percentage.toFixed(2)), pctSymbol, '%', 400);
             }
 
             const posInfo = calculatePosition(code);
@@ -9860,10 +9863,11 @@
                     }
                     const display = getDisplayValues(data);
                     const percentage = display.percentage;
+                    const isZeroPct = Math.abs(percentage) < 0.005;
                     const isPositive = percentage >= 0;
-                    const pctClass = isPositive ? 'positive' : 'negative';
-                    const pctSymbol = isPositive ? '+' : '';
-                    const pctStr = pctSymbol + percentage.toFixed(2) + '%';
+                    const pctClass = isZeroPct ? 'neutral' : (isPositive ? 'positive' : 'negative');
+                    const pctSymbol = isZeroPct ? '' : (isPositive ? '+' : '');
+                    const pctStr = isZeroPct ? '0.00%' : (pctSymbol + percentage.toFixed(2) + '%');
                     let dailyProfitStr = '';
                     if (hasPosition) {
                         const yesterdayValue = parseFloat(data.dwjz);
