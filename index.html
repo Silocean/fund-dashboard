@@ -967,69 +967,126 @@
         /* 同步提醒标记（已移除红点，保留下方提醒条） */
         .sync-badge {
             display: none !important;
-            position: absolute;
-            top: -4px;
-            right: -4px;
-            width: 10px;
-            height: 10px;
-            background: #ff4d4f;
-            border-radius: 50%;
-            border: 2px solid #fff;
-            animation: syncPulse 2s ease-in-out infinite;
         }
 
-        .sync-badge.active {
-            display: block;
-        }
-
-        @keyframes syncPulse {
-            0%, 100% { opacity: 1; transform: scale(1); }
-            50% { opacity: 0.6; transform: scale(1.2); }
-        }
-
-        /* 同步提醒条 */
+        /* 同步提醒条：光条动效 + 文字 + 一键同步 */
         .sync-reminder {
+            position: relative;
             display: flex;
             align-items: center;
             justify-content: space-between;
-            padding: 10px 16px;
-            background: linear-gradient(135deg, #fff7e6, #fffbe6);
-            border: 1px solid #ffe58f;
-            border-radius: 10px;
+            gap: 12px;
+            padding: 12px 16px;
             margin-top: 10px;
+            border-radius: 10px;
+            overflow: hidden;
+            background: linear-gradient(135deg, #fff8f0 0%, #fffbf0 50%, #fff5e6 100%);
+            border: 1px solid rgba(250, 173, 20, 0.35);
             font-size: 13px;
             color: #ad6800;
+            box-shadow: 0 2px 8px rgba(250, 173, 20, 0.08);
+        }
+
+        .sync-reminder::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            right: 0;
+            top: 0;
+            height: 3px;
+            background: linear-gradient(90deg, transparent 0%, var(--primary) 20%, #ffc53d 50%, var(--primary) 80%, transparent 100%);
+            background-size: 200% 100%;
+            animation: syncShine 2s linear infinite;
+        }
+
+        @keyframes syncShine {
+            0% { background-position: 200% 0; }
+            100% { background-position: -200% 0; }
         }
 
         [data-theme="dark"] .sync-reminder {
-            background: linear-gradient(135deg, rgba(255, 229, 143, 0.15), rgba(255, 193, 7, 0.08));
-            border-color: rgba(255, 193, 7, 0.35);
+            background: linear-gradient(135deg, rgba(250, 173, 20, 0.12) 0%, rgba(250, 173, 20, 0.06) 100%);
+            border-color: rgba(250, 173, 20, 0.3);
             color: #ffd666;
+            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.2);
         }
 
-        .sync-reminder a {
-            color: var(--primary);
+        [data-theme="dark"] .sync-reminder::before {
+            background: linear-gradient(90deg, transparent 0%, var(--primary) 25%, #ffc53d 50%, var(--primary) 75%, transparent 100%);
+        }
+
+        .sync-reminder-text {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .sync-reminder-text .sync-reminder-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: #faad14;
+            animation: syncDotPulse 1.5s ease-in-out infinite;
+        }
+
+        @keyframes syncDotPulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.5; transform: scale(1.2); }
+        }
+
+        .sync-reminder-actions {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-shrink: 0;
+        }
+
+        .sync-reminder-btn {
+            padding: 6px 14px;
+            font-size: 13px;
             font-weight: 600;
-            text-decoration: none;
-            margin-left: 2px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark, #0e7490));
+            color: #fff;
+            white-space: nowrap;
+            transition: transform 0.15s, box-shadow 0.15s;
         }
 
-        .sync-reminder a:hover {
-            text-decoration: underline;
+        .sync-reminder-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(8, 145, 178, 0.35);
+        }
+
+        .sync-reminder-btn:active {
+            transform: translateY(0);
         }
 
         .sync-reminder-close {
             background: none;
             border: none;
+            width: 28px;
+            height: 28px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
             font-size: 18px;
             color: #ad6800;
             cursor: pointer;
-            padding: 0 4px;
-            opacity: 0.6;
+            border-radius: 6px;
+            opacity: 0.7;
+            transition: opacity 0.15s, background 0.15s;
         }
 
         .sync-reminder-close:hover {
             opacity: 1;
+            background: rgba(250, 173, 20, 0.15);
+        }
+
+        [data-theme="dark"] .sync-reminder-close {
+            color: #ffd666;
         }
 
         .cloud-settings-info {
@@ -1791,6 +1848,10 @@
         }
         [data-theme="dark"] .profit-trend-chart-summary .summary-item .value.positive { color: #f87171; }
         [data-theme="dark"] .profit-trend-chart-summary .summary-item .value.negative { color: #34d399; }
+        .profit-trend-chart-summary .summary-item .value.neutral { color: var(--text-muted); }
+        .profit-trend-chart-summary .trend-summary-empty {
+            width: 100%; margin: 0 0 8px 0; color: var(--text-muted); font-size: 13px;
+        }
 
         /* 紧凑模式迷你趋势线（与今日金额分开展示） */
         .overview-compact-sparkline-item {
@@ -4264,8 +4325,14 @@
             </div>
             </div>
             <div class="sync-reminder" id="syncReminder" style="display: none;">
-                <span>📌 数据已变更，记得<a href="javascript:void(0)" onclick="uploadToCloud()">同步到云端</a></span>
-                <button class="sync-reminder-close" onclick="dismissSyncReminder()">×</button>
+                <div class="sync-reminder-text">
+                    <span class="sync-reminder-dot" aria-hidden="true"></span>
+                    <span>数据已变更，请同步到云端以在多设备间保持一致</span>
+                </div>
+                <div class="sync-reminder-actions">
+                    <button type="button" class="sync-reminder-btn" onclick="uploadToCloud(); closeBackupMenu();">一键同步</button>
+                    <button type="button" class="sync-reminder-close" onclick="dismissSyncReminder()" title="暂时关闭提示">×</button>
+                </div>
             </div>
         </div>
 
@@ -4397,12 +4464,12 @@
                                 <div class="trend-range-selector" id="trendRangeSelector">
                                     <button class="trend-range-btn" data-range="week" onclick="changeTrendRange('week')">本周</button>
                                     <button class="trend-range-btn" data-range="month" onclick="changeTrendRange('month')">本月</button>
-                                    <button class="trend-range-btn" data-range="year" onclick="changeTrendRange('year')">今年</button>
+                                    <button class="trend-range-btn active" data-range="year" onclick="changeTrendRange('year')">今年</button>
                                     <button class="trend-range-btn" data-range="30" onclick="changeTrendRange(30)">近1月</button>
                                     <button class="trend-range-btn" data-range="90" onclick="changeTrendRange(90)">近3月</button>
                                     <button class="trend-range-btn" data-range="180" onclick="changeTrendRange(180)">近半年</button>
                                     <button class="trend-range-btn" data-range="365" onclick="changeTrendRange(365)">近1年</button>
-                                    <button class="trend-range-btn active" data-range="0" onclick="changeTrendRange(0)">全部</button>
+                                    <button class="trend-range-btn" data-range="0" onclick="changeTrendRange(0)">全部</button>
                                 </div>
                                 <div class="trend-display-selector">
                                     <button class="trend-range-btn active" id="trendDisplayAmount" onclick="changeTrendChartDisplay('amount')">收益金额</button>
@@ -5373,9 +5440,9 @@
         }
 
         // ===== 数据同步提醒 =====
-        function markDataChanged() {
+        function markDataChanged(skipReminder) {
             localStorage.setItem('hasUnsyncedChanges', 'true');
-            showSyncReminder();
+            if (!skipReminder) showSyncReminder();
             updateFooterSyncStatus();
         }
 
@@ -5388,8 +5455,8 @@
 
         function showSyncReminder() {
             const settings = loadCloudSettings();
-            // 只有配置了 token 才提示同步
             if (!settings.token) return;
+            if (document.getElementById('initialPurchaseModal').classList.contains('active')) return;
             const reminder = document.getElementById('syncReminder');
             if (reminder) reminder.style.display = 'flex';
         }
@@ -5582,10 +5649,10 @@
             }
         }
 
-        // 保存基金代码到localStorage
-        function saveFundCodes(codes) {
+        // 保存基金代码到localStorage；skipSyncReminder=true 时仅标记未同步不弹提醒（用于添加基金流程，关闭弹窗后再提示）
+        function saveFundCodes(codes, skipSyncReminder) {
             localStorage.setItem('fundCodes', JSON.stringify(codes));
-            markDataChanged();
+            markDataChanged(!!skipSyncReminder);
         }
 
         // 基金所属板块：code -> 板块名，用于总览饼图按板块汇总
@@ -6547,7 +6614,7 @@
             }
 
             codes.push(code);
-            saveFundCodes(codes);
+            saveFundCodes(codes, true);
             input.value = '';
             state.justAddedFundCode = code;
             state.scrollDeferredForNewFund = true;
@@ -6936,6 +7003,7 @@
                 state.justAddedFundCode = null;
                 state.scrollDeferredForNewFund = false;
                 state.initialPurchaseModalHasOpened = false;
+                clearSyncReminder();
                 return;
             }
 
@@ -6950,6 +7018,7 @@
 
             // 弹窗关闭后重新渲染并定位到该基金（显式传入 code，确保跳过时也能滚动并高亮）
             const codeToScroll = code;
+            if (localStorage.getItem('hasUnsyncedChanges') === 'true') showSyncReminder();
             setTimeout(function () {
                 try {
                     renderFunds();
@@ -8015,7 +8084,6 @@
                 if (state.loadingFundCodes.has(code)) {
                     state.loadingFundCodes.delete(code);
                     state.fundsData[code] = { _loadFailed: true, fundcode: code };
-                    showToast(`基金 ${code} 加载超时，请检查网络或稍后重试`, 'warning');
                     scheduleRender();
                 }
             }, 15000);
@@ -9070,7 +9138,7 @@
 
         // ===== 收益趋势图时间段选择 =====
         // 0=全部, 30/90/180/365=近N天, 'week'/'month'/'year'=当周/当月/当年（自然周/月/年至今）
-        let trendRange = 0;
+        let trendRange = 'year';
         let profitTrendChartDisplay = 'amount'; // 'amount' | 'rate'
 
         function changeTrendRange(value) {
@@ -9107,7 +9175,7 @@
         // 收益趋势图实例
         let profitTrendChartInstance = null;
 
-        // 收益趋势图 Y 轴范围：数据少或数值区间小时让折线更饱满，避免显得空；rate 模式用百分比区间
+        // 收益趋势图 Y 轴范围：数据少或数值区间小时让折线更饱满；rate 模式用更细粒度使收益率曲线变化更明显
         function makeProfitTrendYAxisLimits(filteredData, isRate) {
             return function(axis) {
                 if (axis.max < 0) axis.max = 0;
@@ -9115,7 +9183,7 @@
                 let range = axis.max - axis.min;
                 const center = (axis.max + axis.min) / 2;
                 const absCenter = Math.abs(center);
-                const minRange = isRate ? Math.max(5, absCenter * 0.12) : Math.max(30, absCenter * 0.12);
+                const minRange = isRate ? Math.max(0.8, absCenter * 0.15) : Math.max(30, absCenter * 0.12);
                 if (range < minRange && range > 0) {
                     axis.min = center - minRange / 2;
                     axis.max = center + minRange / 2;
@@ -9123,7 +9191,8 @@
                     if (axis.max > 0 && filteredData.some(v => v > 0)) axis.max = Math.max(axis.max, 0);
                     range = axis.max - axis.min;
                 }
-                const padding = range * 0.12;
+                const paddingRatio = isRate ? 0.03 : 0.12;
+                const padding = range * paddingRatio;
                 axis.max += padding;
                 axis.min -= padding;
             };
@@ -9283,13 +9352,18 @@
                     if (d >= startDateStr) indices.push(i);
                 });
 
+                // 先按选定区间切片（即使只有 0/1 个点也与「全部」区分，避免本周/本月/今年与全部显示相同）
+                filteredDates = indices.map(i => dates[i]);
+                filteredData = indices.map(i => fullCumulativeSeries[i]);
+                filteredHistorical = indices.map(i => fullHistoricalSeries[i]);
+                filteredHolding = indices.map(i => fullHoldingSeries[i]);
+
                 if (indices.length >= 2) {
                     const startIdx = indices[0];
                     const isPartialRange = startIdx > 0 || indices.length < dates.length;
 
                     if (isPartialRange) {
                         // 区间确实比全量短：用区间数据重算，期初为 0
-                        filteredDates = indices.map(i => dates[i]);
                         if (isRateMode) {
                             const baseCost = totalCostAtDate[startIdx] || 0;
                             const baseCumulative = dataPoints[startIdx] || 0;
@@ -9307,8 +9381,7 @@
                             filteredHolding = indices.map(i => holdingProfitPoints[i] - baseHolding);
                         }
                     } else {
-                        // 选定区间等于全量（如数据不足一年时选「近一年」）：与「全部」一致，只切片，数值不变
-                        filteredDates = indices.map(i => dates[i]);
+                        // 选定区间等于全量（如数据不足一年时选「近一年」）：只切片，数值不变（上面已切片）
                         filteredData = indices.map(i => fullCumulativeSeries[i]);
                         filteredHistorical = indices.map(i => fullHistoricalSeries[i]);
                         filteredHolding = indices.map(i => fullHoldingSeries[i]);
@@ -9340,7 +9413,7 @@
                 const lastHistorical = filteredHistorical[filteredHistorical.length - 1];
                 const lastHolding = filteredHolding[filteredHolding.length - 1];
                 const fmt = (v, isRate) => {
-                    if (v == null || isNaN(v)) return '--';
+                    if (v == null || v === undefined || isNaN(v)) return { text: '--', cls: 'neutral' };
                     const cls = v >= 0 ? 'positive' : 'negative';
                     const sym = v >= 0 ? '+' : '';
                     return isRate ? { text: sym + v.toFixed(2) + '%', cls } : { text: sym + (typeof v === 'number' ? v.toFixed(2) : v), cls };
@@ -9349,10 +9422,12 @@
                 const c = fmt(lastCumulative, isRate);
                 const h = fmt(lastHistorical, isRate);
                 const p = fmt(lastHolding, isRate);
-                summaryEl.innerHTML = ''
-                    + '<span class="summary-item"><span class="label">累计</span><span class="value ' + c.cls + '">' + c.text + '</span></span>'
-                    + '<span class="summary-item"><span class="label">历史</span><span class="value ' + h.cls + '">' + h.text + '</span></span>'
-                    + '<span class="summary-item"><span class="label">持仓</span><span class="value ' + p.cls + '">' + p.text + '</span></span>';
+                const hasData = filteredData.length > 0;
+                const emptyHint = trendRange === 'week' ? '本周暂无数据' : trendRange === 'month' ? '本月暂无数据' : trendRange === 'year' ? '今年暂无数据' : '当前区间暂无数据';
+                summaryEl.innerHTML = (hasData ? '' : '<p class="trend-summary-empty">' + emptyHint + '</p>')
+                    + (hasData ? '<span class="summary-item"><span class="label">累计</span><span class="value ' + (c.cls || 'neutral') + '">' + (c.text ?? '--') + '</span></span>'
+                    + '<span class="summary-item"><span class="label">历史</span><span class="value ' + (h.cls || 'neutral') + '">' + (h.text ?? '--') + '</span></span>'
+                    + '<span class="summary-item"><span class="label">持仓</span><span class="value ' + (p.cls || 'neutral') + '">' + (p.text ?? '--') + '</span></span>' : '');
             }
 
             // 数据量少时放大数据点、加粗线条，让折线更醒目
@@ -9481,6 +9556,7 @@
                             display: true,
                             ticks: {
                                 callback: function(value) {
+                                    if (value == null || value === undefined || Number.isNaN(value)) return '';
                                     return profitTrendChartDisplay === 'rate'
                                         ? (value >= 0 ? '+' : '') + value.toFixed(2) + '%'
                                         : (value >= 0 ? '+' : '') + value.toFixed(0);
