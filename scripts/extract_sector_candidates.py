@@ -12,8 +12,8 @@ from pathlib import Path
 from collections import defaultdict
 
 BASE = Path(__file__).resolve().parent.parent
-JS_PATH = BASE / "fundcode_search.js"
-OUT_PATH = BASE / "sector-candidates.json"
+JS_PATH = BASE / "js" / "fundcode_search.js"
+OUT_PATH = BASE / "data" / "sector-candidates.json"
 
 raw = JS_PATH.read_text(encoding="utf-8")
 m = re.search(r"var\s+r\s*=\s*(\[[\s\S]*\])\s*;?\s*$", raw)

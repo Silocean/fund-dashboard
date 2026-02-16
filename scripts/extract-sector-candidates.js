@@ -8,7 +8,7 @@
 const fs = require('fs');
 const path = require('path');
 
-const jsPath = path.join(__dirname, '..', 'fundcode_search.js');
+const jsPath = path.join(__dirname, '..', 'js', 'fundcode_search.js');
 const raw = fs.readFileSync(jsPath, 'utf8');
 
 // 解析 var r = [...];
@@ -141,7 +141,7 @@ const hasOther = sectorList.includes(other);
 const withoutOther = sectorList.filter(s => s !== other);
 const final = hasOther ? [...withoutOther, other] : [...withoutOther, other];
 
-const outPath = path.join(__dirname, '..', 'sector-candidates.json');
+const outPath = path.join(__dirname, '..', 'data', 'sector-candidates.json');
 fs.writeFileSync(outPath, JSON.stringify({ sectors: final, source: 'fundcode_search.js', count: final.length, minCount }, null, 2), 'utf8');
 console.log('已写入', outPath);
 console.log('候选板块数:', final.length);
