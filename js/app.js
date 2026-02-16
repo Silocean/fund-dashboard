@@ -341,7 +341,7 @@ function getDailyPnlByFund(dateStr) {
         const amount = sharesPrev * (navCur - navPrev);
         const valuePrevForRate = sharesPrev * navPrev;
         const rate = valuePrevForRate > 0 ? (amount / valuePrevForRate) * 100 : 0;
-        const name = (state.fundsData[code] && state.fundsData[code].name) || (state.fundDetails[code] && state.fundDetails[code].name) || code;
+        const name = getFundDisplayName(code);
         list.push({ code, name, amount, rate });
     });
     return list.sort((a, b) => Math.abs(b.amount) - Math.abs(a.amount));
@@ -366,7 +366,7 @@ function getPnlByFundForDateRange(startStr, endStr) {
             if (navPrev == null || navCur == null) return;
             const amount = sharesPrev * (navCur - navPrev);
             sumByCode[code] = (sumByCode[code] || 0) + amount;
-            if (!nameByCode[code]) nameByCode[code] = (state.fundsData[code] && state.fundsData[code].name) || (state.fundDetails[code] && state.fundDetails[code].name) || code;
+            if (!nameByCode[code]) nameByCode[code] = getFundDisplayName(code);
         });
         d.setDate(d.getDate() + 1);
     }
@@ -546,6 +546,17 @@ function isFundDeleted(code) {
     return !loadFundCodes().includes(code);
 }
 
+/** 解析基金显示名称：优先 fundsData/fundDetails，其次从全量基金列表 fundList 按 code 查找（已删除/未拉详情的基金），最后回退为 code */
+function getFundDisplayName(code) {
+    if (state.fundsData[code] && state.fundsData[code].name) return state.fundsData[code].name;
+    if (state.fundDetails[code] && state.fundDetails[code].name) return state.fundDetails[code].name;
+    if (state.fundList && state.fundList.length) {
+        const fund = state.fundList.find(f => f.code === code);
+        if (fund && fund.name) return fund.name;
+    }
+    return code;
+}
+
 // ===== 数据同步提醒 =====
 function markDataChanged(skipReminder) {
     localStorage.setItem('hasUnsyncedChanges', 'true');
@@ -593,7 +604,7 @@ function openPositionModal(code) {
     const posInfo = calculatePosition(code);
     const titleEl = document.getElementById('positionModalTitle');
     const contentEl = document.getElementById('positionModalContent');
-    const fundName = (data && data.name) ? data.name : code;
+    const fundName = getFundDisplayName(code);
     titleEl.textContent = '💼 持仓信息 - ' + fundName;
 
     if (posInfo && posInfo.totalShares > 0) {
@@ -2386,8 +2397,7 @@ function openConvertModal(code) {
         return;
     }
     state.currentModalFundCode = code;
-    const data = state.fundsData[code];
-    const name = (data && data.name) ? data.name : code;
+    const name = getFundDisplayName(code);
     document.getElementById('convertOutFundDisplay').textContent = name + '（' + code + '）';
     const latest = getLatestTradingDateStr();
     populateTradeDateSelect('convertTradeDate', latest);
@@ -2559,8 +2569,7 @@ function openHistoricalProfitDetail() {
         });
 
         if (sellCount > 0) {
-            const data = state.fundsData[code];
-            const name = (data && data.name) || (state.fundDetails[code] && state.fundDetails[code].name) || code;
+            const name = getFundDisplayName(code);
             fundProfits.push({
                 code: code,
                 name: name,
@@ -2853,7 +2862,7 @@ function openHoldingProfitDetail() {
 
         items.push({
             code: code,
-            name: data.name || code,
+            name: getFundDisplayName(code),
             currentValue: currentValue,
             cost: posInfo.totalCost,
             profit: profit,
@@ -3256,6 +3265,7 @@ function fetchFundDetailsInternal(code, skipRender = false) {
 
                 if (hasNetWorthData) {
                     state.fundDetails[code] = cacheData.data;
+                    if (state._dailyPnlMapCache) state._dailyPnlMapCache = null;
                     tryUpdateActualNav(code);
                     refreshTradeModalNavIfOpen(code);
                     if (!skipRender) {
@@ -3411,7 +3421,9 @@ function fetchFundDetailsInternal(code, skipRender = false) {
             // 如果基金详情弹窗正在显示，刷新内容
             setTimeout(() => {
                 updateFundDetailsTab(code);
-                
+                // 若总览弹窗已打开，重绘日历使新拉取净值的基金（如已删除）出现在日期格与日期弹窗
+                var overviewModal = document.getElementById('overviewDetailModal');
+                if (overviewModal && overviewModal.classList.contains('active') && typeof renderPnlCalendar === 'function') renderPnlCalendar();
                 // 标记当前加载完成，处理队列中的下一个
                 state.isLoadingFundDetails = false;
                 processFundDetailsQueue();
@@ -3948,7 +3960,7 @@ function openTodayProfitDetail() {
         totalToday += dailyProfit;
 
         items.push({
-            name: data.name || code,
+            name: getFundDisplayName(code),
             code: code,
             profit: dailyProfit,
             percentage: percentage
@@ -6312,7 +6324,19 @@ function init() {
         codes.forEach(code => { fetchFundData(code); });
         scheduleRefresh();
     });
-    
+
+    // 为「仅存在于总览（已删除/清仓）但无净值历史」的基金拉取详情，使日历日期弹窗能显示这些基金
+    setTimeout(function () {
+        const overviewCodes = getOverviewFundCodes();
+        const currentCodes = loadFundCodes();
+        overviewCodes.forEach(function (code) {
+            if (currentCodes.indexOf(code) >= 0) return; // 当前列表会由 fetchFundData 拉详情
+            var details = state.fundDetails[code];
+            if (details && details.netWorthData && details.netWorthData.length > 0) return; // 已有净值数据
+            fetchFundDetails(code, true);
+        });
+    }, 4000);
+
     // 每天凌晨2点自动更新基金列表
     setInterval(() => {
         const now = new Date();
