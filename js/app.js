@@ -41,6 +41,7 @@ const state = {
     netWorthRefreshed: new Set(),
     chartRangeSelection: {},
     _renderTimer: null,
+    fundDataTimeouts: {}, // 基金数据请求 15s 超时 id，切到后台时统一清除避免切回时成批触发
     fundDetailsQueue: [],
     isLoadingFundDetails: false,
     overviewExpanded: localStorage.getItem('overviewExpanded') === 'true',
@@ -3194,16 +3195,22 @@ function fetchFundData(code, skipDetails = false) {
         console.error(`加载基金 ${code} 数据失败`);
         showToast(`加载基金 ${code} 数据失败，请检查基金代码是否正确`, 'error');
         state.loadingFundCodes.delete(code);
+        if (state.fundDataTimeouts[code]) {
+            clearTimeout(state.fundDataTimeouts[code]);
+            delete state.fundDataTimeouts[code];
+        }
         removeFund(code, true); // 跳过确认对话框
     };
     // 超时：若 15 秒后仍未收到数据，标记加载失败并刷新卡片，避免一直显示「加载中」
-    setTimeout(() => {
+    const timeoutId = setTimeout(() => {
         if (state.loadingFundCodes.has(code)) {
             state.loadingFundCodes.delete(code);
             state.fundsData[code] = { _loadFailed: true, fundcode: code };
             scheduleRender();
         }
+        delete state.fundDataTimeouts[code];
     }, 15000);
+    state.fundDataTimeouts[code] = timeoutId;
     document.body.appendChild(script);
 
     if (!skipDetails) {
@@ -3472,6 +3479,10 @@ window.jsonpgz = function(data) {
     
     state.fundsData[data.fundcode] = data;
     state.loadingFundCodes.delete(data.fundcode);
+    if (state.fundDataTimeouts[data.fundcode]) {
+        clearTimeout(state.fundDataTimeouts[data.fundcode]);
+        delete state.fundDataTimeouts[data.fundcode];
+    }
     tryUpdateActualNav(data.fundcode);
     
     // 保存历史数据
@@ -6116,6 +6127,7 @@ let refreshTimer = null;
 
 function scheduleRefresh() {
     if (refreshTimer) clearTimeout(refreshTimer);
+    if (document.hidden) return; // 标签页在后台时不调度，避免切回时大量回调堆积导致卡死
     const interval = getRefreshInterval();
     refreshTimer = setTimeout(() => {
         refreshAllFunds();
@@ -6337,13 +6349,39 @@ function init() {
         });
     }, 4000);
 
-    // 每天凌晨2点自动更新基金列表
-    setInterval(() => {
+    // 每天凌晨2点自动更新基金列表（用递归 setTimeout 替代 setInterval，避免后台标签页被节流后多次回调堆积）
+    let twoAMTimer = null;
+    function scheduleTwoAMCheck() {
         const now = new Date();
         if (now.getHours() === 2 && now.getMinutes() === 0) {
             fetchFundList();
         }
-    }, 60000); // 每分钟检查一次
+        if (!document.hidden) {
+            twoAMTimer = setTimeout(scheduleTwoAMCheck, 60000);
+        }
+    }
+    scheduleTwoAMCheck();
+
+    // 标签页可见性：切到后台时取消定时器；切回时仅恢复定时、不发起刷新，避免大量请求+回调阻塞主线程导致长时间无响应
+    document.addEventListener('visibilitychange', function () {
+        if (document.hidden) {
+            if (refreshTimer) {
+                clearTimeout(refreshTimer);
+                refreshTimer = null;
+            }
+            if (twoAMTimer) {
+                clearTimeout(twoAMTimer);
+                twoAMTimer = null;
+            }
+            Object.keys(state.fundDataTimeouts).forEach(function (code) {
+                clearTimeout(state.fundDataTimeouts[code]);
+            });
+            state.fundDataTimeouts = {};
+        } else {
+            scheduleRefresh();
+            if (!twoAMTimer) scheduleTwoAMCheck();
+        }
+    });
 }
 
 // 页面加载完成后初始化
