@@ -41,6 +41,7 @@ const state = {
     netWorthRefreshed: new Set(),
     chartRangeSelection: {},
     _renderTimer: null,
+    _switchViewRenderTimer: null,
     fundDataTimeouts: {}, // 基金数据请求 15s 超时 id，切到后台时统一清除避免切回时成批触发
     fundDetailsQueue: [],
     isLoadingFundDetails: false,
@@ -55,7 +56,8 @@ const state = {
     justAddedFundCode: null,
     autocompleteSelectedIndex: -1,
     scrollDeferredForNewFund: false,
-    initialPurchaseModalHasOpened: false
+    initialPurchaseModalHasOpened: false,
+    _viewCache: null
 };
 
 // ========== UI：Toast 与确认框 ==========
@@ -445,14 +447,26 @@ function generateTradingDateOptions() {
 function scheduleRender(delay = 250) {
     if (state._renderTimer) clearTimeout(state._renderTimer);
     state._renderTimer = setTimeout(() => {
-        try {
-            renderFunds();
-            scrollToAndHighlightAddedFund();
-        } catch (e) {
-            console.error('scheduleRender: renderFunds 错误', e);
-            showToast('列表刷新异常，请重试', 'error');
+        if (document.getElementById('initialPurchaseModal').classList.contains('active')) {
+            state._renderTimer = null;
+            return;
         }
         state._renderTimer = null;
+        var run = function () {
+            try {
+                state._viewCache = null;
+                renderFunds();
+                scrollToAndHighlightAddedFund();
+            } catch (e) {
+                console.error('scheduleRender: renderFunds 错误', e);
+                showToast('列表刷新异常，请重试', 'error');
+            }
+        };
+        if (state.fundListViewMode === 'list' && typeof requestIdleCallback !== 'undefined') {
+            requestIdleCallback(run, { timeout: 350 });
+        } else {
+            run();
+        }
     }, delay);
 }
 
@@ -586,13 +600,16 @@ function openOverviewDetailModal() {
     if (!modal) return;
     if (state._dailyPnlMapCache) state._dailyPnlMapCache = null;
     modal.classList.add('active');
-    requestAnimationFrame(function () {
-        requestAnimationFrame(function () {
-            if (typeof drawAllocationChart === 'function') drawAllocationChart();
+    var runWhenIdle = typeof requestIdleCallback !== 'undefined' ? requestIdleCallback : function (fn, opts) { setTimeout(fn, opts && opts.timeout ? Math.min(50, opts.timeout) : 50); };
+    runWhenIdle(function () {
+        if (typeof drawAllocationChart === 'function') drawAllocationChart();
+        runWhenIdle(function () {
             if (typeof drawProfitTrendChart === 'function') drawProfitTrendChart();
-            if (typeof renderPnlCalendar === 'function') renderPnlCalendar();
-        });
-    });
+            runWhenIdle(function () {
+                if (typeof renderPnlCalendar === 'function') renderPnlCalendar();
+            }, { timeout: 200 });
+        }, { timeout: 150 });
+    }, { timeout: 100 });
 }
 
 function closeOverviewDetailModal() {
@@ -868,15 +885,46 @@ function inferSectorFromName(name) {
     return '其他';
 }
 
+// 每只基金最多保留的历史点数，避免 localStorage 超配额（约 5MB）
+var MAX_HISTORY_POINTS_PER_FUND = 300;
+
+function trimHistoryDataForStorage(historyData, maxPerFund) {
+    if (!historyData || typeof historyData !== 'object') return {};
+    maxPerFund = maxPerFund || MAX_HISTORY_POINTS_PER_FUND;
+    var out = {};
+    Object.keys(historyData).forEach(function (code) {
+        var arr = historyData[code];
+        if (Array.isArray(arr) && arr.length > 0) {
+            out[code] = arr.length <= maxPerFund ? arr : arr.slice(-maxPerFund);
+        }
+    });
+    return out;
+}
+
 // 加载历史数据
 function loadHistoryData() {
     const saved = localStorage.getItem('fundHistoryData');
     return saved ? JSON.parse(saved) : {};
 }
 
-// 保存历史数据
+// 保存历史数据（写入前裁剪，避免超出 localStorage 配额）
 function saveHistoryData() {
-    localStorage.setItem('fundHistoryData', JSON.stringify(state.historyData));
+    var toSave = trimHistoryDataForStorage(state.historyData);
+    var str = JSON.stringify(toSave);
+    try {
+        localStorage.setItem('fundHistoryData', str);
+    } catch (e) {
+        if (e.name === 'QuotaExceededError' || e.code === 22) {
+            toSave = trimHistoryDataForStorage(state.historyData, 80);
+            try {
+                localStorage.setItem('fundHistoryData', JSON.stringify(toSave));
+            } catch (e2) {
+                console.warn('fundHistoryData 仍超配额，已跳过保存', e2);
+            }
+        } else {
+            throw e;
+        }
+    }
 }
 
 // 加载持仓数据
@@ -1321,7 +1369,7 @@ function performFullImport(importedData) {
         state.positions = importedData.positions || {};
         if (state._dailyPnlMapCache) state._dailyPnlMapCache = null;
         savePositions();
-        state.historyData = importedData.historyData || {};
+        state.historyData = trimHistoryDataForStorage(importedData.historyData || {});
         saveHistoryData();
         state.fundDetails = importedData.fundDetails || {};
         
@@ -1390,12 +1438,13 @@ function performMergeImport(importedData) {
         if (state._dailyPnlMapCache) state._dailyPnlMapCache = null;
         savePositions();
 
-        // 合并历史数据
+        // 合并历史数据（单只基金只保留未覆盖时的合并，写入前整体裁剪避免超配额）
         Object.keys(importedData.historyData || {}).forEach(code => {
             if (!state.historyData[code]) {
                 state.historyData[code] = importedData.historyData[code];
             }
         });
+        state.historyData = trimHistoryDataForStorage(state.historyData);
         saveHistoryData();
 
         // 重新加载
@@ -3545,7 +3594,7 @@ window.jsonpgz = function(data) {
     }
 };
 
-// 切换主视图（持有/自选）：先更新 tab 状态让用户立即看到反馈，再下一帧渲染列表避免卡顿
+// 切换主视图（持有/自选）：有缓存则直接复用 DOM 立即切换，否则在空闲时渲染
 function switchMainView(view) {
     state.currentMainView = view;
     document.querySelectorAll('.main-view-tab').forEach(tab => {
@@ -3553,7 +3602,54 @@ function switchMainView(view) {
         tab.classList.toggle('active', isSelected);
         tab.setAttribute('aria-selected', isSelected);
     });
-    requestAnimationFrame(function () { renderFunds(); });
+    const container = document.getElementById('fundsContainer');
+    const _hw = getHoldingWatchingCodes();
+    const holdingCountEl = document.getElementById('holdingCount');
+    const watchingCountEl = document.getElementById('watchingCount');
+    if (holdingCountEl) holdingCountEl.textContent = _hw.holdingCodes.length;
+    if (watchingCountEl) watchingCountEl.textContent = _hw.watchingCodes.length;
+
+    if (state._viewCache && state._viewCache[view]) {
+        container.className = state.fundListViewMode === 'list' ? 'fund-list' : 'funds-grid';
+        if (state.fundListViewMode === 'list') {
+            var cached = state._viewCache[view];
+            if (cached && typeof cached === 'object' && cached.header && Array.isArray(cached.rowChunks)) {
+                container.innerHTML = cached.header;
+                var chunkIdx = 0;
+                function applyNextChunk() {
+                    if (chunkIdx < cached.rowChunks.length) {
+                        container.insertAdjacentHTML('beforeend', cached.rowChunks[chunkIdx]);
+                        chunkIdx++;
+                        if (chunkIdx < cached.rowChunks.length) requestAnimationFrame(applyNextChunk);
+                    }
+                }
+                requestAnimationFrame(applyNextChunk);
+            } else {
+                container.innerHTML = '';
+                var html = typeof cached === 'string' ? cached : (cached && cached.header ? cached.header + (cached.rowChunks || []).join('') : '');
+                if (html) {
+                    var applyList = function () { container.innerHTML = html; };
+                    if (typeof requestIdleCallback !== 'undefined') requestIdleCallback(applyList, { timeout: 80 });
+                    else setTimeout(applyList, 0);
+                }
+            }
+        } else {
+            container.innerHTML = state._viewCache[view];
+            if (typeof observeCharts === 'function') observeCharts();
+        }
+        return;
+    }
+
+    if (state._switchViewRenderTimer) clearTimeout(state._switchViewRenderTimer);
+    state._switchViewRenderTimer = setTimeout(function () {
+        state._switchViewRenderTimer = null;
+        var doRender = function () { renderFunds(); };
+        if (typeof requestIdleCallback !== 'undefined') {
+            requestIdleCallback(doRender, { timeout: 120 });
+        } else {
+            doRender();
+        }
+    }, 50);
 }
 
 // 切换展示方式（卡片 / 列表）
@@ -3562,7 +3658,97 @@ function setFundListViewMode(mode) {
     localStorage.setItem('fundListViewMode', mode);
     document.getElementById('viewModeCard').classList.toggle('active', mode === 'card');
     document.getElementById('viewModeList').classList.toggle('active', mode === 'list');
-    renderFunds();
+    state._viewCache = null;
+    var container = document.getElementById('fundsContainer');
+    if (mode === 'list') {
+        container.className = 'fund-list';
+        container.innerHTML = '<div class="list-loading-placeholder" style="padding:24px;text-align:center;color:var(--primary);">加载中…</div>';
+        var holdingCountEl = document.getElementById('holdingCount');
+        var watchingCountEl = document.getElementById('watchingCount');
+        var displayCodes, listHeader;
+        function step1() {
+            var codes = loadFundCodes();
+            var _hw = getHoldingWatchingCodes();
+            if (holdingCountEl) holdingCountEl.textContent = _hw.holdingCodes.length;
+            if (watchingCountEl) watchingCountEl.textContent = _hw.watchingCodes.length;
+            displayCodes = state.currentMainView === 'holding' ? _hw.holdingCodes : _hw.watchingCodes;
+            if (codes.length === 0) {
+                container.innerHTML = '<div class="empty-state"><div class="empty-state-icon">📊</div><h2>还没有添加基金</h2><p>请在上方输入基金代码来添加基金</p></div>';
+                document.getElementById('overviewPanel').style.display = 'none';
+                return;
+            }
+            if (displayCodes.length === 0) {
+                var emptyMsg = state.currentMainView === 'holding' ? '暂无持有基金，买入基金后会显示在这里' : '暂无自选基金，添加基金后未买入的会显示在这里';
+                var emptyIcon = state.currentMainView === 'holding' ? '💼' : '⭐';
+                container.innerHTML = '<div class="empty-state"><div class="empty-state-icon">' + emptyIcon + '</div><h2>' + emptyMsg + '</h2></div>';
+                if (state.currentMainView === 'holding' && typeof updateOverviewPanel === 'function') updateOverviewPanel();
+                return;
+            }
+            setTimeout(step2, 0);
+        }
+        function step2() {
+            var listSort = state.listSort;
+            var sortByPct = listSort ? (listSort.by === 'pct') : (state.sortOrder !== 'default');
+            var sortByProfit = listSort && listSort.by === 'dailyProfit';
+            var sortDir = listSort ? listSort.dir : state.sortOrder;
+            if (sortByPct || sortByProfit) {
+                var mult = (sortDir === 'desc') ? 1 : -1;
+                displayCodes = displayCodes.slice().sort(function (a, b) {
+                    var dataA = state.fundsData[a];
+                    var dataB = state.fundsData[b];
+                    if (!dataA || !dataB) return 0;
+                    if (sortByProfit) {
+                        var posA = calculatePosition(a);
+                        var posB = calculatePosition(b);
+                        var hasA = posA && posA.totalShares > 0;
+                        var hasB = posB && posB.totalShares > 0;
+                        var profitA = hasA ? getSharesEligibleForTodayProfit(a) * parseFloat(dataA.dwjz) * (getDisplayValues(dataA).percentage / 100) : 0;
+                        var profitB = hasB ? getSharesEligibleForTodayProfit(b) * parseFloat(dataB.dwjz) * (getDisplayValues(dataB).percentage / 100) : 0;
+                        return mult * (profitB - profitA);
+                    }
+                    var pctA = getDisplayValues(dataA).percentage;
+                    var pctB = getDisplayValues(dataB).percentage;
+                    return mult * (pctB - pctA);
+                });
+            }
+            setTimeout(step3, 0);
+        }
+        function step3() {
+            var now = new Date();
+            var todayStr = toDateStr(now);
+            var dataTradeDateStr = isTradingDay(now) ? todayStr : getPreviousTradingDay(todayStr);
+            var dataTradeDate = new Date(dataTradeDateStr + 'T12:00:00');
+            var headerDateStr = (dataTradeDate.getMonth() + 1) + '/' + dataTradeDate.getDate();
+            var ls = state.listSort;
+            var defaultMark = '<span class="list-col-sort-arrow list-col-sort-default" title="默认顺序">≡</span>';
+            var pctArrow = (ls && ls.by === 'pct') ? (ls.dir === 'desc' ? '<span class="list-col-sort-arrow">↓</span>' : '<span class="list-col-sort-arrow">↑</span>') : defaultMark;
+            var profitArrow = (ls && ls.by === 'dailyProfit') ? (ls.dir === 'desc' ? '<span class="list-col-sort-arrow">↓</span>' : '<span class="list-col-sort-arrow">↑</span>') : defaultMark;
+            listHeader = '<div class="fund-list-header"><div class="list-name">名称</div><div class="list-pct"><span class="list-col-sortable list-col-label" onclick="sortListBy(\'pct\')" title="点击切换：默认顺序 / 涨跌幅降序 / 涨跌幅升序">涨跌幅' + pctArrow + '</span><span class="list-col-date">' + headerDateStr + '</span></div><div class="list-profit-cell"><span class="list-col-sortable list-col-label" onclick="sortListBy(\'dailyProfit\')" title="点击切换：默认顺序 / 今日盈亏降序 / 今日盈亏升序">今日盈亏' + profitArrow + '</span><span class="list-col-date">' + headerDateStr + '</span></div><div class="list-sparkline"><span class="list-col-label">当日走势</span><span class="list-col-date">' + headerDateStr + '</span></div><div class="list-actions">操作</div></div>';
+            container.innerHTML = listHeader;
+            var rowIndex = 0;
+            var rowChunks = [];
+            function appendListChunk() {
+                var chunk = displayCodes.slice(rowIndex, rowIndex + LIST_CHUNK_SIZE);
+                rowIndex += chunk.length;
+                if (chunk.length) {
+                    var chunkHtml = buildListRowsHTML(chunk);
+                    rowChunks.push(chunkHtml);
+                    container.insertAdjacentHTML('beforeend', chunkHtml);
+                }
+                if (rowIndex < displayCodes.length) {
+                    requestAnimationFrame(appendListChunk);
+                } else {
+                    if (typeof updateOverviewPanel === 'function') updateOverviewPanel();
+                    state._viewCache = state._viewCache || {};
+                    state._viewCache[state.currentMainView] = { header: listHeader, rowChunks: rowChunks };
+                }
+            }
+            requestAnimationFrame(appendListChunk);
+        }
+        setTimeout(step1, 0);
+    } else {
+        renderFunds();
+    }
 }
 
 function initFundListViewMode() {
@@ -3579,6 +3765,7 @@ function changeSortOrder() {
     state.listSort = state.sortOrder === 'default' ? null : { by: 'pct', dir: state.sortOrder };
     localStorage.setItem('sortOrder', state.sortOrder);
     try { localStorage.setItem('listSort', state.listSort ? JSON.stringify(state.listSort) : ''); } catch (e) {}
+    state._viewCache = null;
     renderFunds();
 }
 
@@ -3598,6 +3785,7 @@ function sortListBy(by) {
     const sel = document.getElementById('sortSelect');
     if (sel) sel.value = state.sortOrder;
     try { localStorage.setItem('listSort', state.listSort ? JSON.stringify(state.listSort) : ''); } catch (e) {}
+    state._viewCache = null;
     renderFunds();
 }
 
@@ -4862,22 +5050,81 @@ function updateFundListItemInPlace(code) {
 }
 
 // ========== 列表与总览渲染 ==========
-function renderFunds() {
-    const container = document.getElementById('fundsContainer');
-    container.setAttribute('aria-busy', 'false'); // 首屏骨架由 JS 替换后标记为就绪
-    let codes = loadFundCodes();
+var LIST_CHUNK_SIZE = 8;
 
-    // 将基金分为持有和自选两组
+function buildListRowsHTML(codes) {
+    return codes.map(function (code) {
+        const data = state.fundsData[code];
+        const posInfo = calculatePosition(code);
+        const hasPosition = posInfo && posInfo.totalShares > 0;
+        if (!data) {
+            return '<div class="fund-list-item" data-code="' + code + '"><div class="list-name"><div class="list-name-main">加载中…</div><div class="list-name-code">' + code + '</div></div><div class="list-pct">--</div><div class="list-profit-cell">--</div><div class="list-sparkline"></div><div class="list-actions"><button class="btn-del" onclick="removeFund(\'' + code + '\')">删除</button></div></div>';
+        }
+        if (data._loadFailed) {
+            return '<div class="fund-list-item fund-card-failed" data-code="' + code + '"><div class="list-name"><div class="list-name-main">加载失败</div><div class="list-name-code">' + code + '</div></div><div class="list-pct">--</div><div class="list-profit-cell">--</div><div class="list-sparkline"></div><div class="list-actions"><button onclick="retryFundLoad(\'' + code + '\')">重试</button><button class="btn-del" onclick="removeFund(\'' + code + '\')">删除</button></div></div>';
+        }
+        const display = getDisplayValues(data);
+        const percentage = display.percentage;
+        const isZeroPct = Math.abs(percentage) < 0.005;
+        const isPositive = percentage >= 0;
+        const pctClass = isZeroPct ? 'neutral' : (isPositive ? 'positive' : 'negative');
+        const pctSymbol = isZeroPct ? '' : (isPositive ? '+' : '');
+        const pctStr = isZeroPct ? '0.00%' : (pctSymbol + percentage.toFixed(2) + '%');
+        var dailyProfitStr = '';
+        if (hasPosition) {
+            const yesterdayValue = parseFloat(data.dwjz);
+            const eligibleShares = getSharesEligibleForTodayProfit(code);
+            const dailyProfit = eligibleShares * yesterdayValue * (percentage / 100);
+            const isZeroDaily = Math.abs(dailyProfit) < 0.005;
+            const dpClass = isZeroDaily ? 'neutral' : (dailyProfit > 0 ? 'positive' : 'negative');
+            const dpSymbol = isZeroDaily ? '' : (dailyProfit > 0 ? '+' : '');
+            const dailyAmountStr = isZeroDaily ? '0.00' : (dailyProfit < 0 ? '-' : dpSymbol) + (dailyProfit < 0 ? Math.abs(dailyProfit) : dailyProfit).toFixed(2);
+            dailyProfitStr = '<span class="list-profit ' + dpClass + '">' + dailyAmountStr + '</span>';
+        }
+        const rowClass = hasPosition ? 'holding' : 'watching';
+        const dayHistory = state.historyData[code];
+        const sparklineSvg = renderListSparklineSvg(dayHistory, percentage);
+        var nameSubHtml = '';
+        if (hasPosition) {
+            const currentNav = display.isActual ? parseFloat(display.value) : parseFloat(data.gsz);
+            const currentValue = posInfo.totalShares * currentNav;
+            const profit = currentValue - posInfo.totalCost;
+            const profitRateNum = (currentNav - posInfo.avgCost) / posInfo.avgCost * 100;
+            const isZeroProfit = Math.abs(profit) < 0.005;
+            const isZeroRate = Math.abs(profitRateNum) < 0.005;
+            const profitClass = isZeroProfit ? 'holding-neutral' : (profit >= 0 ? 'holding-profit' : 'holding-loss');
+            const profitSymbol = isZeroProfit ? '' : (profit >= 0 ? '+' : '');
+            const valueStr = currentValue.toFixed(2);
+            const profitAmountStr = isZeroProfit ? '0.00' : (profit < 0 ? '' : profitSymbol) + (profit < 0 ? Math.abs(profit) : profit).toFixed(2);
+            const rateStr = isZeroRate ? '0.00%' : (profitRateNum > 0 ? '+' : (profitRateNum < 0 ? '-' : '')) + (profitRateNum < 0 ? Math.abs(profitRateNum) : profitRateNum).toFixed(2) + '%';
+            const fullTitle = '市值 ' + currentValue.toFixed(2) + ' · 收益 ' + profitAmountStr + '（' + rateStr + '）';
+            nameSubHtml = '<div class="list-name-holding"><a href="javascript:void(0)" class="list-holding-link" onclick="openPositionModal(\'' + code + '\')" title="' + fullTitle + '">' + valueStr + '<span class="list-holding-rate ' + profitClass + '">' + rateStr + '</span></a></div>';
+        } else {
+            nameSubHtml = '<div class="list-name-code">' + data.fundcode + '</div>';
+        }
+        return '<div class="fund-list-item ' + rowClass + '" data-code="' + code + '"><div class="list-name"><div class="list-name-main">' + (data.name || code) + '</div>' + nameSubHtml + '</div><div class="list-pct ' + pctClass + '">' + pctStr + '</div><div class="list-profit-cell">' + dailyProfitStr + '</div><div class="list-sparkline">' + (sparklineSvg || '') + '</div><div class="list-actions"><a href="javascript:void(0)" onclick="openFundDetailModal(\'' + code + '\')">详情</a><button class="btn-del" onclick="removeFund(\'' + code + '\')">删除</button></div></div>';
+    }).join('');
+}
+
+function getHoldingWatchingCodes() {
+    const codes = loadFundCodes();
     const holdingCodes = [];
     const watchingCodes = [];
     codes.forEach(code => {
         const posInfo = calculatePosition(code);
-        if (posInfo && posInfo.totalShares > 0) {
-            holdingCodes.push(code);
-        } else {
-            watchingCodes.push(code);
-        }
+        if (posInfo && posInfo.totalShares > 0) holdingCodes.push(code);
+        else watchingCodes.push(code);
     });
+    return { holdingCodes, watchingCodes };
+}
+
+function renderFunds() {
+    const container = document.getElementById('fundsContainer');
+    container.setAttribute('aria-busy', 'false'); // 首屏骨架由 JS 替换后标记为就绪
+    let codes = loadFundCodes();
+    const _hw = getHoldingWatchingCodes();
+    const holdingCodes = _hw.holdingCodes;
+    const watchingCodes = _hw.watchingCodes;
 
     // 更新标签上的计数
     const holdingCountEl = document.getElementById('holdingCount');
@@ -4965,72 +5212,31 @@ function renderFunds() {
                 <div class="list-sparkline"><span class="list-col-label">当日走势</span><span class="list-col-date">${headerDateStr}</span></div>
                 <div class="list-actions">操作</div>
             </div>`;
-        container.innerHTML = listHeader + displayCodes.map(code => {
-            const data = state.fundsData[code];
-            const posInfo = calculatePosition(code);
-            const hasPosition = posInfo && posInfo.totalShares > 0;
-            if (!data) {
-                return `<div class="fund-list-item" data-code="${code}"><div class="list-name"><div class="list-name-main">加载中…</div><div class="list-name-code">${code}</div></div><div class="list-pct">--</div><div class="list-profit-cell">--</div><div class="list-sparkline"></div><div class="list-actions"><button class="btn-del" onclick="removeFund('${code}')">删除</button></div></div>`;
+        container.innerHTML = listHeader;
+        if (displayCodes.length === 0) {
+            updateOverviewPanel();
+            return;
+        }
+        var rowIndex = 0;
+        var listCodes = displayCodes;
+        var rowChunks = [];
+        function appendListChunk() {
+            var chunk = listCodes.slice(rowIndex, rowIndex + LIST_CHUNK_SIZE);
+            rowIndex += chunk.length;
+            if (chunk.length) {
+                var chunkHtml = buildListRowsHTML(chunk);
+                rowChunks.push(chunkHtml);
+                container.insertAdjacentHTML('beforeend', chunkHtml);
             }
-            if (data._loadFailed) {
-                return `<div class="fund-list-item fund-card-failed" data-code="${code}"><div class="list-name"><div class="list-name-main">加载失败</div><div class="list-name-code">${code}</div></div><div class="list-pct">--</div><div class="list-profit-cell">--</div><div class="list-sparkline"></div><div class="list-actions"><button onclick="retryFundLoad('${code}')">重试</button><button class="btn-del" onclick="removeFund('${code}')">删除</button></div></div>`;
-            }
-            const display = getDisplayValues(data);
-            const percentage = display.percentage;
-            const isZeroPct = Math.abs(percentage) < 0.005;
-            const isPositive = percentage >= 0;
-            const pctClass = isZeroPct ? 'neutral' : (isPositive ? 'positive' : 'negative');
-            const pctSymbol = isZeroPct ? '' : (isPositive ? '+' : '');
-            const pctStr = isZeroPct ? '0.00%' : (pctSymbol + percentage.toFixed(2) + '%');
-            let dailyProfitStr = '';
-            if (hasPosition) {
-                const yesterdayValue = parseFloat(data.dwjz);
-                const eligibleShares = getSharesEligibleForTodayProfit(code);
-                const dailyProfit = eligibleShares * yesterdayValue * (percentage / 100);
-                const isZeroDaily = Math.abs(dailyProfit) < 0.005;
-                const dpClass = isZeroDaily ? 'neutral' : (dailyProfit > 0 ? 'positive' : 'negative');
-                const dpSymbol = isZeroDaily ? '' : (dailyProfit > 0 ? '+' : '');
-                const dailyAmountStr = isZeroDaily ? '0.00' : (dailyProfit < 0 ? '-' : dpSymbol) + (dailyProfit < 0 ? Math.abs(dailyProfit) : dailyProfit).toFixed(2);
-                dailyProfitStr = `<span class="list-profit ${dpClass}">${dailyAmountStr}</span>`;
-            }
-            const rowClass = hasPosition ? 'holding' : 'watching';
-            const dayHistory = state.historyData[code];
-            const sparklineSvg = renderListSparklineSvg(dayHistory, percentage);
-            let nameSubHtml = '';
-            if (hasPosition) {
-                const currentNav = display.isActual ? parseFloat(display.value) : parseFloat(data.gsz);
-                const currentValue = posInfo.totalShares * currentNav;
-                const profit = currentValue - posInfo.totalCost;
-                const profitRateNum = (currentNav - posInfo.avgCost) / posInfo.avgCost * 100;
-                const isZeroProfit = Math.abs(profit) < 0.005;
-                const isZeroRate = Math.abs(profitRateNum) < 0.005;
-                const profitClass = isZeroProfit ? 'holding-neutral' : (profit >= 0 ? 'holding-profit' : 'holding-loss');
-                const profitSymbol = isZeroProfit ? '' : (profit >= 0 ? '+' : '');
-                const valueStr = currentValue.toFixed(2);
-                const profitAmountStr = isZeroProfit ? '0.00' : (profit < 0 ? '' : profitSymbol) + (profit < 0 ? Math.abs(profit) : profit).toFixed(2);
-                const rateStr = isZeroRate ? '0.00%' : (profitRateNum > 0 ? '+' : (profitRateNum < 0 ? '-' : '')) + (profitRateNum < 0 ? Math.abs(profitRateNum) : profitRateNum).toFixed(2) + '%';
-                const fullTitle = '市值 ' + currentValue.toFixed(2) + ' · 收益 ' + profitAmountStr + '（' + rateStr + '）';
-                nameSubHtml = `<div class="list-name-holding"><a href="javascript:void(0)" class="list-holding-link" onclick="openPositionModal('${code}')" title="${fullTitle}">${valueStr}<span class="list-holding-rate ${profitClass}">${rateStr}</span></a></div>`;
+            if (rowIndex < listCodes.length) {
+                requestAnimationFrame(appendListChunk);
             } else {
-                nameSubHtml = `<div class="list-name-code">${data.fundcode}</div>`;
+                updateOverviewPanel();
+                state._viewCache = state._viewCache || {};
+                state._viewCache[state.currentMainView] = { header: listHeader, rowChunks: rowChunks };
             }
-            return `
-                <div class="fund-list-item ${rowClass}" data-code="${code}">
-                    <div class="list-name">
-                        <div class="list-name-main">${data.name || code}</div>
-                        ${nameSubHtml}
-                    </div>
-                    <div class="list-pct ${pctClass}">${pctStr}</div>
-                    <div class="list-profit-cell">${dailyProfitStr}</div>
-                    <div class="list-sparkline">${sparklineSvg}</div>
-                    <div class="list-actions">
-                        <a href="javascript:void(0)" onclick="openFundDetailModal('${code}')">详情</a>
-                        <button class="btn-del" onclick="removeFund('${code}')">删除</button>
-                    </div>
-                </div>
-            `;
-        }).join('');
-        updateOverviewPanel();
+        }
+        requestAnimationFrame(appendListChunk);
         return;
     }
 
@@ -5177,6 +5383,9 @@ function renderFunds() {
 
     // 更新总览看板
     updateOverviewPanel();
+
+    state._viewCache = state._viewCache || {};
+    state._viewCache[state.currentMainView] = container.innerHTML;
 }
 
 // 拖拽排序
