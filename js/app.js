@@ -3327,7 +3327,7 @@ function fetchFundDetailsInternal(code, skipRender = false) {
                     if (!skipRender) {
                         const updated = updateFundDetailsTab(code);
                         if (!updated) {
-                            renderFunds();
+                            scheduleRender();
                         }
                     }
                     state.isLoadingFundDetails = false;
@@ -3563,20 +3563,20 @@ window.jsonpgz = function(data) {
     
     if (shouldAddData) {
         if (isInTradingHours) {
-            // 在交易时段内，保存所有数据点
             currentHistory.push({ time, percentage, date: today, tradingHours: true });
         } else {
-            // 非交易时段，如果没有交易时段的数据，则添加当前点
-            // 如果已有交易时段的数据，则不添加（保持交易时段数据的纯净）
             const hasTradingData = currentHistory.some(item => item.tradingHours === true);
             if (!hasTradingData) {
-                // 非交易时段且没有交易数据，保留最近3个点以便形成图表
                 if (currentHistory.length >= 3) {
                     currentHistory.shift();
                 }
                 currentHistory.push({ time, percentage, date: today, tradingHours: false });
+            } else if (currentHistory.length > 0) {
+                currentHistory[currentHistory.length - 1].percentage = percentage;
             }
         }
+    } else if (currentHistory.length > 0) {
+        currentHistory[currentHistory.length - 1].percentage = percentage;
     }
     
     // 更新今日最高最低
@@ -5378,7 +5378,6 @@ function renderFunds() {
         `;
     }).join('');
 
-    // 使用 IntersectionObserver 懒加载图表（只绘制可见卡片）
     observeCharts();
 
     // 更新总览看板
@@ -5743,42 +5742,21 @@ function toggleNwHistory(btn) {
     }
 }
 
-// Chart.js 懒加载：仅绘制视口内可见的图表
-let chartObserver = null;
-
+// 绘制所有基金卡片中的图表（同步绘制，确保 renderFunds 后立即可见）
 function observeCharts() {
-    // 断开旧观察器
-    if (chartObserver) chartObserver.disconnect();
-
-    chartObserver = new IntersectionObserver((entries) => {
-        entries.forEach(entry => {
-            if (entry.isIntersecting) {
-                const canvas = entry.target;
-                const code = canvas.id.replace('chart-', '');
-                if (state.fundsData[code]) {
-                    drawChart(code);
-                }
-                // 绘制后停止观察该元素
-                chartObserver.unobserve(canvas);
-            }
-        });
-    }, { rootMargin: '100px' }); // 提前100px开始加载
-
-    // 观察所有图表 canvas
     document.querySelectorAll('.chart-container canvas').forEach(canvas => {
         const code = canvas.id.replace('chart-', '');
-        // 如果旧 Chart 实例的 canvas 已不在 DOM 中（renderFunds 重建了 DOM），先清理
         if (state.charts[code] && state.charts[code].canvas !== canvas) {
             state.charts[code].destroy();
             delete state.charts[code];
         }
-        // 已有有效图表实例则跳过
-        if (state.charts[code]) return;
-        chartObserver.observe(canvas);
+        if (state.fundsData[code]) {
+            drawChart(code);
+        }
     });
 }
 
-// 绘制图表（支持原地更新，避免闪烁）
+// 绘制图表（每次销毁旧实例并重建，确保数据可靠刷新）
 function drawChart(code) {
     const history = state.historyData[code] || [];
     if (history.length === 0) return;
@@ -5841,48 +5819,9 @@ function drawChart(code) {
         return 1;
     });
 
-    // 如果图表已存在，检查 canvas 是否仍是同一个（renderFunds innerHTML 重建后 canvas 会变）
     if (state.charts[code]) {
-        if (state.charts[code].canvas !== ctx) {
-            // canvas 已被替换（如 renderFunds 重建了 DOM），销毁旧图表，后续会创建新的
-            state.charts[code].destroy();
-            delete state.charts[code];
-        } else {
-            // 同一个 canvas，原地更新数据（避免 destroy/recreate 造成的闪烁）
-            const chart = state.charts[code];
-            const ds = chart.data.datasets[0];
-
-            chart.data.labels = labels;
-            ds.data = data;
-            ds.borderColor = lineColor;
-            ds.backgroundColor = `${lineColor}20`;
-            ds.pointRadius = pointRadius;
-            ds.pointHoverRadius = pointHoverRadius;
-            ds.pointBackgroundColor = pointBackgroundColor;
-            ds.pointBorderColor = pointBorderColor;
-            ds.pointBorderWidth = pointBorderWidth;
-            ds.pointHoverBackgroundColor = pointBackgroundColor;
-            ds.pointHoverBorderColor = pointBorderColor;
-            ds.pointHoverBorderWidth = pointHoverBorderWidth;
-
-            // 更新 tooltip 回调中引用的 maxIndex/minIndex（通过闭包更新）
-            chart.options.plugins.tooltip.callbacks.label = function(context) {
-                let label = parseFloat(context.parsed.y).toFixed(2);
-                if (context.parsed.y >= 0) {
-                    label = '+' + label;
-                }
-                label = label + '%';
-                if (context.dataIndex === maxIndex) {
-                    label += ' 📈 今日最高';
-                } else if (context.dataIndex === minIndex) {
-                    label += ' 📉 今日最低';
-                }
-                return label;
-            };
-
-            chart.update('none'); // 无动画立即更新
-            return;
-        }
+        state.charts[code].destroy();
+        delete state.charts[code];
     }
 
     state.charts[code] = new Chart(ctx, {
@@ -6333,15 +6272,35 @@ function getRefreshInterval() {
 }
 
 let refreshTimer = null;
+let refreshWatchdogTimer = null;
 
 function scheduleRefresh() {
     if (refreshTimer) clearTimeout(refreshTimer);
-    if (document.hidden) return; // 标签页在后台时不调度，避免切回时大量回调堆积导致卡死
     const interval = getRefreshInterval();
     refreshTimer = setTimeout(() => {
-        refreshAllFunds();
-        scheduleRefresh();
+        try {
+            refreshAllFunds();
+        } finally {
+            // 即使刷新过程抛错也继续调度，避免轮询链路中断。
+            scheduleRefresh();
+        }
     }, interval);
+}
+
+function ensureRefreshWatchdog() {
+    if (refreshWatchdogTimer) clearInterval(refreshWatchdogTimer);
+    // 兜底机制：部分运行环境会出现 setTimeout 链路意外中断（或被长期节流）；
+    // watchdog 定期自检，若超过预期周期未刷新，则主动恢复轮询并触发一次刷新。
+    refreshWatchdogTimer = setInterval(function () {
+        const now = Date.now();
+        const last = state.lastAutoRefreshAt || 0;
+        const expected = Math.max(getRefreshInterval() * 2, 90000);
+        const stale = !last || (now - last > expected);
+        if (!refreshTimer || stale) {
+            refreshAllFunds();
+            scheduleRefresh();
+        }
+    }, 10000);
 }
 
 // 手动刷新实际净值（晚间净值公布后使用，会清除缓存并重新拉取）
@@ -6369,6 +6328,7 @@ function refreshActualNav() {
 
 // 刷新所有基金数据（定时刷新只获取实时估值；晚间或非交易日为显示实际净值会拉取详情）
 function refreshAllFunds() {
+    state.lastAutoRefreshAt = Date.now();
     const codes = loadFundCodes();
     const today = new Date();
     codes.forEach(code => {
@@ -6544,6 +6504,7 @@ function init() {
         initDragSort();
         codes.forEach(code => { fetchFundData(code); });
         scheduleRefresh();
+        ensureRefreshWatchdog();
     });
 
     // 为「仅存在于总览（已删除/清仓）但无净值历史」的基金拉取详情，使日历日期弹窗能显示这些基金
@@ -6571,23 +6532,15 @@ function init() {
     }
     scheduleTwoAMCheck();
 
-    // 标签页可见性：切到后台时取消定时器；切回时仅恢复定时、不发起刷新，避免大量请求+回调阻塞主线程导致长时间无响应
+    // 标签页可见性：仅管理每日2点检查定时器；基金刷新由 scheduleRefresh + watchdog 统一维持
     document.addEventListener('visibilitychange', function () {
-        if (document.hidden) {
-            if (refreshTimer) {
-                clearTimeout(refreshTimer);
-                refreshTimer = null;
-            }
+        if (document.visibilityState === 'hidden') {
             if (twoAMTimer) {
                 clearTimeout(twoAMTimer);
                 twoAMTimer = null;
             }
-            Object.keys(state.fundDataTimeouts).forEach(function (code) {
-                clearTimeout(state.fundDataTimeouts[code]);
-            });
-            state.fundDataTimeouts = {};
         } else {
-            scheduleRefresh();
+            if (!refreshTimer) scheduleRefresh();
             if (!twoAMTimer) scheduleTwoAMCheck();
         }
     });
