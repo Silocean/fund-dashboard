@@ -294,10 +294,20 @@ function getDailyPnlMap() {
     });
     const today = toDateStr(new Date());
     dateSet.add(today);
+    // 保障最近交易日的日历连续性：即使交易记录起点较晚，
+    // 也至少纳入前一/前两交易日，避免出现“今天有值、昨天空白”的断层。
+    const prev1 = getPreviousTradingDay(today);
+    const prev2 = getPreviousTradingDay(prev1);
+    dateSet.add(prev1);
+    dateSet.add(prev2);
     const sorted = Array.from(dateSet).sort();
     if (sorted.length < 2) return {};
     const first = sorted[0];
-    let d = new Date(first + 'T12:00:00');
+    // 为了覆盖边界场景（例如仅有“当天+下一有效日”两类日期时），
+    // 起点再向前扩一个交易日，避免首个可展示日被跳过。
+    const firstPrevTradingDay = getPreviousTradingDay(first);
+    const startTradingDay = getPreviousTradingDay(firstPrevTradingDay);
+    let d = new Date(startTradingDay + 'T12:00:00');
     const end = new Date(today + 'T12:00:00');
     const tradingDays = [];
     while (d <= end) {
@@ -346,6 +356,53 @@ function getDailyPnlByFund(dateStr) {
         const rate = valuePrevForRate > 0 ? (amount / valuePrevForRate) * 100 : 0;
         const name = getFundDisplayName(code);
         list.push({ code, name, amount, rate });
+    });
+    return list.sort((a, b) => Math.abs(b.amount) - Math.abs(a.amount));
+}
+
+/** 今日盘中估算盈亏（基于实时估值 gszzl），用于日历在当日净值未公布前展示当天数据 */
+function getTodayEstimatedPnlSummary() {
+    const today = new Date();
+    if (!isTradingDay(today) || isAfterNavPublishTime()) return null;
+    const codes = loadFundCodes();
+    let amount = 0;
+    let valuePrevForRate = 0;
+    codes.forEach(code => {
+        const data = state.fundsData[code];
+        const posInfo = calculatePosition(code);
+        if (!data || !posInfo || posInfo.totalShares <= 0) return;
+        const display = getDisplayValues(data);
+        const percentage = parseFloat(display.percentage || 0);
+        const yesterdayValue = parseFloat(data.dwjz);
+        const eligibleShares = getSharesEligibleForTodayProfit(code);
+        if (!isFinite(percentage) || !isFinite(yesterdayValue) || eligibleShares <= 0) return;
+        amount += eligibleShares * yesterdayValue * (percentage / 100);
+        valuePrevForRate += eligibleShares * yesterdayValue;
+    });
+    if (valuePrevForRate <= 0) return null;
+    const rate = (amount / valuePrevForRate) * 100;
+    return { amount, rate, estimated: true };
+}
+
+/** 今日盘中估算盈亏按基金明细（基于实时估值 gszzl） */
+function getTodayEstimatedPnlByFund() {
+    const today = new Date();
+    if (!isTradingDay(today) || isAfterNavPublishTime()) return [];
+    const codes = loadFundCodes();
+    const list = [];
+    codes.forEach(code => {
+        const data = state.fundsData[code];
+        const posInfo = calculatePosition(code);
+        if (!data || !posInfo || posInfo.totalShares <= 0) return;
+        const display = getDisplayValues(data);
+        const percentage = parseFloat(display.percentage || 0);
+        const yesterdayValue = parseFloat(data.dwjz);
+        const eligibleShares = getSharesEligibleForTodayProfit(code);
+        if (!isFinite(percentage) || !isFinite(yesterdayValue) || eligibleShares <= 0) return;
+        const amount = eligibleShares * yesterdayValue * (percentage / 100);
+        const base = eligibleShares * yesterdayValue;
+        const rate = base > 0 ? (amount / base) * 100 : 0;
+        list.push({ code, name: getFundDisplayName(code), amount, rate });
     });
     return list.sort((a, b) => Math.abs(b.amount) - Math.abs(a.amount));
 }
@@ -2700,13 +2757,15 @@ function openDailyPnlDetail(dateStr) {
     if (toolbar) toolbar.style.display = 'flex';
     const dateObj = new Date(dateStr + 'T12:00:00');
     const dateLabel = `${dateObj.getFullYear()}年${dateObj.getMonth() + 1}月${dateObj.getDate()}日`;
-    titleEl.textContent = '📅 ' + dateLabel + ' 盈亏明细';
-    const list = getDailyPnlByFund(dateStr);
+    const todayStr = toDateStr(new Date());
+    const useEstimated = (dateStr === todayStr) && !isAfterNavPublishTime() && isTradingDay(new Date(todayStr + 'T12:00:00'));
+    titleEl.textContent = '📅 ' + dateLabel + (useEstimated ? ' 估算盈亏明细' : ' 盈亏明细');
+    const list = useEstimated ? getTodayEstimatedPnlByFund() : getDailyPnlByFund(dateStr);
     const showAmount = state.calendarDisplay === 'amount';
     let totalAmount = 0;
     list.forEach(item => { totalAmount += item.amount; });
     if (list.length === 0) {
-        content.innerHTML = '<div class="no-position" style="padding: 24px; text-align: center; color: var(--text-muted);">该日无组合盈亏数据（非交易日或尚无净值）</div>';
+        content.innerHTML = '<div class="no-position" style="padding: 24px; text-align: center; color: var(--text-muted);">' + (useEstimated ? '今日暂无可用估值数据' : '该日无组合盈亏数据（非交易日或尚无净值）') + '</div>';
     } else {
         renderPnlDetailList(content, list, totalAmount, showAmount, 'day', dateStr);
     }
@@ -4050,6 +4109,7 @@ function renderPnlCalendar() {
     if (state.calendarView === 'day') {
         titleEl.textContent = state.calendarYear + '年' + state.calendarMonth + '月';
         const showAmount = state.calendarDisplay === 'amount';
+        const todayEstimate = getTodayEstimatedPnlSummary();
         const firstDay = new Date(state.calendarYear, state.calendarMonth - 1, 1);
         const lastDay = new Date(state.calendarYear, state.calendarMonth, 0);
         const startPad = firstDay.getDay();
@@ -4061,10 +4121,26 @@ function renderPnlCalendar() {
         for (let i = 0; i < startPad; i++) html += '<div class="pnl-cell empty"></div>';
         for (let d = 1; d <= daysInMonth; d++) {
             const dateStr = state.calendarYear + '-' + String(state.calendarMonth).padStart(2, '0') + '-' + String(d).padStart(2, '0');
-            const info = dailyMap[dateStr];
+            let info = dailyMap[dateStr];
             const isToday = dateStr === todayStr;
             const dateObj = new Date(dateStr + 'T12:00:00');
             const isNonTrading = !isTradingDay(dateObj);
+            const useEstimated = isToday && todayEstimate && !isAfterNavPublishTime();
+            if (useEstimated) info = todayEstimate;
+            // 兜底：若日历缓存缺该交易日，按当日明细动态聚合，避免出现“个别交易日空白”。
+            if (!info && !useEstimated && !isNonTrading && dateStr <= todayStr) {
+                const list = getDailyPnlByFund(dateStr);
+                if (list.length > 0) {
+                    const amount = list.reduce((sum, item) => sum + (item.amount || 0), 0);
+                    const prev = getPreviousTradingDay(dateStr);
+                    const prevValueForRate = getPortfolioValueForRateBetween(prev, dateStr);
+                    const rate = prevValueForRate > 0 ? (amount / prevValueForRate) * 100 : 0;
+                    info = { amount, rate };
+                } else {
+                    // 有交易日但无可计算明细时显示 0，避免视觉上“缺格”。
+                    info = { amount: 0, rate: 0 };
+                }
+            }
             let cls = 'pnl-cell';
             let valueHtml = '';
             if (info) {
@@ -4081,7 +4157,7 @@ function renderPnlCalendar() {
             if (isToday) cls += ' pnl-cell-today';
             cls += ' pnl-cell-day';
             let title = dateStr;
-            if (info) title += ' ' + (showAmount ? info.amount.toFixed(2) : info.rate.toFixed(2) + '%') + '，点击查看各基金明细';
+            if (info) title += ' ' + (showAmount ? info.amount.toFixed(2) : info.rate.toFixed(2) + '%') + (useEstimated ? '（估算）' : '') + '，点击查看各基金明细';
             else title += isNonTrading ? ' 非交易日' : ' 暂无净值数据，点击查看';
             html += `<button type="button" class="${cls}" data-date="${dateStr}" title="${title}" onclick="openDailyPnlDetail('${dateStr}')" aria-label="${title}"><span class="pnl-label">${d}</span>${valueHtml}</button>`;
         }
