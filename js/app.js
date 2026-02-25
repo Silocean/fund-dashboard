@@ -57,7 +57,8 @@ const state = {
     autocompleteSelectedIndex: -1,
     scrollDeferredForNewFund: false,
     initialPurchaseModalHasOpened: false,
-    _viewCache: null
+    _viewCache: null,
+    _listRenderToken: 0
 };
 
 // ========== UI：Toast 与确认框 ==========
@@ -3671,11 +3672,13 @@ function switchMainView(view) {
     if (state._viewCache && state._viewCache[view]) {
         container.className = state.fundListViewMode === 'list' ? 'fund-list' : 'funds-grid';
         if (state.fundListViewMode === 'list') {
+            const renderToken = beginListRender();
             var cached = state._viewCache[view];
             if (cached && typeof cached === 'object' && cached.header && Array.isArray(cached.rowChunks)) {
                 container.innerHTML = cached.header;
                 var chunkIdx = 0;
                 function applyNextChunk() {
+                    if (renderToken !== state._listRenderToken) return;
                     if (chunkIdx < cached.rowChunks.length) {
                         container.insertAdjacentHTML('beforeend', cached.rowChunks[chunkIdx]);
                         chunkIdx++;
@@ -3693,6 +3696,7 @@ function switchMainView(view) {
                 }
             }
         } else {
+            beginListRender(); // 取消仍在排队的列表分块渲染
             container.innerHTML = state._viewCache[view];
             if (typeof observeCharts === 'function') observeCharts();
         }
@@ -3718,6 +3722,7 @@ function setFundListViewMode(mode) {
     document.getElementById('viewModeCard').classList.toggle('active', mode === 'card');
     document.getElementById('viewModeList').classList.toggle('active', mode === 'list');
     state._viewCache = null;
+    beginListRender(); // 切换模式时先使旧列表分块任务失效
     var container = document.getElementById('fundsContainer');
     if (mode === 'list') {
         container.className = 'fund-list';
@@ -3773,6 +3778,7 @@ function setFundListViewMode(mode) {
             setTimeout(step3, 0);
         }
         function step3() {
+            const renderToken = beginListRender();
             var now = new Date();
             var todayStr = toDateStr(now);
             var dataTradeDateStr = isTradingDay(now) ? todayStr : getPreviousTradingDay(todayStr);
@@ -3787,6 +3793,7 @@ function setFundListViewMode(mode) {
             var rowIndex = 0;
             var rowChunks = [];
             function appendListChunk() {
+                if (renderToken !== state._listRenderToken) return;
                 var chunk = displayCodes.slice(rowIndex, rowIndex + LIST_CHUNK_SIZE);
                 rowIndex += chunk.length;
                 if (chunk.length) {
@@ -5127,6 +5134,10 @@ function updateFundListItemInPlace(code) {
 
 // ========== 列表与总览渲染 ==========
 var LIST_CHUNK_SIZE = 8;
+function beginListRender() {
+    state._listRenderToken = (state._listRenderToken || 0) + 1;
+    return state._listRenderToken;
+}
 
 function buildListRowsHTML(codes) {
     return codes.map(function (code) {
@@ -5270,6 +5281,7 @@ function renderFunds() {
     container.className = state.fundListViewMode === 'list' ? 'fund-list' : 'funds-grid';
 
     if (state.fundListViewMode === 'list') {
+        const renderToken = beginListRender();
         // 涨跌幅/估值对应的交易日：交易日即当天，非交易日为上一交易日（显示的是该日实际净值）
         const now = new Date();
         const todayStr = toDateStr(now);
@@ -5297,6 +5309,7 @@ function renderFunds() {
         var listCodes = displayCodes;
         var rowChunks = [];
         function appendListChunk() {
+            if (renderToken !== state._listRenderToken) return;
             var chunk = listCodes.slice(rowIndex, rowIndex + LIST_CHUNK_SIZE);
             rowIndex += chunk.length;
             if (chunk.length) {
@@ -5315,6 +5328,7 @@ function renderFunds() {
         requestAnimationFrame(appendListChunk);
         return;
     }
+    beginListRender(); // 非列表模式时，取消遗留的列表分块渲染任务
 
     container.innerHTML = displayCodes.map(code => {
         const data = state.fundsData[code];
