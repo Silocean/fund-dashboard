@@ -220,6 +220,22 @@ function getNavOnOrBefore(code, dateStr) {
     return best ? best.y : null;
 }
 
+/** 某日净值（日历口径）：优先取该日精确净值；若缺失且该日为昨日，则回退到实时接口里的 dwjz（上一交易日单位净值） */
+function getNavForCalendarDate(code, dateStr) {
+    const details = state.fundDetails[code];
+    if (details && details.netWorthData && details.netWorthData.length > 0) {
+        const exact = details.netWorthData.find(x => netWorthItemDateStr(x) === dateStr);
+        if (exact && exact.y != null) return exact.y;
+    }
+    const todayStr = toDateStr(new Date());
+    const yesterdayStr = getPreviousTradingDay(todayStr);
+    if (dateStr === yesterdayStr) {
+        const dwjz = parseFloat(state.fundsData[code]?.dwjz);
+        if (isFinite(dwjz) && dwjz > 0) return dwjz;
+    }
+    return null;
+}
+
 /** 某笔交易生效的净值日期（份额从该日起计入持仓） */
 function getTransEffectiveDate(trans) {
     if (trans.effectiveNavDate) return trans.effectiveNavDate;
@@ -350,7 +366,8 @@ function getDailyPnlByFund(dateStr) {
         const { shares: sharesPrev } = getSharesAndCostAtDate(code, prev);
         if (sharesPrev <= 0) return;
         const navPrev = getNavOnOrBefore(code, prev);
-        const navCur = getNavOnOrBefore(code, dateStr);
+        const navCurExact = getNavForCalendarDate(code, dateStr);
+        const navCur = navCurExact != null ? navCurExact : getNavOnOrBefore(code, dateStr);
         if (navPrev == null || navCur == null) return;
         const amount = sharesPrev * (navCur - navPrev);
         const valuePrevForRate = sharesPrev * navPrev;
@@ -658,6 +675,14 @@ function openOverviewDetailModal() {
     if (!modal) return;
     if (state._dailyPnlMapCache) state._dailyPnlMapCache = null;
     modal.classList.add('active');
+    // 打开总览详情时，确保参与统计的基金都尽快具备净值历史，避免日历按日出现“部分基金有值、部分无值”。
+    const overviewCodes = getOverviewFundCodes();
+    overviewCodes.forEach(function (code) {
+        const details = state.fundDetails[code];
+        if (!details || !details.netWorthData || details.netWorthData.length < 2) {
+            fetchFundDetails(code, true);
+        }
+    });
     var runWhenIdle = typeof requestIdleCallback !== 'undefined' ? requestIdleCallback : function (fn, opts) { setTimeout(fn, opts && opts.timeout ? Math.min(50, opts.timeout) : 50); };
     runWhenIdle(function () {
         if (typeof drawAllocationChart === 'function') drawAllocationChart();
@@ -4134,19 +4159,14 @@ function renderPnlCalendar() {
             const isNonTrading = !isTradingDay(dateObj);
             const useEstimated = isToday && todayEstimate && !isAfterNavPublishTime();
             if (useEstimated) info = todayEstimate;
-            // 兜底：若日历缓存缺该交易日，按当日明细动态聚合，避免出现“个别交易日空白”。
-            if (!info && !useEstimated && !isNonTrading && dateStr <= todayStr) {
+            // 按日视图对已发生交易日统一走明细聚合，避免 dailyMap 边界缺口导致单日空白。
+            if (!useEstimated && !isNonTrading && dateStr <= todayStr) {
                 const list = getDailyPnlByFund(dateStr);
-                if (list.length > 0) {
-                    const amount = list.reduce((sum, item) => sum + (item.amount || 0), 0);
-                    const prev = getPreviousTradingDay(dateStr);
-                    const prevValueForRate = getPortfolioValueForRateBetween(prev, dateStr);
-                    const rate = prevValueForRate > 0 ? (amount / prevValueForRate) * 100 : 0;
-                    info = { amount, rate };
-                } else {
-                    // 有交易日但无可计算明细时显示 0，避免视觉上“缺格”。
-                    info = { amount: 0, rate: 0 };
-                }
+                const amount = list.reduce((sum, item) => sum + (item.amount || 0), 0);
+                const prev = getPreviousTradingDay(dateStr);
+                const prevValueForRate = getPortfolioValueForRateBetween(prev, dateStr);
+                const rate = prevValueForRate > 0 ? (amount / prevValueForRate) * 100 : 0;
+                info = { amount, rate };
             }
             let cls = 'pnl-cell';
             let valueHtml = '';
