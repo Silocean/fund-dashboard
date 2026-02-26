@@ -1783,11 +1783,25 @@ async function downloadFromCloud() {
             throw new Error('Gist 中未找到同步数据文件');
         }
         
+        let fileContent = file.content || '';
+        // Gist API 对大文件会返回截断内容（truncated=true），需改用 raw_url 拉取完整文本
+        if (file.truncated && file.raw_url) {
+            // raw_url 走 gist.githubusercontent.com，带 Authorization 会触发预检并被 CORS 拦截
+            // 这里使用无鉴权简单 GET（不触发 preflight）
+            const rawResponse = await fetch(file.raw_url + '?t=' + Date.now(), {
+                cache: 'no-store'
+            });
+            if (!rawResponse.ok) {
+                throw new Error(`拉取云端原始文件失败（HTTP ${rawResponse.status}）`);
+            }
+            fileContent = await rawResponse.text();
+        }
+        
         let importedData;
         try {
-            importedData = JSON.parse(file.content);
+            importedData = JSON.parse(fileContent);
         } catch (e) {
-            throw new Error('云端数据解析失败，可能因文件过大被截断。请在原设备重新上传（当前仅同步已删除基金的净值数据以减小体积）');
+            throw new Error('云端数据解析失败：同步文件内容不完整或格式损坏。请在原设备重新上传一次后再试');
         }
         
         // 验证数据格式
