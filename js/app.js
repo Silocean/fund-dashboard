@@ -1892,8 +1892,9 @@ function addFund() {
     
     // 弹出初始申购模态框（延迟等待数据加载，加载失败时取消）
     const purchaseTimer = setTimeout(() => {
-        // 只有基金未被删除（加载成功）时才弹出
-        if (loadFundCodes().includes(code)) {
+        // 仅在基金仍在列表且实时数据未标记失败时弹出
+        const data = state.fundsData[code];
+        if (loadFundCodes().includes(code) && !(data && data._loadFailed)) {
             openInitialPurchaseModal(code);
         }
     }, 500);
@@ -3347,7 +3348,9 @@ function fetchFundData(code, skipDetails = false) {
             clearTimeout(state.fundDataTimeouts[code]);
             delete state.fundDataTimeouts[code];
         }
-        removeFund(code, true); // 跳过确认对话框
+        // 不自动删除基金，避免临时网络抖动导致本地列表被误改
+        state.fundsData[code] = { _loadFailed: true, fundcode: code };
+        scheduleRender();
     };
     // 超时：若 15 秒后仍未收到数据，标记加载失败并刷新卡片，避免一直显示「加载中」
     const timeoutId = setTimeout(() => {
@@ -3616,7 +3619,13 @@ window.jsonpgz = function(data) {
             console.error(`基金 ${code} 数据不完整或无效`);
             showToast(`基金代码 ${code} 的数据有问题，可能该基金不支持实时估值或代码错误`, 'error');
             state.loadingFundCodes.delete(code);
-            removeFund(code, true); // 跳过确认对话框
+            if (state.fundDataTimeouts[code]) {
+                clearTimeout(state.fundDataTimeouts[code]);
+                delete state.fundDataTimeouts[code];
+            }
+            // 不自动删除基金，标记为加载失败并允许用户手动重试
+            state.fundsData[code] = { _loadFailed: true, fundcode: code };
+            scheduleRender();
         } else if (state.loadingFundCodes.size > 1) {
             // 多个同时加载时无法确定是哪个，显示通用提示
             console.error('某个基金数据不完整或无效');
