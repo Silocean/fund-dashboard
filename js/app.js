@@ -200,6 +200,23 @@ function netWorthItemDateStr(x) {
     return toDateStr(t);
 }
 
+/** 从净值数组中提取最后一条的日期（YYYY-MM-DD） */
+function getLastNetWorthDateStr(netWorthData) {
+    if (!Array.isArray(netWorthData) || netWorthData.length === 0) return '';
+    return netWorthItemDateStr(netWorthData[netWorthData.length - 1]);
+}
+
+/**
+ * 期望的“最新已公布净值日期”：
+ * - 交易日且 20:00 后：当天
+ * - 其余情况（交易日 20:00 前 / 非交易日）：上一交易日
+ */
+function getExpectedLatestNavDateStr(now = new Date()) {
+    const todayStr = toDateStr(now);
+    if (isTradingDay(now) && isAfterNavPublishTime()) return todayStr;
+    return getPreviousTradingDay(todayStr);
+}
+
 // 从净值走势中获取某日的实际净值（精确匹配）
 function getNavForEffectiveDate(code, effectiveDateStr) {
     const details = state.fundDetails[code];
@@ -3412,10 +3429,14 @@ function fetchFundDetailsInternal(code, skipRender = false) {
             const oneDay = 24 * 60 * 60 * 1000;
             const cacheTime = new Date(cacheData.timestamp);
             const cacheHour = cacheTime.getHours();
+            const expectedLatestNavDate = getExpectedLatestNavDateStr();
+            const cachedLatestNavDate = getLastNetWorthDateStr(cacheData.data && cacheData.data.netWorthData);
             // 晚间（20:00 后）净值已公布，若缓存是当天 20:00 前存的，可能不含当天实际净值，需重新拉取
             const isCacheStaleForEvening = isAfterNavPublishTime() &&
                 cacheTime.toDateString() === new Date().toDateString() && cacheHour < CONFIG.NAV_PUBLISH_HOUR;
-            const cacheValid = (now - cacheData.timestamp < oneDay) && !isCacheStaleForEvening;
+            // 兜底：即使缓存时间在 24h 内，只要净值最后日期落后于应有交易日，也视为过期
+            const isCacheStaleByNavDate = !cachedLatestNavDate || cachedLatestNavDate < expectedLatestNavDate;
+            const cacheValid = (now - cacheData.timestamp < oneDay) && !isCacheStaleForEvening && !isCacheStaleByNavDate;
 
             if (cacheValid) {
                 // 检查缓存中是否有净值数据
