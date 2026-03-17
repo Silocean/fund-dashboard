@@ -6151,9 +6151,14 @@ function drawNetWorthChart(code) {
     
     // 提取日期和净值数据
     const firstDataDateObj = new Date(recentData[0].x);
+    const yearsInRange = new Set(recentData.map(item => new Date(item.x).getFullYear()));
+    const isCrossYear = yearsInRange.size > 1;
     const labels = recentData.map(item => {
         const date = new Date(item.x);
-        return `${date.getMonth() + 1}/${date.getDate()}`;
+        const year = date.getFullYear();
+        const monthDay = `${date.getMonth() + 1}/${date.getDate()}`;
+        // 跨年场景：所有日期都显示完整年份，避免年份歧义
+        return isCrossYear ? `${year}/${monthDay}` : monthDay;
     });
     // 用于图表标题显示的日期范围
     const dateRangeStr = `${firstDataDateObj.getMonth() + 1}/${firstDataDateObj.getDate()} ~ ${lastDataDateObj.getMonth() + 1}/${lastDataDateObj.getDate()}`;
